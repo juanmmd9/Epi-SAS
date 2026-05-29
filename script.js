@@ -18,13 +18,14 @@ const filtroFechaPreventivo = document.getElementById("filtroFechaPreventivo");
 const detalleArea = document.getElementById("detalleArea");
 const detalleEquipo = document.getElementById("detalleEquipo");
 const detalleFecha = document.getElementById("detalleFecha");
-const detalleActividad = document.getElementById("detalleActividad");
-const detalleFoto = document.getElementById("detalleFoto");
+const detalleDescripcionPreventivo = document.getElementById("detalleDescripcionPreventivo");
+const detalleArchivoPreventivo = document.getElementById("detalleArchivoPreventivo");
 const eliminarRegistroBtn = document.getElementById("eliminarRegistroBtn");
 const editarRegistroBtn = document.getElementById("editarRegistroBtn");
 const guardarPreventivoBtn = document.getElementById("guardarPreventivoBtn");
 const cancelarEdicionPreventivoBtn = document.getElementById("cancelarEdicionPreventivoBtn");
-const fotoPreventivoNota = document.getElementById("fotoPreventivoNota");
+const archivoPreventivoNota = document.getElementById("archivoPreventivoNota");
+const descripcionPreventivo = document.getElementById("descripcionPreventivo");
 const formHojas = document.getElementById("formHojas");
 const estadoHojas = document.getElementById("estadoHojas");
 const filtroAreaHojas = document.getElementById("filtroAreaHojas");
@@ -131,6 +132,8 @@ const MODULOS_EN_MAIN = [
 let vistaActual = "vista-inicio";
 const CLAVE_CRONOGRAMA = "mantenimiento_cronograma_preventivo_v1";
 const CLAVE_EXCEPCIONES = "mantenimiento_cronograma_excepciones_v1";
+const EXTENSIONES_ARCHIVO_PREVENTIVO = [".pdf", ".doc", ".docx"];
+const MAX_ARCHIVO_PREVENTIVO_BYTES = 5 * 1024 * 1024;
 const AREAS_PANEL_INICIO = ["Laboratorio", "Confeccion", "Tejidos", "Plasticos"];
 const AREAS_SISTEMA = [
   "Laboratorio",
@@ -295,6 +298,9 @@ function cargarRegistrosPreventivo() {
   try {
     const guardados = localStorage.getItem(CLAVE_PREVENTIVO);
     registrosPreventivo = guardados ? JSON.parse(guardados) : [];
+    registrosPreventivo = registrosPreventivo.map((registro) =>
+      normalizarRegistroPreventivo(registro)
+    );
   } catch (error) {
     registrosPreventivo = [];
     estadoPreventivo.textContent = "No fue posible leer datos guardados.";
@@ -542,10 +548,11 @@ function prepararFormularioPreventivo() {
   formPreventivo.reset();
   if (guardarPreventivoBtn) guardarPreventivoBtn.textContent = "Guardar registro";
   if (cancelarEdicionPreventivoBtn) cancelarEdicionPreventivoBtn.hidden = true;
-  if (fotoPreventivoNota) {
-    fotoPreventivoNota.textContent =
-      "Obligatoria al crear. Al editar, deja vacio para conservar la foto actual.";
+  if (archivoPreventivoNota) {
+    archivoPreventivoNota.textContent =
+      "Obligatorio al crear. PDF, DOC o DOCX (max. 5 MB). Escribe la actividad manualmente abajo.";
   }
+  if (descripcionPreventivo) descripcionPreventivo.value = "";
   actualizarOpcionesEquiposPreventivo();
 }
 
@@ -556,12 +563,15 @@ function llenarFormularioPreventivo(registro) {
   actualizarOpcionesEquiposPreventivo();
   equipoPreventivo.value = registro.maquinaId || "";
   document.getElementById("fechaPreventivo").value = registro.fecha || "";
-  document.getElementById("detallePreventivo").value = registro.actividad || "";
-  document.getElementById("fotoPreventivo").value = "";
+  document.getElementById("archivoPreventivo").value = "";
+  if (descripcionPreventivo) {
+    descripcionPreventivo.value = registro.descripcion || registro.actividad || "";
+  }
   if (guardarPreventivoBtn) guardarPreventivoBtn.textContent = "Guardar cambios";
   if (cancelarEdicionPreventivoBtn) cancelarEdicionPreventivoBtn.hidden = false;
-  if (fotoPreventivoNota) {
-    fotoPreventivoNota.textContent = "Editando: la foto actual se conserva si no eliges otra.";
+  if (archivoPreventivoNota) {
+    const nombre = registro.archivoNombre || "archivo actual";
+    archivoPreventivoNota.textContent = `Editando: se conserva "${nombre}" si no eliges otro archivo.`;
   }
   if (estadoPreventivo) {
     estadoPreventivo.textContent = "Modo edicion: corrige los campos y guarda los cambios.";
@@ -1078,6 +1088,8 @@ function filtrarRegistrosPreventivo(lista = registrosPreventivo) {
 
 function construirHtmlItemPreventivo(registro) {
   const areaTexto = registro.area || "Sin area";
+  const archivoTexto = etiquetaArchivoPreventivo(registro);
+  const descripcionTexto = (registro.descripcion || registro.actividad || "").trim();
   return `
     <article class="item-lista-registro">
       <button type="button" class="btn-registro-contenido" data-ver-preventivo="${registro.id}">
@@ -1085,6 +1097,8 @@ function construirHtmlItemPreventivo(registro) {
         <span class="fecha-registro">${escapeHtml(registro.fecha)}</span>
         <span class="codigo-registro">ID: ${escapeHtml(registro.maquinaId || "sin vinculo")}</span>
         <span class="area-registro">${escapeHtml(areaTexto)}</span>
+        ${descripcionTexto ? `<span class="descripcion-registro">${escapeHtml(descripcionTexto.slice(0, 120))}${descripcionTexto.length > 120 ? "..." : ""}</span>` : ""}
+        <span class="archivo-registro">${escapeHtml(archivoTexto)}</span>
       </button>
       <div class="acciones-lista-registro">
         <button type="button" class="btn-tabla-accion" data-editar-preventivo="${registro.id}">Editar</button>
@@ -1216,6 +1230,74 @@ function leerFotoComoBase64(archivo) {
     lector.onerror = () => reject(new Error("No se pudo procesar la foto."));
     lector.readAsDataURL(archivo);
   });
+}
+
+function leerArchivoComoBase64(archivo) {
+  return new Promise((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onload = () => resolve(lector.result);
+    lector.onerror = () => reject(new Error("No se pudo procesar el archivo."));
+    lector.readAsDataURL(archivo);
+  });
+}
+
+function esArchivoPreventivoValido(archivo) {
+  if (!(archivo instanceof File) || archivo.size <= 0) return false;
+  const nombre = archivo.name.toLowerCase();
+  return EXTENSIONES_ARCHIVO_PREVENTIVO.some((ext) => nombre.endsWith(ext));
+}
+
+function normalizarRegistroPreventivo(registro) {
+  const archivoLegacy = typeof registro.foto === "string" ? registro.foto : "";
+  const archivo = registro.archivo || archivoLegacy || "";
+  return {
+    id: registro.id || Date.now().toString(),
+    area: registro.area || "",
+    maquinaId: registro.maquinaId || "",
+    equipo: registro.equipo || "",
+    fecha: registro.fecha || "",
+    descripcion: (registro.descripcion || registro.actividad || "").trim(),
+    archivo,
+    archivoNombre:
+      registro.archivoNombre ||
+      (archivoLegacy ? "archivo-anterior" : archivo ? "documento-preventivo" : ""),
+    archivoTipo: registro.archivoTipo || "",
+  };
+}
+
+function obtenerDatosArchivoPreventivo(registro) {
+  if (!registro) {
+    return { data: "", nombre: "", tipo: "" };
+  }
+  return {
+    data: registro.archivo || registro.foto || "",
+    nombre: registro.archivoNombre || "documento-preventivo",
+    tipo: registro.archivoTipo || "application/octet-stream",
+  };
+}
+
+function renderDetalleArchivoPreventivo(registro) {
+  if (!detalleArchivoPreventivo) return;
+  detalleArchivoPreventivo.innerHTML = "";
+  const { data, nombre } = obtenerDatosArchivoPreventivo(registro);
+  if (!data) {
+    detalleArchivoPreventivo.textContent = "Sin archivo adjunto.";
+    return;
+  }
+  const enlace = document.createElement("a");
+  enlace.href = data;
+  enlace.download = nombre;
+  enlace.className = "enlace-archivo-preventivo";
+  enlace.textContent = `Descargar ${nombre}`;
+  enlace.target = "_blank";
+  enlace.rel = "noopener noreferrer";
+  detalleArchivoPreventivo.appendChild(enlace);
+}
+
+function etiquetaArchivoPreventivo(registro) {
+  const { data, nombre } = obtenerDatosArchivoPreventivo(registro);
+  if (!data) return "Sin archivo";
+  return nombre || "Adjunto";
 }
 
 function descargarJson(nombreArchivo, datos) {
@@ -2211,9 +2293,10 @@ function renderTablaHistorialMaquina(maquina) {
   } else {
     preventivos.forEach((registro) => {
       const fila = document.createElement("tr");
+      const descripcion = (registro.descripcion || registro.actividad || "").trim();
       fila.innerHTML = `
         <td>${registro.fecha || "-"}</td>
-        <td>${registro.actividad || "-"}</td>
+        <td>${escapeHtml(descripcion || etiquetaArchivoPreventivo(registro))}</td>
         <td>${registro.area || "-"}</td>
       `;
       tablaHistorialPreventivo.appendChild(fila);
@@ -2497,9 +2580,11 @@ function abrirDetalleRegistro(idRegistro) {
   detalleArea.textContent = registro.area || "Sin area";
   detalleEquipo.textContent = registro.equipo;
   detalleFecha.textContent = registro.fecha;
-  detalleActividad.textContent = registro.actividad;
-  detalleFoto.src = registro.foto || "";
-  detalleFoto.hidden = !registro.foto;
+  if (detalleDescripcionPreventivo) {
+    const descripcion = (registro.descripcion || registro.actividad || "").trim();
+    detalleDescripcionPreventivo.textContent = descripcion || "Sin descripcion registrada.";
+  }
+  renderDetalleArchivoPreventivo(registro);
   abrirModal("modal-detalle-preventivo");
 }
 
@@ -2579,7 +2664,7 @@ archivoImportarPreventivo.addEventListener("change", async () => {
 
     if (Array.isArray(datos)) {
       // Compatibilidad con respaldos viejos (solo preventivo)
-      registrosPreventivo = datos;
+      registrosPreventivo = datos.map((registro) => normalizarRegistroPreventivo(registro));
     } else if (datos && typeof datos === "object" && datos.data) {
       const preventivo = datos.data.preventivo;
       const hojasDeVida = datos.data.hojasDeVida;
@@ -2605,7 +2690,9 @@ archivoImportarPreventivo.addEventListener("change", async () => {
           "El archivo no trae datos validos de cronograma preventivo.";
         return;
       }
-      registrosPreventivo = preventivo;
+      registrosPreventivo = preventivo.map((registro) =>
+        normalizarRegistroPreventivo(registro)
+      );
       registrosHojas = Array.isArray(hojasDeVida)
         ? hojasDeVida.map((registro) => normalizarMaquinaHoja(registro))
         : [];
@@ -2657,7 +2744,7 @@ document.addEventListener("keydown", (event) => {
 formPreventivo.addEventListener("submit", async (event) => {
   event.preventDefault();
   const datos = new FormData(formPreventivo);
-  const archivoFoto = datos.get("foto");
+  const archivoEntrada = datos.get("archivo");
   const maquinaId = datos.get("maquinaId")?.toString() || "";
   const maquina = registrosHojas.find((item) => item.id === maquinaId);
 
@@ -2671,37 +2758,55 @@ formPreventivo.addEventListener("submit", async (event) => {
     ? registrosPreventivo.find((item) => item.id === preventivoEditandoId)
     : null;
 
-  let fotoBase64 = registroExistente?.foto || "";
-  const hayFotoNueva =
-    archivoFoto instanceof File && archivoFoto.size > 0;
+  const archivoPrevio = obtenerDatosArchivoPreventivo(registroExistente);
+  let archivoBase64 = archivoPrevio.data;
+  let archivoNombre = archivoPrevio.nombre;
+  let archivoTipo = archivoPrevio.tipo;
+  const hayArchivoNuevo =
+    archivoEntrada instanceof File && archivoEntrada.size > 0;
 
-  if (!preventivoEditandoId && !hayFotoNueva) {
-    estadoPreventivo.textContent = "Debes seleccionar una foto.";
+  if (!preventivoEditandoId && !hayArchivoNuevo) {
+    estadoPreventivo.textContent = "Debes seleccionar un archivo PDF o Word.";
     return;
   }
 
-  if (hayFotoNueva) {
-    if (archivoFoto.size > 2 * 1024 * 1024) {
-      estadoPreventivo.textContent = "La foto debe pesar maximo 2 MB.";
+  if (hayArchivoNuevo) {
+    if (!esArchivoPreventivoValido(archivoEntrada)) {
+      estadoPreventivo.textContent = "Solo se permiten archivos PDF, DOC o DOCX.";
+      return;
+    }
+    if (archivoEntrada.size > MAX_ARCHIVO_PREVENTIVO_BYTES) {
+      estadoPreventivo.textContent = "El archivo debe pesar maximo 5 MB.";
       return;
     }
     try {
-      fotoBase64 = await leerFotoComoBase64(archivoFoto);
+      archivoBase64 = (await leerArchivoComoBase64(archivoEntrada)).toString();
+      archivoNombre = archivoEntrada.name;
+      archivoTipo = archivoEntrada.type || "application/octet-stream";
     } catch (error) {
-      estadoPreventivo.textContent = "No fue posible guardar la foto.";
+      estadoPreventivo.textContent = "No fue posible guardar el archivo.";
       return;
     }
   }
 
-  const registroActualizado = {
+  const descripcionTexto = datos.get("descripcion")?.toString().trim() || "";
+  if (!descripcionTexto) {
+    estadoPreventivo.textContent = "Debes escribir la actividad / descripcion.";
+    descripcionPreventivo?.focus();
+    return;
+  }
+
+  const registroActualizado = normalizarRegistroPreventivo({
     id: preventivoEditandoId || Date.now().toString(),
     area: maquina.area,
     maquinaId: maquina.id,
     equipo: maquina.nombre,
     fecha: datos.get("fecha").toString(),
-    actividad: datos.get("actividad").toString().trim(),
-    foto: fotoBase64.toString(),
-  };
+    descripcion: descripcionTexto,
+    archivo: archivoBase64,
+    archivoNombre,
+    archivoTipo,
+  });
 
   if (preventivoEditandoId) {
     const indice = registrosPreventivo.findIndex(

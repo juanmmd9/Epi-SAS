@@ -125,7 +125,7 @@
       <div class="modal-contenido">
         <button class="cerrar" data-close="true">&times;</button>
         <h3>Mantenimiento preventivo</h3>
-        <p>Registra actividades programadas para cada equipo.</p>
+        <p>Registra el mantenimiento preventivo de cada equipo con su documento de soporte.</p>
         <button
           type="button"
           class="btn-opcion-modal btn-volver"
@@ -133,7 +133,7 @@
         >
           Volver a opciones
         </button>
-        <form id="formPreventivo" class="form-mini">
+        <form id="formPreventivo" class="form-mini" novalidate>
           <label for="areaPreventivo">Area</label>
           <select id="areaPreventivo" name="area" required>
             <option value="">Selecciona un area</option>
@@ -152,25 +152,25 @@
           <label for="fechaPreventivo">Fecha</label>
           <input id="fechaPreventivo" name="fecha" type="date" required />
 
-          <label for="detallePreventivo">Actividad</label>
-          <textarea
-            id="detallePreventivo"
-            name="actividad"
-            rows="3"
-            placeholder="Lubricacion, limpieza, inspeccion..."
-            required
-          ></textarea>
-
-          <label for="fotoPreventivo">Foto del registro</label>
+          <label for="archivoPreventivo">Archivo PDF o Word</label>
           <input
-            id="fotoPreventivo"
-            name="foto"
+            id="archivoPreventivo"
+            name="archivo"
             type="file"
-            accept="image/*"
+            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           />
-          <p id="fotoPreventivoNota" class="leyenda-cronograma">
-            Obligatoria al crear. Al editar, deja vacio para conservar la foto actual.
+          <p id="archivoPreventivoNota" class="leyenda-cronograma">
+            Obligatorio al crear. PDF, DOC o DOCX (max. 5 MB).
           </p>
+
+          <label for="descripcionPreventivo">Actividad / Descripcion</label>
+          <textarea
+            id="descripcionPreventivo"
+            name="descripcion"
+            rows="5"
+            required
+            placeholder="Describe la actividad de mantenimiento realizada."
+          ></textarea>
 
           <div class="acciones-formulario-edicion">
             <button id="guardarPreventivoBtn" type="submit" class="btn-guardar">
@@ -359,13 +359,10 @@
         <p><strong>Area:</strong> <span id="detalleArea"></span></p>
         <p><strong>Equipo:</strong> <span id="detalleEquipo"></span></p>
         <p><strong>Fecha:</strong> <span id="detalleFecha"></span></p>
-        <p><strong>Actividad:</strong></p>
-        <p id="detalleActividad"></p>
-        <img
-          id="detalleFoto"
-          class="detalle-foto"
-          alt="Foto del registro preventivo"
-        />
+        <p><strong>Descripcion:</strong></p>
+        <p id="detalleDescripcionPreventivo" class="detalle-descripcion-preventivo"></p>
+        <p><strong>Archivo:</strong></p>
+        <p id="detalleArchivoPreventivo" class="detalle-archivo-preventivo"></p>
         <div class="acciones-detalle-hoja">
           <button id="editarRegistroBtn" type="button" class="btn-guardar">
             Editar registro
@@ -814,7 +811,7 @@
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Actividad</th>
+                <th>Descripcion</th>
                 <th>Area</th>
               </tr>
             </thead>

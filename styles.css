@@ -1648,6 +1648,49 @@ body {
   background: #dbeafe;
 }
 
+.lista-registros-area .archivo-registro {
+  color: #334155;
+  font-size: 0.78rem;
+}
+
+.lista-registros-area .descripcion-registro {
+  color: #0f172a;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.detalle-descripcion-preventivo {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+  color: #334155;
+}
+
+#descripcionPreventivo:focus {
+  outline: 2px solid #f59e0b;
+  border-color: #f59e0b;
+}
+
+.enlace-archivo-preventivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  color: #1d4ed8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.enlace-archivo-preventivo:hover {
+  background: #dbeafe;
+}
+
+.detalle-archivo-preventivo {
+  margin: 0 0 12px;
+}
+
 .lista-registros-area .item-lista-registro + .item-lista-registro {
   margin-top: 0;
 }
