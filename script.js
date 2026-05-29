@@ -263,6 +263,9 @@ function inicializarVista(idVista) {
   if (idVista === "vista-hojas") {
     renderRegistrosHojas();
   }
+  if (idVista === "vista-indicadores" && typeof initModuloIndicadores === "function") {
+    initModuloIndicadores();
+  }
 }
 
 function mostrarVista(idVista) {
@@ -1236,7 +1239,12 @@ function construirRespaldoGeneral() {
       correctivo: registrosCorrectivo,
       cronogramaPreventivo,
       excepcionesCronograma,
-      indicadores: [],
+      indicadores: {
+        horasProgramadas:
+          typeof obtenerHorasProgramadasRespaldo === "function"
+            ? obtenerHorasProgramadasRespaldo()
+            : {},
+      },
       personal: [],
     },
   };
@@ -2618,11 +2626,17 @@ archivoImportarPreventivo.addEventListener("change", async () => {
     guardarRegistrosCorrectivo();
     guardarCronogramaPreventivo();
     guardarExcepcionesCronograma();
+    if (typeof importarHorasProgramadasDesdeRespaldo === "function" && datos.data.indicadores) {
+      importarHorasProgramadasDesdeRespaldo(datos.data.indicadores);
+    }
     renderRegistrosPreventivo();
     renderRegistrosHojas();
     actualizarOpcionesEquiposPreventivo();
     actualizarProgramacionEnPantalla();
     renderTablaCorrectivo();
+    if (typeof renderPanelIndicadores === "function") {
+      renderPanelIndicadores();
+    }
     estadoPreventivo.textContent = "Respaldo general importado correctamente.";
   } catch (error) {
     estadoPreventivo.textContent = "No se pudo importar el archivo.";

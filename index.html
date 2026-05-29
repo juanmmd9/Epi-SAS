@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Portal de Mantenimiento</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="css/indicadores.css" />
   </head>
   <body>
     <div class="app-layout">
@@ -921,13 +922,127 @@
     </section>
 
     <section id="modal-indicadores" class="modal">
-      <div class="modal-contenido">
-        <button class="cerrar" data-close="true">&times;</button>
-        <h3>Indicadores</h3>
-        <p>
-          Seguimiento de disponibilidad, MTTR, MTBF y cumplimiento del plan de
-          mantenimiento.
-        </p>
+      <div class="modal-contenido modal-grande vista-indicadores-contenido">
+        <header class="indicadores-encabezado">
+          <div>
+            <h3>Indicadores de mantenimiento</h3>
+            <p>
+              Metricas calculadas desde hojas de vida, preventivo y correctivo.
+              Este modulo vive en archivos separados (<code>js/indicadores.js</code>,
+              <code>css/indicadores.css</code>).
+            </p>
+          </div>
+        </header>
+
+        <div class="indicadores-barra-filtros">
+          <label class="filtro-indicadores">
+            <span>Area</span>
+            <select id="indicadoresFiltroArea">
+              <option value="">Todas las areas</option>
+              <option value="Laboratorio">Laboratorio</option>
+              <option value="Confeccion">Confeccion</option>
+              <option value="Tejidos">Tejidos</option>
+              <option value="Plasticos">Plasticos</option>
+              <option value="Locativos">Locativos</option>
+            </select>
+          </label>
+          <label class="filtro-indicadores">
+            <span>Mes</span>
+            <select id="indicadoresFiltroMes">
+              <option value="1">Enero</option>
+              <option value="2">Febrero</option>
+              <option value="3">Marzo</option>
+              <option value="4">Abril</option>
+              <option value="5">Mayo</option>
+              <option value="6">Junio</option>
+              <option value="7">Julio</option>
+              <option value="8">Agosto</option>
+              <option value="9">Septiembre</option>
+              <option value="10">Octubre</option>
+              <option value="11">Noviembre</option>
+              <option value="12">Diciembre</option>
+            </select>
+          </label>
+          <label class="filtro-indicadores">
+            <span>Año</span>
+            <input id="indicadoresFiltroAnio" type="number" min="2000" max="2100" />
+          </label>
+          <label class="filtro-indicadores">
+            <span>Tipo mant. (correctivo)</span>
+            <select id="indicadoresFiltroTipo">
+              <option value="MECANICA">Mecanico</option>
+              <option value="">Todos los tipos</option>
+            </select>
+          </label>
+          <label class="filtro-indicadores">
+            <span>Horas programadas del mes</span>
+            <input
+              id="indicadoresHorasProgramadas"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="Ej. 1376"
+            />
+          </label>
+          <button id="guardarHorasProgramadasBtn" type="button" class="btn-guardar">
+            Guardar horas
+          </button>
+          <button id="actualizarIndicadoresBtn" type="button" class="btn-opcion-modal">
+            Actualizar indicadores
+          </button>
+        </div>
+
+        <nav class="indicadores-pestanas" aria-label="Vistas de indicadores">
+          <button
+            type="button"
+            class="indicadores-pestaña indicadores-pestaña--activa"
+            data-panel-indicadores="detalle"
+          >
+            Detalle del mes
+          </button>
+          <button
+            type="button"
+            class="indicadores-pestaña"
+            data-panel-indicadores="tabla"
+          >
+            Tabla de indicadores
+          </button>
+        </nav>
+
+        <div id="panelIndicadoresDetalle" class="panel-indicadores-vista">
+        <section class="indicadores-seccion">
+          <header class="indicadores-seccion__encabezado">
+            <h4>Tiempos de respuesta — mantenimiento correctivo</h4>
+            <p>Formulas Excel: tiempo respuesta, mantenimiento, tiempo real y ratio vs horas programadas.</p>
+          </header>
+          <div id="indicadorFinalCorrectivo" class="indicadores-resumen-global"></div>
+          <div id="tablaIndicadoresCorrectivo" class="tabla-indicadores-contenedor"></div>
+          <div id="resumenIndicadoresCorrectivo" class="resumen-indicadores-correctivo"></div>
+        </section>
+
+        <section class="indicadores-seccion">
+          <header class="indicadores-seccion__encabezado">
+            <h4>Cumplimiento preventivo del mes</h4>
+            <p>Segun el cronograma programado: maquinas cumplidas, reprogramadas al mes siguiente y pendientes.</p>
+          </header>
+          <div id="indicadoresPreventivoAreas" class="indicadores-grid-areas"></div>
+        </section>
+        </div>
+
+        <div id="panelIndicadoresTabla" class="panel-indicadores-vista" hidden>
+          <section class="indicadores-seccion">
+            <header class="indicadores-seccion__encabezado">
+              <h4>Tabla de indicadores — preventivo y correctivo</h4>
+              <p>
+                Resumen mensual del año seleccionado. Ausentismo, accidentes y acciones de mejora
+                se agregaran en una siguiente etapa.
+              </p>
+            </header>
+            <div id="tablaResumenIndicadoresAnual" class="tabla-indicadores-contenedor"></div>
+          </section>
+        </div>
+
+        <p id="estadoIndicadores" class="estado-form"></p>
       </div>
     </section>
 
@@ -942,5 +1057,6 @@
     </section>
 
     <script src="script.js"></script>
+    <script src="js/indicadores.js"></script>
   </body>
 </html>
