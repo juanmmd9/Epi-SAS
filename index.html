@@ -311,6 +311,7 @@
           <label for="impresionArea">Area</label>
           <select id="impresionArea" required>
             <option value="">Selecciona un area</option>
+            <option value="__TODAS__">Todas las areas</option>
             <option value="Laboratorio">Laboratorio</option>
             <option value="Confeccion">Confeccion</option>
             <option value="Tejidos">Tejidos</option>
@@ -340,6 +341,13 @@
 
           <button type="submit" class="btn-guardar">Ver lista del mes</button>
           <button
+            id="enviarCorreoCronogramaBtn"
+            type="button"
+            class="btn-opcion-modal btn-secundario"
+          >
+            Enviar resumen por correo
+          </button>
+          <button
             id="limpiarListaMensualBtn"
             type="button"
             class="btn-opcion-modal"
@@ -347,6 +355,47 @@
             Limpiar resultado
           </button>
         </form>
+
+        <details class="opciones-correo-cronograma">
+          <summary>Configuracion de correo (EmailJS)</summary>
+          <label for="emailjsDestinoCronograma">Correo destino</label>
+          <input
+            id="emailjsDestinoCronograma"
+            type="email"
+            autocomplete="email"
+            placeholder="tu-correo@empresa.com"
+          />
+          <label for="emailjsPublicKeyCronograma">Public Key</label>
+          <input
+            id="emailjsPublicKeyCronograma"
+            type="password"
+            autocomplete="off"
+            placeholder="Public key de EmailJS"
+          />
+          <label for="emailjsServiceIdCronograma">Service ID</label>
+          <input
+            id="emailjsServiceIdCronograma"
+            type="text"
+            autocomplete="off"
+            placeholder="service_xxxx"
+          />
+          <label for="emailjsTemplateIdCronograma">Template ID</label>
+          <input
+            id="emailjsTemplateIdCronograma"
+            type="text"
+            autocomplete="off"
+            placeholder="template_xxxx"
+          />
+          <p class="leyenda-cronograma">
+            Cuenta gratis en
+            <a href="https://www.emailjs.com/" target="_blank" rel="noopener noreferrer">EmailJS</a>.
+            En la plantilla usa variables
+            <code>{{to_email}}</code>, <code>{{subject}}</code>, <code>{{message}}</code>,
+            <code>{{area}}</code>, <code>{{mes}}</code>, <code>{{anio}}</code>.
+            Requiere internet. La configuracion queda solo en este navegador.
+          </p>
+        </details>
+
         <p id="estadoImpresionCronograma" class="estado-form"></p>
         <div id="resultadoListaMensual" class="tabla-contenedor"></div>
       </div>
@@ -1053,6 +1102,7 @@
       </div>
     </section>
 
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="script.js"></script>
     <script src="js/indicadores.js"></script>
   </body>

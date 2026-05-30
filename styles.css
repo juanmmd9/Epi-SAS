@@ -1691,6 +1691,40 @@ body {
   margin: 0 0 12px;
 }
 
+.opciones-correo-cronograma {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.opciones-correo-cronograma summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.opciones-correo-cronograma label {
+  margin-top: 10px;
+}
+
+.opciones-correo-cronograma input {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.opciones-correo-cronograma code {
+  font-size: 0.85em;
+  background: #e2e8f0;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+#enviarCorreoCronogramaBtn {
+  margin-top: 8px;
+}
+
 .lista-registros-area .item-lista-registro + .item-lista-registro {
   margin-top: 0;
 }

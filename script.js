@@ -65,6 +65,11 @@ const impresionMes = document.getElementById("impresionMes");
 const estadoImpresionCronograma = document.getElementById("estadoImpresionCronograma");
 const resultadoListaMensual = document.getElementById("resultadoListaMensual");
 const limpiarListaMensualBtn = document.getElementById("limpiarListaMensualBtn");
+const enviarCorreoCronogramaBtn = document.getElementById("enviarCorreoCronogramaBtn");
+const emailjsDestinoCronograma = document.getElementById("emailjsDestinoCronograma");
+const emailjsPublicKeyCronograma = document.getElementById("emailjsPublicKeyCronograma");
+const emailjsServiceIdCronograma = document.getElementById("emailjsServiceIdCronograma");
+const emailjsTemplateIdCronograma = document.getElementById("emailjsTemplateIdCronograma");
 const tituloDiaCronograma = document.getElementById("tituloDiaCronograma");
 const resumenDiaCronograma = document.getElementById("resumenDiaCronograma");
 const listaDiaCronograma = document.getElementById("listaDiaCronograma");
@@ -132,6 +137,10 @@ const MODULOS_EN_MAIN = [
 let vistaActual = "vista-inicio";
 const CLAVE_CRONOGRAMA = "mantenimiento_cronograma_preventivo_v1";
 const CLAVE_EXCEPCIONES = "mantenimiento_cronograma_excepciones_v1";
+const CLAVE_EMAILJS_PUBLIC = "epi_emailjs_public_key_v1";
+const CLAVE_EMAILJS_SERVICE = "epi_emailjs_service_id_v1";
+const CLAVE_EMAILJS_TEMPLATE = "epi_emailjs_template_id_v1";
+const CLAVE_EMAILJS_DESTINO = "epi_emailjs_destino_v1";
 const EXTENSIONES_ARCHIVO_PREVENTIVO = [".pdf", ".doc", ".docx"];
 const MAX_ARCHIVO_PREVENTIVO_BYTES = 5 * 1024 * 1024;
 const AREAS_PANEL_INICIO = ["Laboratorio", "Confeccion", "Tejidos", "Plasticos"];
@@ -2058,43 +2067,192 @@ function obtenerResumenDelMes(area, anio, mesSeleccionado) {
   return itemsMes;
 }
 
+function esTodasLasAreasImpresion(area) {
+  return area === "__TODAS__";
+}
+
+function obtenerAreasParaResumenMensual(area) {
+  if (esTodasLasAreasImpresion(area)) return [...AREAS_SISTEMA];
+  return area ? [area] : [];
+}
+
+function construirResumenCorreoMantenimientos(area, anio, mesSeleccionado) {
+  const areas = obtenerAreasParaResumenMensual(area);
+  const nombreMes = NOMBRES_MESES_LARGOS[mesSeleccionado - 1] || "";
+  const bloques = [];
+  let totalDias = 0;
+
+  areas.forEach((areaItem) => {
+    const itemsMes = obtenerResumenDelMes(areaItem, anio, mesSeleccionado);
+    if (itemsMes.length === 0) return;
+    totalDias += itemsMes.length;
+    bloques.push(`=== ${areaItem} ===`);
+    itemsMes.forEach((item) => {
+      bloques.push(`${item.fecha}: ${item.maquinas.join(", ")}`);
+    });
+    bloques.push("");
+  });
+
+  return {
+    vacio: bloques.length === 0,
+    nombreMes,
+    totalDias,
+    areaEtiqueta: esTodasLasAreasImpresion(area) ? "Todas las areas" : area,
+    texto: bloques.join("\n").trim(),
+  };
+}
+
+function obtenerConfigEmailJsCronograma() {
+  try {
+    return {
+      publicKey: localStorage.getItem(CLAVE_EMAILJS_PUBLIC) || "",
+      serviceId: localStorage.getItem(CLAVE_EMAILJS_SERVICE) || "",
+      templateId: localStorage.getItem(CLAVE_EMAILJS_TEMPLATE) || "",
+      destino: localStorage.getItem(CLAVE_EMAILJS_DESTINO) || "",
+    };
+  } catch {
+    return { publicKey: "", serviceId: "", templateId: "", destino: "" };
+  }
+}
+
+function guardarConfigEmailJsCronograma(config) {
+  try {
+    const { publicKey, serviceId, templateId, destino } = config;
+    if (publicKey?.trim()) localStorage.setItem(CLAVE_EMAILJS_PUBLIC, publicKey.trim());
+    else localStorage.removeItem(CLAVE_EMAILJS_PUBLIC);
+    if (serviceId?.trim()) localStorage.setItem(CLAVE_EMAILJS_SERVICE, serviceId.trim());
+    else localStorage.removeItem(CLAVE_EMAILJS_SERVICE);
+    if (templateId?.trim()) localStorage.setItem(CLAVE_EMAILJS_TEMPLATE, templateId.trim());
+    else localStorage.removeItem(CLAVE_EMAILJS_TEMPLATE);
+    if (destino?.trim()) localStorage.setItem(CLAVE_EMAILJS_DESTINO, destino.trim());
+    else localStorage.removeItem(CLAVE_EMAILJS_DESTINO);
+  } catch {
+    /* almacenamiento no disponible */
+  }
+}
+
+function leerConfigEmailJsDesdeFormulario() {
+  return {
+    destino: emailjsDestinoCronograma?.value.trim() || "",
+    publicKey: emailjsPublicKeyCronograma?.value.trim() || "",
+    serviceId: emailjsServiceIdCronograma?.value.trim() || "",
+    templateId: emailjsTemplateIdCronograma?.value.trim() || "",
+  };
+}
+
+function cargarConfigEmailJsEnFormulario() {
+  const config = obtenerConfigEmailJsCronograma();
+  if (emailjsDestinoCronograma) emailjsDestinoCronograma.value = config.destino;
+  if (emailjsPublicKeyCronograma) emailjsPublicKeyCronograma.value = config.publicKey;
+  if (emailjsServiceIdCronograma) emailjsServiceIdCronograma.value = config.serviceId;
+  if (emailjsTemplateIdCronograma) emailjsTemplateIdCronograma.value = config.templateId;
+}
+
+function validarSeleccionListaMensual(area, anio, mesSeleccionado) {
+  if (!area) return "Selecciona un area.";
+  if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return "Selecciona un año valido.";
+  if (!Number.isInteger(mesSeleccionado) || mesSeleccionado < 1 || mesSeleccionado > 12) {
+    return "Selecciona un mes valido.";
+  }
+  return "";
+}
+
+async function enviarResumenMensualPorCorreo(area, anio, mesSeleccionado) {
+  const errorSeleccion = validarSeleccionListaMensual(area, anio, mesSeleccionado);
+  if (errorSeleccion) {
+    estadoImpresionCronograma.textContent = errorSeleccion;
+    return false;
+  }
+
+  const configFormulario = leerConfigEmailJsDesdeFormulario();
+  guardarConfigEmailJsCronograma(configFormulario);
+
+  const { publicKey, serviceId, templateId, destino } = configFormulario;
+  if (!destino || !publicKey || !serviceId || !templateId) {
+    estadoImpresionCronograma.textContent =
+      "Completa correo destino, Public Key, Service ID y Template ID en la configuracion.";
+    return false;
+  }
+
+  if (typeof emailjs === "undefined") {
+    estadoImpresionCronograma.textContent =
+      "No se pudo cargar EmailJS. Revisa tu conexion a internet y recarga la pagina.";
+    return false;
+  }
+
+  limpiarCacheOcurrencias();
+  const resumen = construirResumenCorreoMantenimientos(area, anio, mesSeleccionado);
+  if (resumen.vacio) {
+    estadoImpresionCronograma.textContent = "No hay mantenimientos programados para enviar.";
+    return false;
+  }
+
+  const subject = `PM programados - ${resumen.nombreMes} ${anio} (${resumen.areaEtiqueta})`;
+  const message = [
+    "Portal Mantenimiento EPI",
+    `Periodo: ${resumen.nombreMes} ${anio}`,
+    `Area: ${resumen.areaEtiqueta}`,
+    `Dias con actividad: ${resumen.totalDias}`,
+    "",
+    resumen.texto,
+  ].join("\n");
+
+  estadoImpresionCronograma.textContent = "Enviando correo...";
+
+  try {
+    emailjs.init({ publicKey });
+    await emailjs.send(serviceId, templateId, {
+      to_email: destino,
+      subject,
+      message,
+      area: resumen.areaEtiqueta,
+      mes: resumen.nombreMes,
+      anio: String(anio),
+    });
+    estadoImpresionCronograma.textContent = `Correo enviado a ${destino}.`;
+    return true;
+  } catch (error) {
+    console.warn(error);
+    estadoImpresionCronograma.textContent =
+      "No se pudo enviar el correo. Revisa la configuracion de EmailJS y la plantilla.";
+    return false;
+  }
+}
+
 function verListaMensualCronograma(area, anio, mesSeleccionado) {
   resultadoListaMensual.innerHTML = "";
-  if (!area) {
-    estadoImpresionCronograma.textContent = "Selecciona un area.";
-    return;
-  }
-  if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) {
-    estadoImpresionCronograma.textContent = "Selecciona un año valido.";
-    return;
-  }
-  if (!Number.isInteger(mesSeleccionado) || mesSeleccionado < 1 || mesSeleccionado > 12) {
-    estadoImpresionCronograma.textContent = "Selecciona un mes valido.";
+  const errorSeleccion = validarSeleccionListaMensual(area, anio, mesSeleccionado);
+  if (errorSeleccion) {
+    estadoImpresionCronograma.textContent = errorSeleccion;
     return;
   }
 
-  const nombresMeses = [
-    "Enero",
-    "Febrero",
-    "Marzo",
-    "Abril",
-    "Mayo",
-    "Junio",
-    "Julio",
-    "Agosto",
-    "Septiembre",
-    "Octubre",
-    "Noviembre",
-    "Diciembre",
-  ];
-  const nombreMes = nombresMeses[mesSeleccionado - 1];
-  const resumenMes = obtenerResumenDelMes(area, anio, mesSeleccionado);
+  const nombreMes = NOMBRES_MESES_LARGOS[mesSeleccionado - 1];
+  const areas = obtenerAreasParaResumenMensual(area);
+  const encabezadoArea = esTodasLasAreasImpresion(area)
+    ? "Todas las areas"
+    : area;
   const encabezado = `
-    <h4 class="subtitulo-tabla">Resultado: ${escapeHtml(area)} - ${escapeHtml(
+    <h4 class="subtitulo-tabla">Resultado: ${escapeHtml(encabezadoArea)} - ${escapeHtml(
       nombreMes
     )} ${anio}</h4>
   `;
-  if (resumenMes.length === 0) {
+
+  const filas = [];
+  areas.forEach((areaItem) => {
+    const resumenMes = obtenerResumenDelMes(areaItem, anio, mesSeleccionado);
+    resumenMes.forEach((item) => {
+      filas.push(`
+        <tr>
+          <td>${escapeHtml(areaItem)}</td>
+          <td>${item.fecha}</td>
+          <td>${escapeHtml(item.maquinas.join(", "))}</td>
+        </tr>
+      `);
+    });
+  });
+
+  if (filas.length === 0) {
     resultadoListaMensual.innerHTML = `
       ${encabezado}
       <p>Sin actividades programadas para este mes.</p>
@@ -2103,26 +2261,17 @@ function verListaMensualCronograma(area, anio, mesSeleccionado) {
     return;
   }
 
-  const filas = resumenMes
-    .map(
-      (item) => `
-        <tr>
-          <td>${item.fecha}</td>
-          <td>${escapeHtml(item.maquinas.join(", "))}</td>
-        </tr>
-      `
-    )
-    .join("");
   resultadoListaMensual.innerHTML = `
     ${encabezado}
     <table class="tabla-historial">
       <thead>
         <tr>
+          <th>Area</th>
           <th>Fecha</th>
           <th>Maquinas programadas</th>
         </tr>
       </thead>
-      <tbody>${filas}</tbody>
+      <tbody>${filas.join("")}</tbody>
     </table>
   `;
   estadoImpresionCronograma.textContent = "Lista mensual generada.";
@@ -2619,11 +2768,12 @@ cronogramaArea.addEventListener("change", renderCronogramaPreventivo);
 cronogramaAnio.addEventListener("change", renderCronogramaPreventivo);
 cronogramaAnio.addEventListener("input", renderCronogramaPreventivo);
 imprimirCronogramaBtn.addEventListener("click", () => {
-  impresionArea.value = cronogramaArea.value;
-  impresionAnio.value = cronogramaAnio.value;
-  impresionMes.value = "";
+  impresionArea.value = cronogramaArea.value || "__TODAS__";
+  impresionAnio.value = cronogramaAnio.value || String(new Date().getFullYear());
+  impresionMes.value = String(new Date().getMonth() + 1);
   estadoImpresionCronograma.textContent = "";
   resultadoListaMensual.innerHTML = "";
+  cargarConfigEmailJsEnFormulario();
   abrirModal("modal-impresion-cronograma");
 });
 formImpresionCronograma.addEventListener("submit", (event) => {
@@ -2633,6 +2783,26 @@ formImpresionCronograma.addEventListener("submit", (event) => {
   const mes = Number(impresionMes.value);
   verListaMensualCronograma(area, anio, mes);
 });
+if (enviarCorreoCronogramaBtn) {
+  enviarCorreoCronogramaBtn.addEventListener("click", async () => {
+    const area = impresionArea.value;
+    const anio = Number.parseInt(impresionAnio.value, 10);
+    const mes = Number.parseInt(impresionMes.value, 10);
+    await enviarResumenMensualPorCorreo(area, anio, mes);
+  });
+}
+[
+  emailjsDestinoCronograma,
+  emailjsPublicKeyCronograma,
+  emailjsServiceIdCronograma,
+  emailjsTemplateIdCronograma,
+].forEach((campo) => {
+  if (!campo) return;
+  const guardar = () => guardarConfigEmailJsCronograma(leerConfigEmailJsDesdeFormulario());
+  campo.addEventListener("change", guardar);
+  campo.addEventListener("blur", guardar);
+});
+cargarConfigEmailJsEnFormulario();
 limpiarListaMensualBtn.addEventListener("click", () => {
   resultadoListaMensual.innerHTML = "";
   estadoImpresionCronograma.textContent = "";
