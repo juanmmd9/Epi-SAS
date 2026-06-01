@@ -41,8 +41,8 @@
               <div>
                 <h2>Panel de mantenimiento preventivo</h2>
                 <p>
-                  Vista rapida por area: que maquina tiene PM y en que mes. Los
-                  datos salen de Hojas de vida (primer PM + frecuencia).
+                  Vista rapida por area: que maquina tiene PM y en que mes. Al registrar
+                  la actividad veras un chulo verde en Inicio y en el cronograma.
                 </p>
               </div>
               <div class="selector-anio-inicio">
@@ -122,7 +122,7 @@
     </section>
 
     <section id="modal-preventivo-registro" class="modal">
-      <div class="modal-contenido">
+      <div class="modal-contenido modal-grande vista-preventivo-contenido">
         <button class="cerrar" data-close="true">&times;</button>
         <h3>Mantenimiento preventivo</h3>
         <p>Registra el mantenimiento preventivo de cada equipo con su documento de soporte.</p>
@@ -210,8 +210,8 @@
           </div>
         </div>
         <p class="leyenda-cronograma">
-          Los registros se agrupan por area. Usa las tarjetas o el filtro para ver cada
-          zona. Editar o Eliminar en cada fila si llenaste algun dato mal.
+          Los registros se agrupan por area. Desplaza dentro de cada bloque para ver todos.
+          Editar o Eliminar en cada fila si llenaste algun dato mal.
         </p>
         <div id="resumenPreventivoAreas" class="resumen-correctivo-areas"></div>
         <div id="listaPreventivo" class="lista-preventivo-contenedor"></div>
@@ -504,6 +504,7 @@
                 <option value="Tejidos">Tejidos</option>
                 <option value="Plasticos">Plasticos</option>
                 <option value="Locativos">Locativos</option>
+                <option value="Moldes">Moldes</option>
               </select>
             </div>
             <div class="celda-solicitud celda-solicitud--ancho2">
@@ -619,6 +620,7 @@
                 <option value="Tejidos">Tejidos</option>
                 <option value="Plasticos">Plasticos</option>
                 <option value="Locativos">Locativos</option>
+                <option value="Moldes">Moldes</option>
                 <option value="__sin_area__">Sin area</option>
               </select>
             </label>
@@ -665,6 +667,7 @@
                     <option value="Tejidos">Tejidos</option>
                     <option value="Plasticos">Plasticos</option>
                     <option value="Locativos">Locativos</option>
+                    <option value="Moldes">Moldes</option>
                   </select>
                 </div>
                 <div class="campo-hoja">
@@ -775,6 +778,7 @@
                     <option value="Tejidos">Tejidos</option>
                     <option value="Plasticos">Plasticos</option>
                     <option value="Locativos">Locativos</option>
+                    <option value="Moldes">Moldes</option>
                     <option value="__sin_area__">Sin area</option>
                   </select>
                 </label>
@@ -905,6 +909,7 @@
             <option value="Tejidos">Tejidos</option>
             <option value="Plasticos">Plasticos</option>
             <option value="Locativos">Locativos</option>
+            <option value="Moldes">Moldes</option>
           </select>
 
           <label for="editNombreMaquina">Maquina / Equipo</label>
@@ -990,6 +995,7 @@
               <option value="Tejidos">Tejidos</option>
               <option value="Plasticos">Plasticos</option>
               <option value="Locativos">Locativos</option>
+              <option value="Moldes">Moldes</option>
             </select>
           </label>
           <label class="filtro-indicadores">

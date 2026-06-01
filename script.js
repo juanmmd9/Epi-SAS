@@ -143,14 +143,23 @@ const CLAVE_EMAILJS_TEMPLATE = "epi_emailjs_template_id_v1";
 const CLAVE_EMAILJS_DESTINO = "epi_emailjs_destino_v1";
 const EXTENSIONES_ARCHIVO_PREVENTIVO = [".pdf", ".doc", ".docx"];
 const MAX_ARCHIVO_PREVENTIVO_BYTES = 5 * 1024 * 1024;
-const AREAS_PANEL_INICIO = ["Laboratorio", "Confeccion", "Tejidos", "Plasticos"];
 const AREAS_SISTEMA = [
   "Laboratorio",
   "Confeccion",
   "Tejidos",
   "Plasticos",
   "Locativos",
+  "Moldes",
 ];
+const AREAS_SOLO_CORRECTIVO = ["Moldes"];
+const AREAS_CON_PM = AREAS_SISTEMA.filter(
+  (area) => !AREAS_SOLO_CORRECTIVO.includes(area)
+);
+const AREAS_PANEL_INICIO = [...AREAS_CON_PM];
+
+function areaTienePreventivo(area) {
+  return Boolean(area) && !AREAS_SOLO_CORRECTIVO.includes(area);
+}
 const NOMBRES_MESES_LARGOS = [
   "Enero",
   "Febrero",
@@ -178,6 +187,7 @@ let excepcionesCronograma = [];
 let diaCronogramaContexto = null;
 let correctivoEditandoId = null;
 let preventivoEditandoId = null;
+let preventivoPendienteDesdeInicio = null;
 
 const COLUMNAS_TABLA_CORRECTIVO = [
   { clave: "numeroSolicitud", titulo: "# Solicitud" },
@@ -268,6 +278,10 @@ function inicializarVista(idVista) {
   }
   if (idVista === "vista-preventivo-registro") {
     prepararFormularioPreventivo();
+    if (preventivoPendienteDesdeInicio) {
+      aplicarPreventivoPendienteDesdeInicio(preventivoPendienteDesdeInicio);
+      preventivoPendienteDesdeInicio = null;
+    }
   }
   if (idVista === "vista-cronograma") {
     renderCronogramaPreventivo();
@@ -565,6 +579,47 @@ function prepararFormularioPreventivo() {
   actualizarOpcionesEquiposPreventivo();
 }
 
+function aplicarPreventivoPendienteDesdeInicio(opciones) {
+  if (!formPreventivo || !opciones?.maquinaId) return;
+
+  const maquina = registrosHojas.find((item) => item.id === opciones.maquinaId);
+  if (!maquina) {
+    if (estadoPreventivo) {
+      estadoPreventivo.textContent = "No se encontro la maquina seleccionada en Hojas de vida.";
+    }
+    return;
+  }
+
+  if (!areaTienePreventivo(maquina.area)) {
+    if (estadoPreventivo) {
+      estadoPreventivo.textContent =
+        "En Moldes solo hay mantenimiento correctivo. Usa Mantenimiento correctivo.";
+    }
+    return;
+  }
+
+  const area = opciones.area || maquina.area || "";
+  if (areaPreventivo) areaPreventivo.value = area;
+  actualizarOpcionesEquiposPreventivo();
+  if (equipoPreventivo) equipoPreventivo.value = maquina.id;
+
+  const fechaInput = document.getElementById("fechaPreventivo");
+  if (fechaInput && opciones.fecha) {
+    fechaInput.value = opciones.fecha;
+  } else if (fechaInput && !fechaInput.value) {
+    fechaInput.value = new Date().toISOString().slice(0, 10);
+  }
+
+  if (estadoPreventivo) {
+    estadoPreventivo.textContent = `Registro para ${maquina.nombre} (${maquina.codigo}). Completa el formulario y guarda.`;
+  }
+}
+
+function abrirRegistroPreventivoDesdeInicio(opciones) {
+  preventivoPendienteDesdeInicio = opciones;
+  mostrarVista("vista-preventivo-registro");
+}
+
 function llenarFormularioPreventivo(registro) {
   if (!formPreventivo || !registro) return;
   preventivoEditandoId = registro.id;
@@ -595,6 +650,7 @@ function eliminarPreventivoPorId(idRegistro) {
   if (preventivoEditandoId === idRegistro) prepararFormularioPreventivo();
   guardarRegistrosPreventivo();
   renderRegistrosPreventivo();
+  actualizarProgramacionEnPantalla();
   estadoPreventivo.textContent = "Registro preventivo eliminado.";
 }
 
@@ -1063,12 +1119,52 @@ function obtenerAreaRegistroPreventivo(registro) {
   return (registro?.area || "").trim();
 }
 
+function claveCitaPmCompletada(maquinaId, fecha) {
+  return `${maquinaId}|${fecha}`;
+}
+
+function construirIndicePmCompletados(anioVista) {
+  const exactas = new Set();
+  const porMes = new Set();
+
+  registrosPreventivo.forEach((registro) => {
+    const maquinaId = registro.maquinaId;
+    const fecha = registro.fecha;
+    if (!maquinaId || !fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return;
+    const anio = Number.parseInt(fecha.slice(0, 4), 10);
+    if (anio !== anioVista) return;
+    exactas.add(claveCitaPmCompletada(maquinaId, fecha));
+    porMes.add(`${maquinaId}|${fecha.slice(0, 7)}`);
+  });
+
+  return { exactas, porMes };
+}
+
+function citaPmEstaCompletada(maquinaId, fechaIso, indice) {
+  if (!maquinaId || !fechaIso || !indice) return false;
+  if (indice.exactas.has(claveCitaPmCompletada(maquinaId, fechaIso))) return true;
+  return indice.porMes.has(`${maquinaId}|${fechaIso.slice(0, 7)}`);
+}
+
+function contarCitasCompletadasEnDatos(datos, indice) {
+  let total = 0;
+  datos.porMes.forEach((bloque) => {
+    bloque.citas.forEach((cita) => {
+      const fecha = `${datos.anioVista}-${String(bloque.mes).padStart(2, "0")}-${String(cita.dia).padStart(2, "0")}`;
+      if (citaPmEstaCompletada(cita.maquinaId, fecha, indice)) {
+        total += 1;
+      }
+    });
+  });
+  return total;
+}
+
 function contarPreventivoPorArea(lista = registrosPreventivo) {
-  const conteo = Object.fromEntries(AREAS_SISTEMA.map((area) => [area, 0]));
+  const conteo = Object.fromEntries(AREAS_CON_PM.map((area) => [area, 0]));
   conteo["Sin area"] = 0;
   lista.forEach((registro) => {
     const area = obtenerAreaRegistroPreventivo(registro);
-    if (AREAS_SISTEMA.includes(area)) {
+    if (AREAS_CON_PM.includes(area)) {
       conteo[area] += 1;
     } else {
       conteo["Sin area"] += 1;
@@ -1085,7 +1181,7 @@ function filtrarRegistrosPreventivo(lista = registrosPreventivo) {
     .filter((registro) => {
       const area = obtenerAreaRegistroPreventivo(registro);
       if (areaFiltro === "__sin_area__") {
-        if (area && AREAS_SISTEMA.includes(area)) return false;
+        if (area && AREAS_CON_PM.includes(area)) return false;
       } else if (areaFiltro && area !== areaFiltro) {
         return false;
       }
@@ -1124,7 +1220,7 @@ function renderResumenPreventivoPorArea(conteo) {
   const total = registrosPreventivo.length;
   const tarjetas = [
     { clave: "", titulo: "Todas", cantidad: total },
-    ...AREAS_SISTEMA.map((area) => ({
+    ...AREAS_CON_PM.map((area) => ({
       clave: area,
       titulo: area,
       cantidad: conteo[area] || 0,
@@ -1202,19 +1298,19 @@ function renderRegistrosPreventivo() {
     return;
   }
 
-  const grupos = Object.fromEntries(AREAS_SISTEMA.map((area) => [area, []]));
+  const grupos = Object.fromEntries(AREAS_CON_PM.map((area) => [area, []]));
   grupos["Sin area"] = [];
 
   registrosFiltrados.forEach((registro) => {
     const area = obtenerAreaRegistroPreventivo(registro);
-    if (AREAS_SISTEMA.includes(area)) {
+    if (AREAS_CON_PM.includes(area)) {
       grupos[area].push(registro);
     } else {
       grupos["Sin area"].push(registro);
     }
   });
 
-  listaPreventivo.innerHTML = [...AREAS_SISTEMA, "Sin area"]
+  listaPreventivo.innerHTML = [...AREAS_CON_PM, "Sin area"]
     .filter((area) => grupos[area].length > 0)
     .map(
       (area) => `
@@ -1435,6 +1531,7 @@ function limpiarCacheOcurrencias() {
 }
 
 function obtenerOcurrenciasPreventivasEnAnio(maquina, anioVista) {
+  if (!areaTienePreventivo(maquina?.area)) return [];
   const base = parseFechaPreventivo(maquina.fechaPrimerPreventivo);
   if (!base) return [];
 
@@ -1557,7 +1654,7 @@ function renderResumenProgramacionAnual(area, anio) {
 }
 
 function sincronizarVistaCronogramaConMaquina(maquina) {
-  if (!maquina) return;
+  if (!maquina || !areaTienePreventivo(maquina.area)) return;
   cronogramaArea.value = maquina.area;
   const base = parseFechaPreventivo(maquina.fechaPrimerPreventivo);
   if (base) {
@@ -1647,8 +1744,9 @@ function obtenerDatosVentanaCronograma(area, anioVista) {
   };
 }
 
-function renderHtmlVentanaCronograma(datos) {
+function renderHtmlVentanaCronograma(datos, indicePmCompletados) {
   const claseArea = `ventana-cronograma--${slugArea(datos.area)}`;
+  const citasCompletadas = contarCitasCompletadasEnDatos(datos, indicePmCompletados);
   if (datos.totalMaquinas === 0) {
     return `
       <article class="ventana-cronograma ${claseArea}">
@@ -1685,22 +1783,43 @@ function renderHtmlVentanaCronograma(datos) {
       ? datos.porMes
           .map((bloque) => {
             const esMesActual = bloque.mes === datos.mesActual;
+            let completadasMes = 0;
             const citasHtml = bloque.citas
-              .map(
-                (cita) => `
-              <li>
+              .map((cita) => {
+                const fechaCita = `${datos.anioVista}-${String(bloque.mes).padStart(2, "0")}-${String(cita.dia).padStart(2, "0")}`;
+                const completada = citaPmEstaCompletada(
+                  cita.maquinaId,
+                  fechaCita,
+                  indicePmCompletados
+                );
+                if (completada) completadasMes += 1;
+                const claseCompletada = completada ? " cita-inicio-item--completada" : "";
+                const tituloItem = completada
+                  ? `PM registrado: ${cita.nombre}`
+                  : `Registrar actividad de ${cita.nombre}`;
+                return `
+              <li
+                class="cita-inicio-item${claseCompletada}"
+                role="button"
+                tabindex="0"
+                title="${escapeHtml(tituloItem)}"
+                data-registrar-preventivo-maquina="${escapeHtml(cita.maquinaId)}"
+                data-registrar-preventivo-area="${escapeHtml(datos.area)}"
+                data-registrar-preventivo-fecha="${fechaCita}"
+              >
+                ${completada ? '<span class="pm-check" aria-label="Registrado">✓</span>' : ""}
                 <span class="dia-pm-badge">${cita.dia}</span>
                 <span class="pm-nombre">${escapeHtml(cita.nombre)}</span>
                 <span class="pm-codigo">${escapeHtml(cita.codigo)} · cada ${cita.frecuencia}m</span>
               </li>
-            `
-              )
+            `;
+              })
               .join("");
             return `
             <div class="mes-bloque-inicio ${esMesActual ? "mes-bloque-inicio--actual" : ""}">
               <div class="mes-bloque-inicio__titulo">
                 <span>${escapeHtml(bloque.nombreMes)}</span>
-                <span>${bloque.citas.length} PM</span>
+                <span>${completadasMes}/${bloque.citas.length} hecho(s)</span>
               </div>
               <ul class="mes-bloque-inicio__lista">${citasHtml}</ul>
             </div>
@@ -1717,6 +1836,11 @@ function renderHtmlVentanaCronograma(datos) {
           <span class="chip-stat">${datos.totalMaquinas} maquina(s)</span>
           <span class="chip-stat">${datos.maquinasActivas} activa(s)</span>
           <span class="chip-stat chip-stat--pm">${datos.totalCitas} PM en ${datos.anioVista}</span>
+          ${
+            citasCompletadas > 0
+              ? `<span class="chip-stat chip-stat--ok">${citasCompletadas} registrado(s)</span>`
+              : ""
+          }
         </div>
       </div>
       ${proximoHtml}
@@ -1743,15 +1867,18 @@ function renderPanelCronogramaInicio() {
   let totalPmGlobal = 0;
   let totalMaquinasGlobal = 0;
   let citasMesActual = 0;
+  let totalCompletadosGlobal = 0;
   const mesActual = new Date().getMonth() + 1;
+  const indicePmCompletados = construirIndicePmCompletados(anio);
 
   const ventanasHtml = AREAS_PANEL_INICIO.map((area) => {
     const datos = obtenerDatosVentanaCronograma(area, anio);
     totalPmGlobal += datos.totalCitas;
     totalMaquinasGlobal += datos.totalMaquinas;
+    totalCompletadosGlobal += contarCitasCompletadasEnDatos(datos, indicePmCompletados);
     const bloqueMes = datos.porMes.find((item) => item.mes === mesActual);
     citasMesActual += bloqueMes ? bloqueMes.citas.length : 0;
-    return renderHtmlVentanaCronograma(datos);
+    return renderHtmlVentanaCronograma(datos, indicePmCompletados);
   }).join("");
 
   gridVentanasCronograma.innerHTML = ventanasHtml;
@@ -1769,6 +1896,10 @@ function renderPanelCronogramaInicio() {
       <span>PM este mes</span>
       <strong>${citasMesActual}</strong>
     </div>
+    <div class="tarjeta-resumen-global tarjeta-resumen-global--ok">
+      <span>PM registrados ${anio}</span>
+      <strong>${totalCompletadosGlobal}</strong>
+    </div>
     <div class="tarjeta-resumen-global">
       <span>Areas en panel</span>
       <strong>${AREAS_PANEL_INICIO.length}</strong>
@@ -1782,6 +1913,25 @@ function renderPanelCronogramaInicio() {
       cronogramaArea.value = area;
       cronogramaAnio.value = String(anio);
       mostrarVista("vista-cronograma");
+    });
+  });
+
+  gridVentanasCronograma.querySelectorAll("[data-registrar-preventivo-maquina]").forEach((item) => {
+    const abrirRegistro = () => {
+      const maquinaId = item.getAttribute("data-registrar-preventivo-maquina");
+      if (!maquinaId) return;
+      abrirRegistroPreventivoDesdeInicio({
+        maquinaId,
+        area: item.getAttribute("data-registrar-preventivo-area") || "",
+        fecha: item.getAttribute("data-registrar-preventivo-fecha") || "",
+      });
+    };
+    item.addEventListener("click", abrirRegistro);
+    item.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        abrirRegistro();
+      }
     });
   });
 }
@@ -1809,6 +1959,7 @@ function sugerirAreaCronograma() {
 
 function construirMapaProgramacionAutomatica(area, anioVista) {
   const mapa = new Map();
+  if (!areaTienePreventivo(area)) return mapa;
   const maquinas = registrosHojas.filter((maquina) => {
     if (maquina.area !== area) return false;
     return Boolean(parseFechaPreventivo(maquina.fechaPrimerPreventivo));
@@ -2072,8 +2223,8 @@ function esTodasLasAreasImpresion(area) {
 }
 
 function obtenerAreasParaResumenMensual(area) {
-  if (esTodasLasAreasImpresion(area)) return [...AREAS_SISTEMA];
-  return area ? [area] : [];
+  if (esTodasLasAreasImpresion(area)) return [...AREAS_CON_PM];
+  return area && areaTienePreventivo(area) ? [area] : [];
 }
 
 function construirResumenCorreoMantenimientos(area, anio, mesSeleccionado) {
@@ -2303,6 +2454,7 @@ function renderCronogramaPreventivo() {
 
   renderResumenProgramacionAnual(area, anio);
   const mapaProgramacionAutomatica = construirMapaProgramacionAutomatica(area, anio);
+  const indicePmCompletados = construirIndicePmCompletados(anio);
 
   const meses = [
     "Enero",
@@ -2355,15 +2507,34 @@ function renderCronogramaPreventivo() {
       const celda = document.createElement("button");
       celda.type = "button";
       celda.className = "dia-celda";
+      const fechaIso = `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+      let completadas = 0;
+      programaciones.forEach((item) => {
+        if (citaPmEstaCompletada(item.maquinaId, fechaIso, indicePmCompletados)) {
+          completadas += 1;
+        }
+      });
       if (programaciones.length > 0) {
         celda.classList.add("con-plan");
+        if (completadas === programaciones.length) {
+          celda.classList.add("con-plan-completado");
+        } else if (completadas > 0) {
+          celda.classList.add("con-plan-parcial");
+        }
       }
       const etiquetaCantidad =
         programaciones.length > 0
           ? `${programaciones.length} maq.`
           : "Libre";
+      const iconoEstado =
+        programaciones.length > 0 && completadas === programaciones.length
+          ? '<span class="dia-pm-estado dia-pm-estado--ok" title="PM registrado">✓</span>'
+          : completadas > 0
+            ? `<span class="dia-pm-estado dia-pm-estado--parcial" title="${completadas} de ${programaciones.length} registrados">${completadas}/${programaciones.length}</span>`
+            : "";
       celda.innerHTML = `
         <span class="dia-numero">${dia}</span>
+        ${iconoEstado}
         <span class="dia-cantidad">${etiquetaCantidad}</span>
       `;
       if (programaciones.length > 0) {
@@ -2924,6 +3095,12 @@ formPreventivo.addEventListener("submit", async (event) => {
     return;
   }
 
+  if (!areaTienePreventivo(maquina.area)) {
+    estadoPreventivo.textContent =
+      "En Moldes solo hay mantenimiento correctivo, no preventivo.";
+    return;
+  }
+
   const registroExistente = preventivoEditandoId
     ? registrosPreventivo.find((item) => item.id === preventivoEditandoId)
     : null;
@@ -2992,6 +3169,7 @@ formPreventivo.addEventListener("submit", async (event) => {
 
   guardarRegistrosPreventivo();
   renderRegistrosPreventivo();
+  actualizarProgramacionEnPantalla();
   prepararFormularioPreventivo();
 });
 

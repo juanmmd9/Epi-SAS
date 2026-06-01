@@ -9,7 +9,9 @@ const AREAS_INDICADORES = [
   "Tejidos",
   "Plasticos",
   "Locativos",
+  "Moldes",
 ];
+const AREAS_INDICADORES_PM = AREAS_INDICADORES.filter((area) => area !== "Moldes");
 
 const NOMBRES_MESES_INDICADORES = [
   "Enero",
@@ -538,6 +540,17 @@ function renderListaCitasPreventivo(items, claseEstado, vacio) {
 }
 
 function renderBloquePreventivoIndicadores(area, anio, mes) {
+  if (area === "Moldes") {
+    return `
+      <section class="bloque-indicadores-area bloque-preventivo-indicadores">
+        <header class="bloque-indicadores-area__encabezado">
+          <h4>${escapeHtml(area)}</h4>
+        </header>
+        <p class="lista-preventivo-vacia">En Moldes no hay mantenimiento preventivo programado.</p>
+      </section>
+    `;
+  }
+
   const datos = clasificarCitasPreventivas(area, anio, mes);
   const nombreMes = NOMBRES_MESES_INDICADORES[mes - 1];
 
@@ -627,7 +640,7 @@ function promedioValoresMensuales(valores) {
 function calcularCumplimientoPreventivoGlobal(anio, mes) {
   let totalCitas = 0;
   let totalCumplidas = 0;
-  AREAS_INDICADORES.forEach((area) => {
+  AREAS_INDICADORES_PM.forEach((area) => {
     const datos = clasificarCitasPreventivas(area, anio, mes);
     totalCitas += datos.total;
     totalCumplidas += datos.cumplidas.length;
@@ -867,7 +880,7 @@ function renderPanelIndicadores() {
     if (areaFiltro) {
       preventivoAreas.innerHTML = renderBloquePreventivoIndicadores(areaFiltro, anio, mes);
     } else {
-      preventivoAreas.innerHTML = AREAS_INDICADORES.map((area) =>
+      preventivoAreas.innerHTML = AREAS_INDICADORES_PM.map((area) =>
         renderBloquePreventivoIndicadores(area, anio, mes)
       ).join("");
     }
