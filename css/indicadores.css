@@ -399,6 +399,18 @@
   font-weight: 600;
 }
 
+.celda-meta-clicable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.celda-meta-clicable:hover {
+  outline: 2px solid #1d4ed8;
+  outline-offset: -2px;
+}
+
 .leyenda-tabla-indicadores {
   margin: 12px 14px 0;
   font-size: 0.78rem;

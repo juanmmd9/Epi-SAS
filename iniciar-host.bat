@@ -12,6 +12,9 @@ echo.
 echo  Para otros equipos en la misma red, usa tu IP local:
 echo    http://TU-IP:5500/index.html
 echo.
+echo  IMPORTANTE: no abras index.html con doble clic.
+echo  Usa Chrome en http://localhost:5500/index.html
+echo.
 echo  Pulsa Ctrl+C para detener el servidor.
 echo.
 

@@ -6,8 +6,10 @@
     <title>Portal de Mantenimiento</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="css/indicadores.css" />
+    <link rel="stylesheet" href="css/formatos.css" />
   </head>
   <body>
+    <div id="avisoEntorno" class="aviso-entorno" hidden></div>
     <div class="app-layout">
       <nav id="panelMenu" class="nav-vertical" aria-label="Menu principal">
         <div class="nav-marca">
@@ -30,6 +32,9 @@
         <button class="menu-item" data-vista="vista-hojas">Hojas de vida</button>
         <button class="menu-item" data-vista="vista-indicadores">
           Indicadores
+        </button>
+        <button class="menu-item" data-vista="vista-formatos">
+          Formatos de mantenimiento
         </button>
         <button class="menu-item" data-vista="vista-personal">Personal</button>
       </nav>
@@ -86,6 +91,7 @@
                   hidden
                 />
               </div>
+              <p id="estadoRespaldo" class="estado-form estado-respaldo" aria-live="polite"></p>
             </div>
           </section>
         </main>
@@ -1079,6 +1085,17 @@
           </header>
           <div id="indicadoresPreventivoAreas" class="indicadores-grid-areas"></div>
         </section>
+
+        <section class="indicadores-seccion indicadores-seccion--nc">
+          <header class="indicadores-seccion__encabezado">
+            <h4>Metas no cumplidas — GC-RE-009</h4>
+            <p>
+              Si un indicador del mes no alcanza la meta, debes registrar una no conformidad con el
+              formato GC-RE-009 y definir acciones correctivas.
+            </p>
+          </header>
+          <div id="indicadoresMetasIncumplidas"></div>
+        </section>
         </div>
 
         <div id="panelIndicadoresTabla" class="panel-indicadores-vista" hidden>
@@ -1098,6 +1115,259 @@
       </div>
     </section>
 
+    <section id="modal-formatos" class="modal">
+      <div class="modal-contenido modal-grande vista-formatos-contenido">
+        <header class="formatos-encabezado">
+          <div>
+            <h3>Formatos de mantenimiento</h3>
+            <p>
+              Formatos del sistema de gestion de calidad. El GC-RE-009 registra no conformidades y
+              acciones correctivas por auditorias, quejas, producto NC, indicadores fuera de meta o
+              procesos internos.
+            </p>
+          </div>
+        </header>
+
+        <div class="formatos-grid">
+          <button type="button" class="tarjeta-formato" id="abrirGcRe009Btn">
+            <span class="tarjeta-formato__codigo">GC-RE-009 — Version 2</span>
+            <span class="tarjeta-formato__titulo">
+              Registro y control de no conformidades y acciones correctivas
+            </span>
+            <span class="tarjeta-formato__uso">
+              Llenar ante hallazgos de auditoria, acciones correctivas, metas de indicadores no
+              cumplidas o eventos del proceso de mantenimiento.
+            </span>
+          </button>
+        </div>
+
+        <section class="panel-formato-lista">
+          <header class="indicadores-seccion__encabezado">
+            <h4>Registros GC-RE-009 guardados</h4>
+          </header>
+          <div id="listaNcGuardadas" class="lista-nc-guardadas"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="modal-formato-gcre009" class="modal">
+      <div class="modal-contenido modal-grande vista-formato-gcre009-contenido">
+        <header class="formatos-encabezado formatos-encabezado--formulario">
+          <div>
+            <button type="button" class="btn-opcion-modal" data-open-vista="vista-formatos">
+              ← Volver a formatos
+            </button>
+            <h3>GC-RE-009 — No conformidades y acciones correctivas</h3>
+            <p>
+              Complete el formulario y pulse <strong>Guardar y ver PDF</strong>. Los datos se escriben
+              sobre la plantilla oficial y el archivo queda guardado en el navegador.
+            </p>
+          </div>
+          <button type="button" class="btn-opcion-modal" id="nuevoGcRe009Btn">Nuevo registro</button>
+        </header>
+
+        <p id="ncAvisoIndicador" class="aviso-indicador-nc" hidden></p>
+
+        <div class="layout-formato-gcre009 layout-formato-gcre009--vertical">
+          <div class="panel-formato-formulario">
+            <form id="formGcRe009" class="form-gcre009">
+              <div class="form-gcre009-grid-3">
+                <label>
+                  No. registro
+                  <input id="ncNumero" type="text" readonly />
+                </label>
+                <label>
+                  Area
+                  <select name="area" required>
+                    <option value="">Seleccione</option>
+                    <option value="Laboratorio">Laboratorio</option>
+                    <option value="Confeccion">Confeccion</option>
+                    <option value="Tejidos">Tejidos</option>
+                    <option value="Plasticos">Plasticos</option>
+                    <option value="Locativos">Locativos</option>
+                    <option value="Moldes">Moldes</option>
+                  </select>
+                </label>
+                <label>
+                  Fecha de deteccion
+                  <input name="fechaDeteccion" type="date" required />
+                </label>
+              </div>
+
+              <fieldset>
+                <legend>Origen de la no conformidad</legend>
+                <div class="origen-opciones">
+                  <label><input type="radio" name="origen" value="auditoria" /> Auditoria</label>
+                  <label><input type="radio" name="origen" value="queja" /> Queja de cliente</label>
+                  <label><input type="radio" name="origen" value="producto" /> Producto no conforme</label>
+                  <label><input type="radio" name="origen" value="indicador" checked /> Indicador</label>
+                  <label><input type="radio" name="origen" value="proceso" /> Proceso interno</label>
+                </div>
+              </fieldset>
+
+              <label>
+                Descripcion de la no conformidad
+                <textarea name="descripcion" required placeholder="Describa la NC detectada"></textarea>
+              </label>
+
+              <div class="form-gcre009-grid-2">
+                <label>
+                  Detectada por (nombre)
+                  <input name="detectadaPorNombre" type="text" />
+                </label>
+                <label>
+                  Cargo
+                  <input name="detectadaPorCargo" type="text" />
+                </label>
+              </div>
+
+              <fieldset>
+                <legend>Tratamiento inmediato / correccion</legend>
+                <label>
+                  Accion inmediata
+                  <textarea name="tratamientoInmediato"></textarea>
+                </label>
+                <div class="form-gcre009-grid-2">
+                  <label>
+                    Ejecutado por
+                    <input name="tratamientoInmediatoPor" type="text" />
+                  </label>
+                  <label>
+                    Fecha
+                    <input name="tratamientoInmediatoFecha" type="date" />
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Analisis de causa raiz</legend>
+                <label>
+                  Herramienta utilizada
+                  <input name="herramientaCausa" type="text" placeholder="Ej. Ishikawa, 5 por que" />
+                </label>
+                <label>
+                  Resumen del analisis
+                  <textarea name="resumenCausa"></textarea>
+                </label>
+                <div class="form-gcre009-grid-2">
+                  <label>
+                    Tratamiento ejecutado por
+                    <input name="analisisPor" type="text" />
+                  </label>
+                  <label>
+                    Fecha
+                    <input name="analisisFecha" type="date" />
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Determinacion y plan de accion</legend>
+                <p class="form-gcre009-ayuda">
+                  Se define plan si la NC es repetitiva, de alto impacto o hallazgo de auditoria.
+                </p>
+                <div class="radio-inline">
+                  <span>Requiere accion correctiva formal?</span>
+                  <label><input type="radio" name="requiereAccionFormal" value="si" /> Si</label>
+                  <label><input type="radio" name="requiereAccionFormal" value="no" /> No</label>
+                </div>
+                <table id="tablaPlanAccionGcRe009" class="tabla-plan-accion">
+                  <thead>
+                    <tr>
+                      <th>Actividad</th>
+                      <th>Responsable</th>
+                      <th>Fecha entrega</th>
+                      <th>Evidencia</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+                <button type="button" class="btn-opcion-modal" id="agregarFilaPlanBtn">
+                  + Agregar fila al plan
+                </button>
+              </fieldset>
+
+              <fieldset>
+                <legend>Seguimiento, eficacia y cierre</legend>
+                <label>
+                  Se cumplieron las actividades en las fechas propuestas?
+                  <input name="seguimientoCumplimiento" type="text" />
+                </label>
+                <label>
+                  Fueron eficaces las acciones tomadas?
+                  <input name="seguimientoEficacia" type="text" />
+                </label>
+                <table id="tablaSeguimientoGcRe009" class="tabla-seguimiento-nc">
+                  <thead>
+                    <tr>
+                      <th>Actividad</th>
+                      <th>Cumplido</th>
+                      <th>Fue eficaz?</th>
+                      <th>Por que?</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+                <button type="button" class="btn-opcion-modal" id="agregarFilaSeguimientoBtn">
+                  + Agregar fila de seguimiento
+                </button>
+                <div class="form-gcre009-grid-2">
+                  <label>
+                    Verificado por (nombre)
+                    <input name="verificadoPorNombre" type="text" />
+                  </label>
+                  <label>
+                    Cargo
+                    <input name="verificadoPorCargo" type="text" />
+                  </label>
+                </div>
+                <div class="radio-inline">
+                  <span>El tratamiento fue eficaz?</span>
+                  <label><input type="radio" name="tratamientoEficaz" value="si" /> Si</label>
+                  <label><input type="radio" name="tratamientoEficaz" value="no" /> No</label>
+                </div>
+                <label>
+                  Por que?
+                  <textarea name="tratamientoEficazPorque"></textarea>
+                </label>
+              </fieldset>
+
+              <div class="acciones-formato-gcre009">
+                <button type="submit" class="btn-guardar">Guardar y ver PDF</button>
+                <button type="button" class="btn-opcion-modal" id="soloGuardarGcRe009Btn">
+                  Solo guardar
+                </button>
+              </div>
+            </form>
+            <p id="estadoFormatoGcRe009" class="estado-form"></p>
+          </div>
+
+          <section class="panel-formato-lista">
+            <header class="indicadores-seccion__encabezado">
+              <h4>Registros GC-RE-009 guardados</h4>
+              <p>
+                Plantilla en blanco:
+                <a href="templates/GC-RE-009-v2.pdf" target="_blank" rel="noopener">GC-RE-009-v2.pdf</a>
+              </p>
+            </header>
+            <div id="listaNcGuardadasFormulario" class="lista-nc-guardadas"></div>
+          </section>
+
+          <section id="panelVistaPdfGcRe009" class="panel-formato-vista-pdf" hidden>
+            <header class="indicadores-seccion__encabezado">
+              <h4>Vista previa del PDF generado</h4>
+              <p>Documento rellenado sobre la plantilla oficial. Usa Descargar en la lista o guarda desde el visor.</p>
+            </header>
+            <iframe
+              id="iframePdfGcRe009"
+              class="iframe-pdf-gcre009"
+              title="Vista previa GC-RE-009"
+            ></iframe>
+          </section>
+        </div>
+      </div>
+    </section>
+
     <section id="modal-personal" class="modal">
       <div class="modal-contenido">
         <button class="cerrar" data-close="true">&times;</button>
@@ -1108,8 +1378,11 @@
       </div>
     </section>
 
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="script.js"></script>
     <script src="js/indicadores.js"></script>
+    <script src="js/gcre009-pdf.js"></script>
+    <script src="js/formatos.js"></script>
   </body>
 </html>

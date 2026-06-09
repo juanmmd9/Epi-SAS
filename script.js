@@ -12,6 +12,7 @@ const importarPreventivoBtn = document.getElementById("importarPreventivoBtn");
 const archivoImportarPreventivo = document.getElementById(
   "archivoImportarPreventivo"
 );
+const estadoRespaldo = document.getElementById("estadoRespaldo");
 const filtroAreaPreventivo = document.getElementById("filtroAreaPreventivo");
 const resumenPreventivoAreas = document.getElementById("resumenPreventivoAreas");
 const filtroFechaPreventivo = document.getElementById("filtroFechaPreventivo");
@@ -108,6 +109,10 @@ const cancelarEdicionCorrectivoBtn = document.getElementById("cancelarEdicionCor
 const CLAVE_PREVENTIVO = "mantenimiento_preventivo_registros_v1";
 const CLAVE_HOJAS = "mantenimiento_hojas_vida_v1";
 const CLAVE_CORRECTIVO = "mantenimiento_correctivo_registros_v1";
+const DB_ARCHIVOS_NOMBRE = "epi_portal_archivos_v1";
+const STORE_ARCHIVOS_PREVENTIVO = "preventivo_archivos";
+const STORE_ARCHIVOS_GCRE009 = "gcre009_pdf";
+const DB_ARCHIVOS_VERSION = 2;
 
 const MAPA_MODAL_A_VISTA = {
   "modal-preventivo": "vista-preventivo",
@@ -116,12 +121,15 @@ const MAPA_MODAL_A_VISTA = {
   "modal-correctivo": "vista-correctivo",
   "modal-hojas": "vista-hojas",
   "modal-indicadores": "vista-indicadores",
+  "modal-formatos": "vista-formatos",
+  "modal-formato-gcre009": "vista-formato-gcre009",
   "modal-personal": "vista-personal",
 };
 
 const VISTA_A_MENU = {
   "vista-preventivo-registro": "vista-preventivo",
   "vista-cronograma": "vista-preventivo",
+  "vista-formato-gcre009": "vista-formatos",
 };
 
 const MODULOS_EN_MAIN = [
@@ -131,6 +139,8 @@ const MODULOS_EN_MAIN = [
   "modal-correctivo",
   "modal-hojas",
   "modal-indicadores",
+  "modal-formatos",
+  "modal-formato-gcre009",
   "modal-personal",
 ];
 
@@ -292,6 +302,12 @@ function inicializarVista(idVista) {
   if (idVista === "vista-indicadores" && typeof initModuloIndicadores === "function") {
     initModuloIndicadores();
   }
+  if (idVista === "vista-formatos" && typeof initModuloFormatos === "function") {
+    initModuloFormatos();
+  }
+  if (idVista === "vista-formato-gcre009" && typeof prepararVistaFormatoGcRe009 === "function") {
+    prepararVistaFormatoGcRe009();
+  }
 }
 
 function mostrarVista(idVista) {
@@ -317,21 +333,234 @@ function abrirModal(idModal) {
   modal.classList.add("activo");
 }
 
-function cargarRegistrosPreventivo() {
-  try {
-    const guardados = localStorage.getItem(CLAVE_PREVENTIVO);
-    registrosPreventivo = guardados ? JSON.parse(guardados) : [];
-    registrosPreventivo = registrosPreventivo.map((registro) =>
-      normalizarRegistroPreventivo(registro)
-    );
-  } catch (error) {
-    registrosPreventivo = [];
-    estadoPreventivo.textContent = "No fue posible leer datos guardados.";
+let dbArchivosPromise = null;
+
+function abrirAlmacenArchivos() {
+  if (!window.indexedDB) {
+    return Promise.resolve(null);
+  }
+  if (!dbArchivosPromise) {
+    dbArchivosPromise = new Promise((resolve, reject) => {
+      const solicitud = indexedDB.open(DB_ARCHIVOS_NOMBRE, DB_ARCHIVOS_VERSION);
+      solicitud.onupgradeneeded = (evento) => {
+        const db = evento.target.result;
+        if (!db.objectStoreNames.contains(STORE_ARCHIVOS_PREVENTIVO)) {
+          db.createObjectStore(STORE_ARCHIVOS_PREVENTIVO);
+        }
+        if (!db.objectStoreNames.contains(STORE_ARCHIVOS_GCRE009)) {
+          db.createObjectStore(STORE_ARCHIVOS_GCRE009);
+        }
+      };
+      solicitud.onsuccess = () => resolve(solicitud.result);
+      solicitud.onerror = () => reject(solicitud.error);
+    });
+  }
+  return dbArchivosPromise;
+}
+
+function guardarArchivoPreventivoEnIdb(registroId, payload) {
+  return abrirAlmacenArchivos().then((db) => {
+    if (!db) return false;
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_ARCHIVOS_PREVENTIVO, "readwrite");
+      tx.objectStore(STORE_ARCHIVOS_PREVENTIVO).put(payload, registroId);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  });
+}
+
+function leerArchivoPreventivoDesdeIdb(registroId) {
+  return abrirAlmacenArchivos().then((db) => {
+    if (!db) return null;
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_ARCHIVOS_PREVENTIVO, "readonly");
+      const solicitud = tx.objectStore(STORE_ARCHIVOS_PREVENTIVO).get(registroId);
+      solicitud.onsuccess = () => resolve(solicitud.result || null);
+      solicitud.onerror = () => reject(solicitud.error);
+    });
+  });
+}
+
+function eliminarArchivoPreventivoDeIdb(registroId) {
+  return abrirAlmacenArchivos().then((db) => {
+    if (!db) return;
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_ARCHIVOS_PREVENTIVO, "readwrite");
+      tx.objectStore(STORE_ARCHIVOS_PREVENTIVO).delete(registroId);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  });
+}
+
+function guardarPdfGcRe009EnIdb(registroId, pdfBytes) {
+  return abrirAlmacenArchivos().then((db) => {
+    if (!db) return false;
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_ARCHIVOS_GCRE009, "readwrite");
+      tx.objectStore(STORE_ARCHIVOS_GCRE009).put(
+        { bytes: pdfBytes, actualizadoEn: new Date().toISOString() },
+        registroId
+      );
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  });
+}
+
+function leerPdfGcRe009DesdeIdb(registroId) {
+  return abrirAlmacenArchivos().then((db) => {
+    if (!db) return null;
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_ARCHIVOS_GCRE009, "readonly");
+      const solicitud = tx.objectStore(STORE_ARCHIVOS_GCRE009).get(registroId);
+      solicitud.onsuccess = () => resolve(solicitud.result?.bytes || null);
+      solicitud.onerror = () => reject(solicitud.error);
+    });
+  });
+}
+
+function eliminarPdfGcRe009DeIdb(registroId) {
+  return abrirAlmacenArchivos().then((db) => {
+    if (!db) return;
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_ARCHIVOS_GCRE009, "readwrite");
+      tx.objectStore(STORE_ARCHIVOS_GCRE009).delete(registroId);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  });
+}
+
+function mostrarEstadoRespaldo(mensaje, esError = false) {
+  if (estadoRespaldo) {
+    estadoRespaldo.textContent = mensaje;
+    estadoRespaldo.classList.toggle("estado-respaldo--error", esError);
+    estadoRespaldo.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  if (estadoPreventivo) {
+    estadoPreventivo.textContent = mensaje;
   }
 }
 
-function guardarRegistrosPreventivo() {
-  localStorage.setItem(CLAVE_PREVENTIVO, JSON.stringify(registrosPreventivo));
+function mostrarAvisoEntorno(mensaje) {
+  const aviso = document.getElementById("avisoEntorno");
+  if (!aviso) return;
+  aviso.hidden = false;
+  aviso.textContent = mensaje;
+}
+
+function verificarEntornoAplicacion() {
+  if (window.location.protocol === "file:") {
+    mostrarAvisoEntorno(
+      "Estas abriendo el archivo directo desde el disco. Para guardar e importar datos usa iniciar-host.bat y abre http://localhost:5500/index.html en Chrome."
+    );
+    return;
+  }
+
+  const origenEsperado = `${window.location.protocol}//${window.location.host}`;
+  if (
+    window.location.hostname !== "localhost" &&
+    window.location.hostname !== "127.0.0.1"
+  ) {
+    mostrarAvisoEntorno(
+      `Portal abierto en ${origenEsperado}. Usa siempre la misma direccion al exportar e importar respaldos.`
+    );
+  }
+}
+
+function esErrorCuotaAlmacenamiento(error) {
+  return (
+    error &&
+    (error.name === "QuotaExceededError" ||
+      error.code === 22 ||
+      error.code === 1014)
+  );
+}
+
+async function completarRegistroPreventivoDesdeIdb(registro) {
+  if (!registro?.archivoEnIdb) {
+    return normalizarRegistroPreventivo(registro);
+  }
+  const payload = await leerArchivoPreventivoDesdeIdb(registro.id);
+  return normalizarRegistroPreventivo({
+    ...registro,
+    archivo: payload?.data || "",
+    archivoNombre: payload?.nombre || registro.archivoNombre,
+    archivoTipo: payload?.tipo || registro.archivoTipo,
+  });
+}
+
+async function prepararRegistroPreventivoParaLocalStorage(registro) {
+  const normalizado = normalizarRegistroPreventivo(registro);
+  if (!normalizado.archivo) {
+    return { ...normalizado, archivoEnIdb: Boolean(normalizado.archivoEnIdb) };
+  }
+
+  const guardadoEnIdb = await guardarArchivoPreventivoEnIdb(normalizado.id, {
+    data: normalizado.archivo,
+    nombre: normalizado.archivoNombre,
+    tipo: normalizado.archivoTipo,
+  });
+
+  if (guardadoEnIdb) {
+    return {
+      ...normalizado,
+      archivo: "",
+      archivoEnIdb: true,
+    };
+  }
+
+  return normalizado;
+}
+
+async function obtenerRegistrosPreventivoCompletos() {
+  return Promise.all(
+    registrosPreventivo.map((registro) => completarRegistroPreventivoDesdeIdb(registro))
+  );
+}
+
+async function cargarRegistrosPreventivo() {
+  try {
+    const guardados = localStorage.getItem(CLAVE_PREVENTIVO);
+    const listaGuardada = guardados ? JSON.parse(guardados) : [];
+    registrosPreventivo = await Promise.all(
+      listaGuardada.map((registro) => completarRegistroPreventivoDesdeIdb(registro))
+    );
+  } catch (error) {
+    registrosPreventivo = [];
+    mostrarEstadoRespaldo("No fue posible leer los registros preventivos guardados.", true);
+  }
+}
+
+function guardarJsonEnLocalStorage(clave, valor, etiqueta) {
+  try {
+    localStorage.setItem(clave, JSON.stringify(valor));
+    return true;
+  } catch (error) {
+    if (esErrorCuotaAlmacenamiento(error)) {
+      mostrarEstadoRespaldo(
+        `El navegador se quedo sin espacio al guardar ${etiqueta}. Exporta un respaldo y libera datos.`,
+        true
+      );
+    } else {
+      mostrarEstadoRespaldo(`No se pudo guardar ${etiqueta} en este navegador.`, true);
+    }
+    return false;
+  }
+}
+
+async function guardarRegistrosPreventivo() {
+  try {
+    const registrosParaGuardar = await Promise.all(
+      registrosPreventivo.map((registro) => prepararRegistroPreventivoParaLocalStorage(registro))
+    );
+    guardarJsonEnLocalStorage(CLAVE_PREVENTIVO, registrosParaGuardar, "preventivo");
+  } catch (error) {
+    console.warn(error);
+    mostrarEstadoRespaldo("No se pudieron guardar los registros preventivos.", true);
+  }
 }
 
 function cargarRegistrosHojas() {
@@ -648,6 +877,7 @@ function eliminarPreventivoPorId(idRegistro) {
   registrosPreventivo = registrosPreventivo.filter((item) => item.id !== idRegistro);
   if (registroSeleccionadoId === idRegistro) registroSeleccionadoId = null;
   if (preventivoEditandoId === idRegistro) prepararFormularioPreventivo();
+  eliminarArchivoPreventivoDeIdb(idRegistro).catch(() => {});
   guardarRegistrosPreventivo();
   renderRegistrosPreventivo();
   actualizarProgramacionEnPantalla();
@@ -716,6 +946,7 @@ function construirHtmlTablaCorrectivo(registros) {
           ${celdas}
           <td>
             <button type="button" class="btn-tabla-accion" data-editar-correctivo="${registro.id}">Editar</button>
+            <button type="button" class="btn-tabla-accion" data-nc-correctivo="${registro.id}">GC-RE-009</button>
             <button type="button" class="btn-tabla-accion btn-tabla-accion--eliminar" data-eliminar-correctivo="${registro.id}">Eliminar</button>
           </td>
         </tr>
@@ -744,6 +975,17 @@ function vincularAccionesTablaCorrectivo(contenedor) {
       if (!registro) return;
       llenarFormularioCorrectivo(registro);
       formCorrectivo.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  contenedor.querySelectorAll("[data-nc-correctivo]").forEach((boton) => {
+    boton.addEventListener("click", () => {
+      const registro = registrosCorrectivo.find(
+        (item) => item.id === boton.getAttribute("data-nc-correctivo")
+      );
+      if (registro && typeof abrirFormatoGcRe009DesdeCorrectivo === "function") {
+        abrirFormatoGcRe009DesdeCorrectivo(registro);
+      }
     });
   });
 
@@ -1367,6 +1609,7 @@ function normalizarRegistroPreventivo(registro) {
       registro.archivoNombre ||
       (archivoLegacy ? "archivo-anterior" : archivo ? "documento-preventivo" : ""),
     archivoTipo: registro.archivoTipo || "",
+    archivoEnIdb: Boolean(registro.archivoEnIdb),
   };
 }
 
@@ -1416,12 +1659,12 @@ function descargarJson(nombreArchivo, datos) {
   URL.revokeObjectURL(url);
 }
 
-function construirRespaldoGeneral() {
+function construirRespaldoGeneral(registrosPreventivoCompletos = registrosPreventivo) {
   return {
-    version: 1,
+    version: 2,
     exportadoEn: new Date().toISOString(),
     data: {
-      preventivo: registrosPreventivo,
+      preventivo: registrosPreventivoCompletos,
       hojasDeVida: registrosHojas,
       correctivo: registrosCorrectivo,
       cronogramaPreventivo,
@@ -1432,8 +1675,80 @@ function construirRespaldoGeneral() {
             ? obtenerHorasProgramadasRespaldo()
             : {},
       },
+      noConformidades:
+        typeof obtenerNoConformidadesRespaldo === "function"
+          ? obtenerNoConformidadesRespaldo()
+          : [],
       personal: [],
     },
+  };
+}
+
+function extraerListaPreventivoDesdeRespaldo(datos) {
+  if (Array.isArray(datos)) {
+    return datos;
+  }
+  if (!datos || typeof datos !== "object") {
+    return null;
+  }
+  if (Array.isArray(datos.preventivo)) {
+    return datos.preventivo;
+  }
+  if (Array.isArray(datos.registrosPreventivo)) {
+    return datos.registrosPreventivo;
+  }
+  const contenedor = datos.data && typeof datos.data === "object" ? datos.data : null;
+  if (!contenedor) {
+    return null;
+  }
+  if (Array.isArray(contenedor.preventivo)) {
+    return contenedor.preventivo;
+  }
+  if (Array.isArray(contenedor.registrosPreventivo)) {
+    return contenedor.registrosPreventivo;
+  }
+  if (
+    Array.isArray(contenedor.hojasDeVida) ||
+    Array.isArray(contenedor.correctivo) ||
+    Array.isArray(contenedor.cronogramaPreventivo)
+  ) {
+    return [];
+  }
+  return null;
+}
+
+function respaldoTieneDatosImportables(datos) {
+  if (Array.isArray(datos)) {
+    return datos.length > 0;
+  }
+  const listaPreventivo = extraerListaPreventivoDesdeRespaldo(datos);
+  if (listaPreventivo && listaPreventivo.length > 0) {
+    return true;
+  }
+  const generales = extraerDatosGeneralesDesdeRespaldo(datos);
+  if (!generales) {
+    return Boolean(listaPreventivo && listaPreventivo.length === 0 && datos?.data);
+  }
+  return ["hojasDeVida", "correctivo", "cronogramaPreventivo", "excepcionesCronograma", "noConformidades"].some(
+    (clave) => Array.isArray(generales[clave]) && generales[clave].length > 0
+  );
+}
+
+function extraerDatosGeneralesDesdeRespaldo(datos) {
+  if (!datos || typeof datos !== "object" || Array.isArray(datos)) {
+    return null;
+  }
+  return datos.data && typeof datos.data === "object" ? datos.data : null;
+}
+
+function contarRespaldoGeneral(respaldo) {
+  const data = respaldo?.data || {};
+  return {
+    preventivo: Array.isArray(data.preventivo) ? data.preventivo.length : 0,
+    hojas: Array.isArray(data.hojasDeVida) ? data.hojasDeVida.length : 0,
+    correctivo: Array.isArray(data.correctivo) ? data.correctivo.length : 0,
+    cronograma: Array.isArray(data.cronogramaPreventivo) ? data.cronogramaPreventivo.length : 0,
+    noConformidades: Array.isArray(data.noConformidades) ? data.noConformidades.length : 0,
   };
 }
 
@@ -2979,84 +3294,121 @@ limpiarListaMensualBtn.addEventListener("click", () => {
   estadoImpresionCronograma.textContent = "";
 });
 
-exportarPreventivoBtn.addEventListener("click", () => {
-  if (registrosPreventivo.length === 0 && registrosHojas.length === 0) {
-    estadoPreventivo.textContent = "No hay datos para exportar.";
+exportarPreventivoBtn?.addEventListener("click", async () => {
+  const totalNc =
+    typeof obtenerNoConformidadesRespaldo === "function"
+      ? obtenerNoConformidadesRespaldo().length
+      : 0;
+  if (
+    registrosPreventivo.length === 0 &&
+    registrosHojas.length === 0 &&
+    registrosCorrectivo.length === 0 &&
+    totalNc === 0
+  ) {
+    mostrarEstadoRespaldo("No hay datos para exportar.", true);
     return;
   }
 
-  const fecha = new Date().toISOString().slice(0, 10);
-  const respaldoGeneral = construirRespaldoGeneral();
-  descargarJson(`respaldo-general-${fecha}.json`, respaldoGeneral);
-  estadoPreventivo.textContent = "Respaldo general exportado correctamente.";
+  try {
+    const preventivoCompleto = await obtenerRegistrosPreventivoCompletos();
+    const fecha = new Date().toISOString().slice(0, 10);
+    const respaldoGeneral = construirRespaldoGeneral(preventivoCompleto);
+    const conteo = contarRespaldoGeneral(respaldoGeneral);
+    descargarJson(`respaldo-general-${fecha}.json`, respaldoGeneral);
+    mostrarEstadoRespaldo(
+      `Respaldo exportado: ${conteo.preventivo} preventivo(s), ${conteo.hojas} hoja(s), ${conteo.correctivo} correctivo(s), ${conteo.noConformidades} NC(s).`
+    );
+  } catch (error) {
+    console.warn(error);
+    mostrarEstadoRespaldo(
+      "No se pudo exportar. Si tienes muchos PDF adjuntos, prueba exportar con menos archivos o usa otro navegador.",
+      true
+    );
+  }
 });
 
-importarPreventivoBtn.addEventListener("click", () => {
+importarPreventivoBtn?.addEventListener("click", () => {
   archivoImportarPreventivo.click();
 });
 
-archivoImportarPreventivo.addEventListener("change", async () => {
+archivoImportarPreventivo?.addEventListener("change", async () => {
   const archivo = archivoImportarPreventivo.files?.[0];
   if (!archivo) return;
 
   try {
+    mostrarEstadoRespaldo("Importando respaldo...");
     const texto = await archivo.text();
     const datos = JSON.parse(texto);
 
-    if (Array.isArray(datos)) {
-      // Compatibilidad con respaldos viejos (solo preventivo)
-      registrosPreventivo = datos.map((registro) => normalizarRegistroPreventivo(registro));
-    } else if (datos && typeof datos === "object" && datos.data) {
-      const preventivo = datos.data.preventivo;
-      const hojasDeVida = datos.data.hojasDeVida;
-      const correctivo = datos.data.correctivo;
-      const cronograma = datos.data.cronogramaPreventivo;
-      if (!Array.isArray(preventivo)) {
-        estadoPreventivo.textContent =
-          "El archivo no trae datos validos de preventivo.";
-        return;
-      }
-      if (hojasDeVida !== undefined && !Array.isArray(hojasDeVida)) {
-        estadoPreventivo.textContent =
-          "El archivo no trae datos validos de hojas de vida.";
-        return;
-      }
-      if (correctivo !== undefined && !Array.isArray(correctivo)) {
-        estadoPreventivo.textContent =
-          "El archivo no trae datos validos de correctivo.";
-        return;
-      }
-      if (cronograma !== undefined && !Array.isArray(cronograma)) {
-        estadoPreventivo.textContent =
-          "El archivo no trae datos validos de cronograma preventivo.";
-        return;
-      }
-      registrosPreventivo = preventivo.map((registro) =>
-        normalizarRegistroPreventivo(registro)
+    if (!respaldoTieneDatosImportables(datos)) {
+      mostrarEstadoRespaldo(
+        "El archivo esta vacio o no es un respaldo valido de este portal.",
+        true
       );
-      registrosHojas = Array.isArray(hojasDeVida)
-        ? hojasDeVida.map((registro) => normalizarMaquinaHoja(registro))
-        : [];
-      registrosCorrectivo = Array.isArray(correctivo)
-        ? correctivo.map((registro) => normalizarRegistroCorrectivo(registro))
-        : [];
-      cronogramaPreventivo = Array.isArray(cronograma) ? cronograma : [];
-      excepcionesCronograma = Array.isArray(datos.data.excepcionesCronograma)
-        ? datos.data.excepcionesCronograma
-        : [];
-    } else {
-      estadoPreventivo.textContent = "El archivo no tiene formato valido.";
       return;
     }
 
-    guardarRegistrosPreventivo();
-    guardarRegistrosHojas();
-    guardarRegistrosCorrectivo();
-    guardarCronogramaPreventivo();
-    guardarExcepcionesCronograma();
-    if (typeof importarHorasProgramadasDesdeRespaldo === "function" && datos.data.indicadores) {
-      importarHorasProgramadasDesdeRespaldo(datos.data.indicadores);
+    const listaPreventivo = extraerListaPreventivoDesdeRespaldo(datos) || [];
+    const datosGenerales = extraerDatosGeneralesDesdeRespaldo(datos);
+    const registrosImportados = [];
+
+    for (const registro of listaPreventivo) {
+      const normalizado = normalizarRegistroPreventivo(registro);
+      if (normalizado.archivo) {
+        const guardadoEnIdb = await guardarArchivoPreventivoEnIdb(normalizado.id, {
+          data: normalizado.archivo,
+          nombre: normalizado.archivoNombre,
+          tipo: normalizado.archivoTipo,
+        });
+        if (guardadoEnIdb) {
+          normalizado.archivoEnIdb = true;
+        }
+      }
+      registrosImportados.push(normalizado);
     }
+
+    registrosPreventivo = registrosImportados;
+
+    if (datosGenerales) {
+      if (Array.isArray(datosGenerales.hojasDeVida)) {
+        registrosHojas = datosGenerales.hojasDeVida.map((registro) =>
+          normalizarMaquinaHoja(registro)
+        );
+      }
+      if (Array.isArray(datosGenerales.correctivo)) {
+        registrosCorrectivo = datosGenerales.correctivo.map((registro) =>
+          normalizarRegistroCorrectivo(registro)
+        );
+      }
+      if (Array.isArray(datosGenerales.cronogramaPreventivo)) {
+        cronogramaPreventivo = datosGenerales.cronogramaPreventivo;
+      }
+      if (Array.isArray(datosGenerales.excepcionesCronograma)) {
+        excepcionesCronograma = datosGenerales.excepcionesCronograma;
+      }
+    }
+
+    await guardarRegistrosPreventivo();
+    const guardoHojas = guardarJsonEnLocalStorage(CLAVE_HOJAS, registrosHojas, "hojas de vida");
+    const guardoCorrectivo = guardarJsonEnLocalStorage(
+      CLAVE_CORRECTIVO,
+      registrosCorrectivo,
+      "correctivo"
+    );
+    guardarJsonEnLocalStorage(CLAVE_CRONOGRAMA, cronogramaPreventivo, "cronograma");
+    guardarJsonEnLocalStorage(CLAVE_EXCEPCIONES, excepcionesCronograma, "excepciones");
+
+    if (typeof importarHorasProgramadasDesdeRespaldo === "function" && datosGenerales?.indicadores) {
+      importarHorasProgramadasDesdeRespaldo(datosGenerales.indicadores);
+    }
+
+    if (
+      typeof importarNoConformidadesDesdeRespaldo === "function" &&
+      Array.isArray(datosGenerales?.noConformidades)
+    ) {
+      importarNoConformidadesDesdeRespaldo(datosGenerales.noConformidades);
+    }
+
     renderRegistrosPreventivo();
     renderRegistrosHojas();
     actualizarOpcionesEquiposPreventivo();
@@ -3065,9 +3417,30 @@ archivoImportarPreventivo.addEventListener("change", async () => {
     if (typeof renderPanelIndicadores === "function") {
       renderPanelIndicadores();
     }
-    estadoPreventivo.textContent = "Respaldo general importado correctamente.";
+
+    const resumen = `Respaldo importado: ${registrosPreventivo.length} preventivo(s), ${registrosHojas.length} hoja(s), ${registrosCorrectivo.length} correctivo(s), ${Array.isArray(datosGenerales?.noConformidades) ? datosGenerales.noConformidades.length : 0} NC(s).`;
+    mostrarEstadoRespaldo(resumen);
+
+    if (!guardoHojas || !guardoCorrectivo) {
+      mostrarEstadoRespaldo(
+        `${resumen} Algunos datos quedaron solo en esta sesion por falta de espacio en el navegador.`,
+        true
+      );
+    }
+
+    if (registrosPreventivo.length > 0) {
+      mostrarVista("vista-preventivo-registro");
+    } else if (registrosHojas.length > 0) {
+      mostrarVista("vista-hojas");
+    } else if (registrosCorrectivo.length > 0) {
+      mostrarVista("vista-correctivo");
+    }
   } catch (error) {
-    estadoPreventivo.textContent = "No se pudo importar el archivo.";
+    console.warn(error);
+    mostrarEstadoRespaldo(
+      "No se pudo importar el archivo. Verifica que sea un respaldo .json de este portal.",
+      true
+    );
   } finally {
     archivoImportarPreventivo.value = "";
   }
@@ -3547,7 +3920,6 @@ if (inicioCronogramaAnio) {
   inicioCronogramaAnio.addEventListener("input", renderPanelCronogramaInicio);
 }
 
-cargarRegistrosPreventivo();
 cargarRegistrosHojas();
 cargarRegistrosCorrectivo();
 cargarCronogramaPreventivo();
@@ -3565,8 +3937,13 @@ cronogramaAnio.value = String(anioActualSistema);
 if (inicioCronogramaAnio) {
   inicioCronogramaAnio.value = String(anioActualSistema);
 }
-actualizarOpcionesEquiposPreventivo();
-renderRegistrosPreventivo();
-renderRegistrosHojas();
-actualizarProgramacionEnPantalla();
-renderTablaCorrectivo();
+
+(async function iniciarPortal() {
+  verificarEntornoAplicacion();
+  await cargarRegistrosPreventivo();
+  actualizarOpcionesEquiposPreventivo();
+  renderRegistrosPreventivo();
+  renderRegistrosHojas();
+  actualizarProgramacionEnPantalla();
+  renderTablaCorrectivo();
+})();

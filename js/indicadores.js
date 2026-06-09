@@ -691,12 +691,32 @@ function claseCeldaHorasPerdidas(valor) {
   return "celda-meta-fail";
 }
 
-function renderCeldasMensuales(valores, formatear, claseMeta) {
+function renderCeldasMensuales(valores, formatear, claseMeta, infoNc) {
   const celdasMes = valores
-    .map((valor) => {
+    .map((valor, indice) => {
       const texto = valor === null ? "—" : formatear(valor);
       const clase = claseMeta(valor);
-      return `<td class="${clase}">${texto}</td>`;
+      const fueraDeMeta =
+        valor !== null && (clase === "celda-meta-fail" || clase === "celda-meta-alerta");
+
+      if (!fueraDeMeta || !infoNc) {
+        return `<td class="${clase}">${texto}</td>`;
+      }
+
+      const mes = indice + 1;
+      const nombreMes = NOMBRES_MESES_INDICADORES[indice];
+      const payload = encodeURIComponent(
+        JSON.stringify({
+          area: infoNc.area || "",
+          indicador: infoNc.indicador,
+          meta: infoNc.meta,
+          valor: texto,
+          mes,
+          anio: infoNc.anio,
+          descripcion: `Indicador "${infoNc.indicador}" no cumple la meta (${infoNc.meta}). Valor obtenido: ${texto}. Periodo: ${nombreMes} ${infoNc.anio}.${infoNc.area ? ` Area: ${infoNc.area}.` : ""}`,
+        })
+      );
+      return `<td class="${clase} celda-meta-clicable" data-nc-celda="${payload}" title="Click para llenar el formato GC-RE-009 de ${nombreMes}">${texto}</td>`;
     })
     .join("");
   const promedio = promedioValoresMensuales(valores);
@@ -706,7 +726,10 @@ function renderCeldasMensuales(valores, formatear, claseMeta) {
 }
 
 function renderFilaIndicadorTabla(fila) {
-  const celdasMes = renderCeldasMensuales(fila.valores, fila.formatear, fila.claseMeta);
+  const infoNc = fila.anio
+    ? { area: fila.area || "", indicador: fila.indicador, meta: fila.meta, anio: fila.anio }
+    : null;
+  const celdasMes = renderCeldasMensuales(fila.valores, fila.formatear, fila.claseMeta, infoNc);
   return `
     <tr>
       <td class="col-objetivo">${fila.objetivo ? escapeHtml(fila.objetivo) : ""}</td>
@@ -726,6 +749,111 @@ function renderFilaAreaTabla(nombreArea) {
   `;
 }
 
+function evaluarMetaIndicador(claseMeta, valor) {
+  if (valor === null || Number.isNaN(valor)) return "sin-dato";
+  const clase = claseMeta(valor);
+  if (clase === "celda-meta-ok") return "ok";
+  if (clase === "celda-meta-alerta") return "alerta";
+  return "fail";
+}
+
+function obtenerMetasIncumplidasMes(anio, mes, tipoMantenimiento, areaFiltro = "") {
+  const incumplidas = [];
+
+  const pm = calcularCumplimientoPreventivoGlobal(anio, mes);
+  if (evaluarMetaIndicador(claseCeldaPreventivo, pm) !== "ok") {
+    incumplidas.push({
+      area: "Todas las areas PM",
+      indicador: "CUMPLIMIENTO A MANTENIMIENTOS PREVENTIVOS",
+      meta: "100%",
+      valor: `${pm}%`,
+      mes,
+      anio,
+      severidad: evaluarMetaIndicador(claseCeldaPreventivo, pm),
+    });
+  }
+
+  const areasCorrectivo = areaFiltro
+    ? AREAS_CORRECTIVO_TABLA.includes(areaFiltro)
+      ? [areaFiltro]
+      : []
+    : AREAS_CORRECTIVO_TABLA;
+
+  areasCorrectivo.forEach((area) => {
+    const respuesta = calcularPromedioRespuestaCorrectivoArea(anio, mes, area, tipoMantenimiento);
+    if (evaluarMetaIndicador(claseCeldaTiempoRespuesta, respuesta) !== "ok") {
+      incumplidas.push({
+        area,
+        indicador: `TIEMPO DE RESPUESTA PROMEDIO DEL SERVICIO DE MANTENIMIENTO CORRECTIVO (${area.toUpperCase()})`,
+        meta: "10 MINUTOS",
+        valor: respuesta === null ? "—" : `${formatearNumero(respuesta)} min`,
+        mes,
+        anio,
+        severidad: evaluarMetaIndicador(claseCeldaTiempoRespuesta, respuesta),
+      });
+    }
+
+    const horas = calcularPorcentajeHorasPerdidasArea(anio, mes, area, tipoMantenimiento);
+    if (evaluarMetaIndicador(claseCeldaHorasPerdidas, horas) !== "ok") {
+      incumplidas.push({
+        area,
+        indicador: `PORCENTAJE DE HORAS PERDIDAS POR MANTENIMIENTO CORRECTIVO (${area.toUpperCase()})`,
+        meta: "1%",
+        valor: horas === null ? "Sin horas programadas" : `${formatearNumero(horas)}%`,
+        mes,
+        anio,
+        severidad: evaluarMetaIndicador(claseCeldaHorasPerdidas, horas),
+      });
+    }
+  });
+
+  return incumplidas;
+}
+
+function renderBloqueMetasIncumplidas(anio, mes, tipoMantenimiento, areaFiltro) {
+  const incumplidas = obtenerMetasIncumplidasMes(anio, mes, tipoMantenimiento, areaFiltro);
+  const nombreMes = NOMBRES_MESES_INDICADORES[mes - 1];
+
+  if (incumplidas.length === 0) {
+    return `<p class="indicadores-vacio">Todas las metas del mes (${nombreMes} ${anio}) se cumplen o no hay datos para evaluar.</p>`;
+  }
+
+  const filas = incumplidas
+    .map((item) => {
+      const payload = encodeURIComponent(
+        JSON.stringify({
+          area: item.area === "Todas las areas PM" ? areaFiltro || "" : item.area,
+          indicador: item.indicador,
+          meta: item.meta,
+          valor: item.valor,
+          mes: item.mes,
+          anio: item.anio,
+          descripcion: `Indicador "${item.indicador}" no cumple la meta (${item.meta}). Valor obtenido: ${item.valor}. Periodo: ${nombreMes} ${item.anio}. Area: ${item.area}.`,
+        })
+      );
+      const claseSeveridad =
+        item.severidad === "fail"
+          ? "item-meta-fallida item-meta-fallida--fail"
+          : "item-meta-fallida item-meta-fallida--alerta";
+      return `
+        <div class="${claseSeveridad}">
+          <div>
+            <strong>${escapeHtml(item.indicador)}</strong>
+            <div class="item-meta-fallida__detalle">
+              ${escapeHtml(item.area)} · Meta ${escapeHtml(item.meta)} · Valor ${escapeHtml(item.valor)}
+            </div>
+          </div>
+          <button type="button" class="btn-tabla-accion" data-nc-indicador="${payload}">
+            Llenar GC-RE-009
+          </button>
+        </div>
+      `;
+    })
+    .join("");
+
+  return `<div class="lista-metas-fallidas">${filas}</div>`;
+}
+
 function renderTablaResumenIndicadoresAnual(anio, tipoMantenimiento) {
   const valoresPreventivo = [];
   for (let mes = 1; mes <= 12; mes += 1) {
@@ -741,6 +869,8 @@ function renderTablaResumenIndicadoresAnual(anio, tipoMantenimiento) {
       valores: valoresPreventivo,
       formatear: (valor) => `${valor}%`,
       claseMeta: claseCeldaPreventivo,
+      anio,
+      area: "",
     }),
   ];
 
@@ -766,6 +896,8 @@ function renderTablaResumenIndicadoresAnual(anio, tipoMantenimiento) {
         valores: valoresRespuesta,
         formatear: (valor) => formatearNumero(valor),
         claseMeta: claseCeldaTiempoRespuesta,
+        anio,
+        area,
       })
     );
     filas.push(
@@ -777,6 +909,8 @@ function renderTablaResumenIndicadoresAnual(anio, tipoMantenimiento) {
         valores: valoresHoras,
         formatear: (valor) => `${formatearNumero(valor)}%`,
         claseMeta: claseCeldaHorasPerdidas,
+        anio,
+        area,
       })
     );
   });
@@ -809,6 +943,7 @@ function renderTablaResumenIndicadoresAnual(anio, tipoMantenimiento) {
       <span class="leyenda-item leyenda-alerta">Amarillo</span> cerca del limite —
       <span class="leyenda-item leyenda-fail">Rojo</span> fuera de meta.
       Horas perdidas requieren horas programadas guardadas por area y mes.
+      <strong>Haz click en una celda roja o amarilla para llenar el formato GC-RE-009 de ese mes.</strong>
     </p>
   `;
 }
@@ -886,6 +1021,16 @@ function renderPanelIndicadores() {
     }
   }
 
+  const metasIncumplidas = document.getElementById("indicadoresMetasIncumplidas");
+  if (metasIncumplidas) {
+    metasIncumplidas.innerHTML = renderBloqueMetasIncumplidas(
+      anio,
+      mes,
+      tipoMantenimiento,
+      areaFiltro
+    );
+  }
+
   const tablaAnual = document.getElementById("tablaResumenIndicadoresAnual");
   if (tablaAnual) {
     tablaAnual.innerHTML = renderTablaResumenIndicadoresAnual(anio, tipoMantenimiento);
@@ -940,6 +1085,32 @@ function configurarEventosIndicadores() {
       const panel = boton.getAttribute("data-panel-indicadores");
       if (panel) cambiarPanelIndicadores(panel);
     });
+  });
+
+  document.getElementById("indicadoresMetasIncumplidas")?.addEventListener("click", (evento) => {
+    const boton = evento.target.closest("[data-nc-indicador]");
+    if (!boton) return;
+    try {
+      const datos = JSON.parse(decodeURIComponent(boton.getAttribute("data-nc-indicador") || ""));
+      if (typeof abrirFormatoGcRe009DesdeIndicador === "function") {
+        abrirFormatoGcRe009DesdeIndicador(datos);
+      }
+    } catch (error) {
+      console.warn(error);
+    }
+  });
+
+  document.getElementById("tablaResumenIndicadoresAnual")?.addEventListener("click", (evento) => {
+    const celda = evento.target.closest("[data-nc-celda]");
+    if (!celda) return;
+    try {
+      const datos = JSON.parse(decodeURIComponent(celda.getAttribute("data-nc-celda") || ""));
+      if (typeof abrirFormatoGcRe009DesdeIndicador === "function") {
+        abrirFormatoGcRe009DesdeIndicador(datos);
+      }
+    } catch (error) {
+      console.warn(error);
+    }
   });
 
   cargarHorasProgramadasStorage();
