@@ -1,0 +1,237 @@
+.indicadores__descripcion {
+  color: var(--color-texto-suave);
+  margin-top: 0;
+}
+
+.indicadores__filtros {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.indicadores__filtros label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+}
+
+.indicadores__filtros input,
+.indicadores__filtros select {
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  max-width: 160px;
+}
+
+.indicadores__horas {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.indicadores__mensaje {
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.indicadores__mensaje--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.indicadores__mensaje--error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.indicadores__vacio {
+  color: var(--color-texto-suave);
+  background: var(--color-superficie);
+  border: 1px dashed var(--color-borde);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+/* ----- Tarjetas ----- */
+
+.indicadores__tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.indicadores__tarjetas--compactas {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.tarjeta-indicador {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.tarjeta-indicador span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tarjeta-indicador strong {
+  font-size: 1.5rem;
+  color: var(--color-primario);
+}
+
+.tarjeta-indicador small {
+  color: var(--color-texto-suave);
+}
+
+/* ----- Tabla correctivo ----- */
+
+.indicadores__tabla-contenedor {
+  overflow-x: auto;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.indicadores__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.indicadores__tabla th,
+.indicadores__tabla td {
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.indicadores__tabla thead th {
+  background: var(--color-fondo);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--color-texto-suave);
+}
+
+.indicadores__subencabezado th {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.indicadores__col-real {
+  font-weight: 700;
+  color: var(--color-primario);
+}
+
+.fila-advertencia td {
+  background: #fef2f2;
+}
+
+.indicadores__fila-resumen td {
+  background: var(--color-fondo);
+  font-size: 0.85rem;
+}
+
+/* ----- Preventivo ----- */
+
+.indicadores__preventivo {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bloque-preventivo {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.bloque-preventivo header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.75rem;
+}
+
+.bloque-preventivo header span {
+  color: var(--color-texto-suave);
+  font-size: 0.85rem;
+}
+
+.bloque-preventivo__listas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.bloque-preventivo__listas h5 {
+  margin: 0 0 0.4rem;
+  font-size: 0.82rem;
+  color: var(--color-texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.indicadores__lista-vacia {
+  color: var(--color-texto-suave);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.indicadores__lista-citas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.indicadores__lista-citas li {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  border-left: 3px solid var(--color-borde);
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  background: var(--color-fondo);
+}
+
+.indicadores__lista-citas li span {
+  color: var(--color-texto-suave);
+  font-size: 0.78rem;
+}
+
+.cita-cumplida {
+  border-left-color: #16a34a !important;
+}
+
+.cita-reprogramada {
+  border-left-color: #d97706 !important;
+}
+
+.cita-pendiente {
+  border-left-color: #dc2626 !important;
+}
