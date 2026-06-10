@@ -9,6 +9,7 @@ import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
 import { listarPreventivo } from "../preventivo/preventivoService";
 import type { RegistroPreventivo } from "../preventivo/types";
+import ImportadorRespaldo from "../importador/ImportadorRespaldo";
 import "./inicio.css";
 
 interface CitaMes extends CitaCronograma {
@@ -114,6 +115,11 @@ function InicioPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    recargarDatos();
+  }, []);
+
+  function recargarDatos() {
+    setCargando(true);
     Promise.all([listarHojas(), listarExcepciones(), listarPreventivo()])
       .then(([hojas, excs, prev]) => {
         setMaquinas(hojas);
@@ -122,7 +128,7 @@ function InicioPage() {
       })
       .catch((e: Error) => setError("No se pudieron cargar los datos: " + e.message))
       .finally(() => setCargando(false));
-  }, []);
+  }
 
   const datosPorArea = useMemo(
     () =>
@@ -149,6 +155,9 @@ function InicioPage() {
       </div>
 
       {error && <p className="inicio__error">{error}</p>}
+
+      <ImportadorRespaldo onImportado={recargarDatos} />
+
       {cargando && <p>Cargando panel...</p>}
 
       <div className="inicio__areas">
