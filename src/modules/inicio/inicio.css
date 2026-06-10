@@ -129,6 +129,12 @@
   font-size: 0.85rem;
   padding: 0.25rem 0.4rem;
   border-radius: 6px;
+  cursor: pointer;
+}
+
+.cita:hover {
+  background: var(--color-fondo);
+  outline: 1px solid var(--color-primario);
 }
 
 .cita--completada {

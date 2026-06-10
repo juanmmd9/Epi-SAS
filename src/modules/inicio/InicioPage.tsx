@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AREAS_CON_PM } from "../../lib/areas";
 import { aFechaIso, NOMBRES_MESES, valorFecha } from "../../lib/fechas";
 import { mapaCitasDelAnio } from "../cronograma/cronogramaCalculo";
@@ -105,6 +105,7 @@ function construirDatosArea(
 function InicioPage() {
   const anioActual = new Date().getFullYear();
   const mesActual = new Date().getMonth() + 1;
+  const navegar = useNavigate();
   const [anio, setAnio] = useState(anioActual);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
   const [excepciones, setExcepciones] = useState<ExcepcionCronograma[]>([]);
@@ -213,11 +214,38 @@ function InicioPage() {
                               <li
                                 key={`${cita.maquinaId}-${cita.dia}`}
                                 className={cita.completada ? "cita cita--completada" : "cita"}
+                                role="button"
+                                tabIndex={0}
                                 title={
                                   cita.completada
                                     ? `PM registrado: ${cita.nombre}`
                                     : `Registrar actividad de ${cita.nombre}`
                                 }
+                                onClick={() =>
+                                  navegar("/preventivo", {
+                                    state: {
+                                      registrarPm: {
+                                        maquinaId: cita.maquinaId,
+                                        area: datos.area,
+                                        fecha: aFechaIso(anio, bloque.mes, cita.dia),
+                                      },
+                                    },
+                                  })
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    navegar("/preventivo", {
+                                      state: {
+                                        registrarPm: {
+                                          maquinaId: cita.maquinaId,
+                                          area: datos.area,
+                                          fecha: aFechaIso(anio, bloque.mes, cita.dia),
+                                        },
+                                      },
+                                    });
+                                  }
+                                }}
                               >
                                 {cita.completada && <span className="cita__check">✓</span>}
                                 <span className="cita__dia">{cita.dia}</span>

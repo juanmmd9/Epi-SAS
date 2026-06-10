@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { AREAS_CON_PM } from "../../lib/areas";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
@@ -17,7 +17,12 @@ import "./preventivo.css";
 
 const formularioVacio = { area: "", maquinaId: "", fecha: "", descripcion: "" };
 
+interface EstadoNavegacion {
+  registrarPm?: { maquinaId: string; area: string; fecha: string };
+}
+
 function PreventivoPage() {
+  const ubicacion = useLocation();
   const [registros, setRegistros] = useState<RegistroPreventivo[]>([]);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -38,6 +43,17 @@ function PreventivoPage() {
       .catch((e: Error) => setError("No se pudieron cargar los datos: " + e.message))
       .finally(() => setCargando(false));
   }, []);
+
+  // Precarga del formulario al llegar desde el panel de inicio (clic en una cita)
+  useEffect(() => {
+    const estado = ubicacion.state as EstadoNavegacion | null;
+    if (!estado?.registrarPm) return;
+    const { maquinaId, area, fecha } = estado.registrarPm;
+    setEditandoId(null);
+    setCampos({ area, maquinaId, fecha, descripcion: "" });
+    setMensaje("Datos cargados desde el panel de inicio. Completa la actividad y el soporte.");
+    window.history.replaceState({}, "");
+  }, [ubicacion.state]);
 
   const maquinasDelArea = useMemo(
     () => maquinas.filter((m) => m.area === campos.area && m.activa),
