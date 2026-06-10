@@ -1,11 +1,9 @@
-.hojas__descripcion {
+.preventivo__descripcion {
   color: var(--color-texto-suave);
   margin-top: 0;
 }
 
-/* ----- Formulario ----- */
-
-.hoja-form {
+.preventivo-form {
   background: var(--color-superficie);
   border: 1px solid var(--color-borde);
   border-radius: 12px;
@@ -13,13 +11,13 @@
   margin-bottom: 1.5rem;
 }
 
-.hoja-form__grid {
+.preventivo-form__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 0.9rem;
 }
 
-.hoja-form label {
+.preventivo-form label {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -28,8 +26,9 @@
   color: var(--color-texto-suave);
 }
 
-.hoja-form input,
-.hoja-form select {
+.preventivo-form input,
+.preventivo-form select,
+.preventivo-form textarea {
   font: inherit;
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--color-borde);
@@ -38,39 +37,40 @@
   color: var(--color-texto);
 }
 
-.hoja-form input:focus,
-.hoja-form select:focus {
+.preventivo-form input:focus,
+.preventivo-form select:focus,
+.preventivo-form textarea:focus {
   outline: 2px solid var(--color-primario);
   outline-offset: 1px;
 }
 
-.hoja-form__acciones {
+.preventivo-form__descripcion {
+  grid-column: 1 / -1;
+}
+
+.preventivo-form__acciones {
   display: flex;
   gap: 0.6rem;
   margin-top: 1rem;
 }
 
-/* ----- Mensajes ----- */
-
-.hojas__mensaje {
+.preventivo__mensaje {
   padding: 0.6rem 0.9rem;
   border-radius: 8px;
   font-size: 0.9rem;
 }
 
-.hojas__mensaje--ok {
+.preventivo__mensaje--ok {
   background: #dcfce7;
   color: #166534;
 }
 
-.hojas__mensaje--error {
+.preventivo__mensaje--error {
   background: #fee2e2;
   color: #991b1b;
 }
 
-/* ----- Listado ----- */
-
-.hojas__filtros {
+.preventivo__filtros {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -78,14 +78,14 @@
   margin: 1rem 0 0.75rem;
 }
 
-.hojas__filtros select {
+.preventivo__filtros select {
   font: inherit;
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--color-borde);
   border-radius: 8px;
 }
 
-.hojas__vacio {
+.preventivo__vacio {
   color: var(--color-texto-suave);
   background: var(--color-superficie);
   border: 1px dashed var(--color-borde);
@@ -94,68 +94,39 @@
   text-align: center;
 }
 
-.hojas__lista {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1rem;
-}
-
-.tarjeta-maquina {
+.preventivo__tabla-contenedor {
+  overflow-x: auto;
   background: var(--color-superficie);
   border: 1px solid var(--color-borde);
   border-radius: 12px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
 }
 
-.tarjeta-maquina--baja {
-  opacity: 0.75;
-  background: #f8fafc;
-}
-
-.tarjeta-maquina__foto {
-  height: 140px;
-  border-radius: 8px;
-  background: var(--color-fondo);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-texto-suave);
-  font-size: 0.85rem;
-  overflow: hidden;
-}
-
-.tarjeta-maquina__foto img {
+.preventivo__tabla {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  border-collapse: collapse;
+  font-size: 0.9rem;
 }
 
-.tarjeta-maquina__info h3 {
-  margin-bottom: 0.2rem;
+.preventivo__tabla th,
+.preventivo__tabla td {
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--color-borde);
 }
 
-.tarjeta-maquina__info p {
-  margin: 0.15rem 0;
-  font-size: 0.88rem;
+.preventivo__tabla th {
+  background: var(--color-fondo);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   color: var(--color-texto-suave);
 }
 
-.tarjeta-maquina__codigo {
-  font-weight: 600;
-  color: var(--color-primario) !important;
+.preventivo__tabla tr:last-child td {
+  border-bottom: none;
 }
 
-.tarjeta-maquina__baja {
-  color: #b45309 !important;
-  font-weight: 600;
-}
-
-.tarjeta-maquina__acciones {
+.preventivo__acciones {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: auto;
+  gap: 0.4rem;
 }
