@@ -1,7 +1,28 @@
+# Entorno
 .env
 .env.*
+*.local
+
+# Dependencias y build
+node_modules
+dist
+dist-ssr
+
+# Logs
+logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Sistema operativo / editor
 .DS_Store
 Thumbs.db
 desktop.ini
-js/vendor/
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
