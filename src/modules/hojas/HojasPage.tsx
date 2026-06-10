@@ -1,8 +1,196 @@
+import { useEffect, useMemo, useState } from "react";
+import { AREAS_SISTEMA } from "../../lib/areas";
+import HojaForm from "./HojaForm";
+import {
+  actualizarHoja,
+  cambiarEstadoHoja,
+  crearHoja,
+  eliminarHoja,
+  listarHojas,
+  subirFotoMaquina,
+} from "./hojasService";
+import type { HojaVida, HojaVidaInput } from "./types";
+import "./hojas.css";
+
 function HojasPage() {
+  const [hojas, setHojas] = useState<HojaVida[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [filtroArea, setFiltroArea] = useState("");
+  const [hojaEnEdicion, setHojaEnEdicion] = useState<HojaVida | null>(null);
+
+  useEffect(() => {
+    listarHojas()
+      .then(setHojas)
+      .catch((e: Error) => setError("No se pudieron cargar las máquinas: " + e.message))
+      .finally(() => setCargando(false));
+  }, []);
+
+  const hojasFiltradas = useMemo(
+    () => (filtroArea ? hojas.filter((h) => h.area === filtroArea) : hojas),
+    [hojas, filtroArea],
+  );
+
+  async function manejarGuardar(input: HojaVidaInput, foto: File | null) {
+    setGuardando(true);
+    setError(null);
+    setMensaje(null);
+    try {
+      const fotoUrl = foto ? await subirFotoMaquina(foto) : null;
+      if (hojaEnEdicion) {
+        const cambios = fotoUrl ? { ...input, foto_url: fotoUrl } : input;
+        const actualizada = await actualizarHoja(hojaEnEdicion.id, cambios);
+        setHojas((previas) =>
+          previas.map((h) => (h.id === actualizada.id ? actualizada : h)),
+        );
+        setHojaEnEdicion(null);
+        setMensaje(`Máquina "${actualizada.nombre}" actualizada.`);
+      } else {
+        const creada = await crearHoja(input, fotoUrl);
+        setHojas((previas) => [creada, ...previas]);
+        setMensaje(
+          `Máquina registrada. PM automático cada ${input.frecuencia_pm_meses} mes(es)` +
+            (input.primer_pm ? ` desde ${input.primer_pm}.` : "."),
+        );
+      }
+    } catch (e) {
+      setError("No fue posible guardar: " + (e as Error).message);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function manejarBaja(hoja: HojaVida) {
+    const motivo = window.prompt(
+      `Motivo de baja para "${hoja.nombre}" (puede quedar vacío):`,
+    );
+    if (motivo === null) return;
+    try {
+      const actualizada = await cambiarEstadoHoja(hoja, false, motivo);
+      setHojas((previas) =>
+        previas.map((h) => (h.id === actualizada.id ? actualizada : h)),
+      );
+    } catch (e) {
+      setError("No fue posible dar de baja: " + (e as Error).message);
+    }
+  }
+
+  async function manejarReactivar(hoja: HojaVida) {
+    try {
+      const actualizada = await cambiarEstadoHoja(hoja, true);
+      setHojas((previas) =>
+        previas.map((h) => (h.id === actualizada.id ? actualizada : h)),
+      );
+    } catch (e) {
+      setError("No fue posible reactivar: " + (e as Error).message);
+    }
+  }
+
+  async function manejarEliminar(hoja: HojaVida) {
+    const confirmado = window.confirm(
+      `¿Eliminar definitivamente "${hoja.nombre}"? Esta acción no se puede deshacer.`,
+    );
+    if (!confirmado) return;
+    try {
+      await eliminarHoja(hoja.id);
+      setHojas((previas) => previas.filter((h) => h.id !== hoja.id));
+      if (hojaEnEdicion?.id === hoja.id) setHojaEnEdicion(null);
+    } catch (e) {
+      setError("No fue posible eliminar: " + (e as Error).message);
+    }
+  }
+
   return (
-    <section>
+    <section className="hojas">
       <h1>Hojas de vida</h1>
-      <p>Catálogo de máquinas y equipos. (Primer módulo a migrar)</p>
+      <p className="hojas__descripcion">
+        Catálogo de máquinas y equipos. Los datos se guardan en la nube y los ven
+        todos los usuarios del portal.
+      </p>
+
+      <HojaForm
+        hojaEnEdicion={hojaEnEdicion}
+        guardando={guardando}
+        onGuardar={manejarGuardar}
+        onCancelarEdicion={() => setHojaEnEdicion(null)}
+      />
+
+      {mensaje && <p className="hojas__mensaje hojas__mensaje--ok">{mensaje}</p>}
+      {error && <p className="hojas__mensaje hojas__mensaje--error">{error}</p>}
+
+      <div className="hojas__filtros">
+        <h2>Máquinas registradas ({hojasFiltradas.length})</h2>
+        <select value={filtroArea} onChange={(e) => setFiltroArea(e.target.value)}>
+          <option value="">Todas las áreas</option>
+          {AREAS_SISTEMA.map((area) => (
+            <option key={area} value={area}>
+              {area}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {cargando && <p>Cargando máquinas...</p>}
+      {!cargando && hojasFiltradas.length === 0 && (
+        <p className="hojas__vacio">
+          No hay máquinas registradas{filtroArea ? ` en ${filtroArea}` : ""}. Usa el
+          formulario de arriba para registrar la primera.
+        </p>
+      )}
+
+      <div className="hojas__lista">
+        {hojasFiltradas.map((hoja) => (
+          <article
+            key={hoja.id}
+            className={"tarjeta-maquina" + (hoja.activa ? "" : " tarjeta-maquina--baja")}
+          >
+            <div className="tarjeta-maquina__foto">
+              {hoja.foto_url ? (
+                <img src={hoja.foto_url} alt={hoja.nombre} />
+              ) : (
+                <span>Sin foto</span>
+              )}
+            </div>
+            <div className="tarjeta-maquina__info">
+              <h3>{hoja.nombre}</h3>
+              <p className="tarjeta-maquina__codigo">
+                {hoja.codigo || "Sin código"} · {hoja.area}
+              </p>
+              <p>
+                PM cada {hoja.frecuencia_pm_meses ?? 12} mes(es)
+                {hoja.primer_pm ? ` · desde ${hoja.primer_pm}` : ""}
+              </p>
+              {hoja.datos.ubicacion && <p>Ubicación: {hoja.datos.ubicacion}</p>}
+              {!hoja.activa && (
+                <p className="tarjeta-maquina__baja">
+                  Fuera de circulación
+                  {hoja.datos.fechaBaja ? ` desde ${hoja.datos.fechaBaja}` : ""}
+                  {hoja.datos.motivoBaja ? ` — ${hoja.datos.motivoBaja}` : ""}
+                </p>
+              )}
+            </div>
+            <div className="tarjeta-maquina__acciones">
+              <button className="btn" onClick={() => setHojaEnEdicion(hoja)}>
+                Editar
+              </button>
+              {hoja.activa ? (
+                <button className="btn btn--advertencia" onClick={() => manejarBaja(hoja)}>
+                  Dar de baja
+                </button>
+              ) : (
+                <button className="btn btn--primario" onClick={() => manejarReactivar(hoja)}>
+                  Reactivar
+                </button>
+              )}
+              <button className="btn btn--peligro" onClick={() => manejarEliminar(hoja)}>
+                Eliminar
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
