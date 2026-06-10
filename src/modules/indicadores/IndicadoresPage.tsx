@@ -9,12 +9,14 @@ import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
 import { listarPreventivo } from "../preventivo/preventivoService";
 import type { RegistroPreventivo } from "../preventivo/types";
+import { useNavigate } from "react-router-dom";
 import {
   calcularResumenCorrectivo,
   calcularTiemposCorrectivo,
   clasificarCitasPreventivas,
   filtrarCorrectivos,
   formatearNumero,
+  metasIncumplidasMes,
   type CitaClasificada,
 } from "./indicadoresCalculo";
 import {
@@ -23,6 +25,7 @@ import {
   periodoDe,
   type HorasProgramadas,
 } from "./horasService";
+import TablaAnual, { type PayloadNc } from "./TablaAnual";
 import "./indicadores.css";
 
 function ListaCitas({ items, clase, vacio }: { items: CitaClasificada[]; clase: string; vacio: string }) {
@@ -48,6 +51,8 @@ function ListaCitas({ items, clase, vacio }: { items: CitaClasificada[]; clase: 
 
 function IndicadoresPage() {
   const hoy = new Date();
+  const navegar = useNavigate();
+  const [panel, setPanel] = useState<"detalle" | "tabla">("detalle");
   const [area, setArea] = useState("");
   const [mes, setMes] = useState(hoy.getMonth() + 1);
   const [anio, setAnio] = useState(hoy.getFullYear());
@@ -139,12 +144,48 @@ function IndicadoresPage() {
 
   const ratio = horasProgramadasActual ? resumen.horas / horasProgramadasActual : null;
 
+  const metasIncumplidas = useMemo(
+    () =>
+      metasIncumplidasMes(
+        maquinas, excepciones, preventivo, correctivos, horas, anio, mes, tipo, area,
+      ),
+    [maquinas, excepciones, preventivo, correctivos, horas, anio, mes, tipo, area],
+  );
+
+  function abrirNcDesdeMetaIncumplida(meta: (typeof metasIncumplidas)[number]) {
+    const payload: PayloadNc = {
+      area: meta.area === "Todas las areas PM" ? area : meta.area,
+      indicador: meta.indicador,
+      meta: meta.meta,
+      valor: meta.valor,
+      mes: meta.mes,
+      anio: meta.anio,
+      descripcion: `Indicador "${meta.indicador}" no cumple la meta (${meta.meta}). Valor obtenido: ${meta.valor}. Periodo: ${NOMBRES_MESES[meta.mes - 1]} ${meta.anio}. Area: ${meta.area}.`,
+    };
+    navegar("/formatos/gc-re-009", { state: { nc: payload } });
+  }
+
   return (
     <section className="indicadores">
       <h1>Indicadores de mantenimiento</h1>
       <p className="indicadores__descripcion">
         Tiempos de respuesta correctivos y cumplimiento del cronograma preventivo.
       </p>
+
+      <div className="indicadores__pestanas">
+        <button
+          className={"pestana" + (panel === "detalle" ? " pestana--activa" : "")}
+          onClick={() => setPanel("detalle")}
+        >
+          Detalle del mes
+        </button>
+        <button
+          className={"pestana" + (panel === "tabla" ? " pestana--activa" : "")}
+          onClick={() => setPanel("tabla")}
+        >
+          Tabla anual
+        </button>
+      </div>
 
       <div className="indicadores__filtros">
         <label>
@@ -202,6 +243,51 @@ function IndicadoresPage() {
       {estado && <p className="indicadores__mensaje indicadores__mensaje--ok">{estado}</p>}
       {error && <p className="indicadores__mensaje indicadores__mensaje--error">{error}</p>}
       {cargando && <p>Cargando indicadores...</p>}
+
+      {panel === "tabla" && !cargando && (
+        <TablaAnual
+          anio={anio}
+          tipoMantenimiento={tipo}
+          maquinas={maquinas}
+          excepciones={excepciones}
+          preventivo={preventivo}
+          correctivos={correctivos}
+          horas={horas}
+        />
+      )}
+
+      {panel === "detalle" && (
+      <>
+      <h2>Metas del mes — {NOMBRES_MESES[mes - 1]} {anio}</h2>
+
+      {metasIncumplidas.length === 0 ? (
+        <p className="indicadores__vacio">
+          Todas las metas del mes ({NOMBRES_MESES[mes - 1]} {anio}) se cumplen o no hay
+          datos para evaluar.
+        </p>
+      ) : (
+        <div className="metas-fallidas">
+          {metasIncumplidas.map((meta, indice) => (
+            <div
+              key={indice}
+              className={
+                "meta-fallida" +
+                (meta.severidad === "fail" ? " meta-fallida--fail" : " meta-fallida--alerta")
+              }
+            >
+              <div>
+                <strong>{meta.indicador}</strong>
+                <div className="meta-fallida__detalle">
+                  {meta.area} · Meta {meta.meta} · Valor {meta.valor}
+                </div>
+              </div>
+              <button className="btn" onClick={() => abrirNcDesdeMetaIncumplida(meta)}>
+                Llenar GC-RE-009
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <h2>Correctivo — tiempos de respuesta</h2>
 
@@ -361,6 +447,8 @@ function IndicadoresPage() {
           </section>
         ))}
       </div>
+      </>
+      )}
     </section>
   );
 }

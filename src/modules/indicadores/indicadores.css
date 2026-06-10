@@ -3,6 +3,142 @@
   margin-top: 0;
 }
 
+.indicadores__pestanas {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.pestana {
+  border: 1px solid var(--color-borde);
+  background: var(--color-superficie);
+  color: var(--color-texto-suave);
+  padding: 0.5rem 1.1rem;
+  border-radius: 8px 8px 0 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.pestana--activa {
+  background: var(--color-primario);
+  border-color: var(--color-primario);
+  color: #fff;
+}
+
+/* ----- Metas incumplidas ----- */
+
+.metas-fallidas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.meta-fallida {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-left-width: 4px;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+
+.meta-fallida--fail {
+  border-left-color: #dc2626;
+}
+
+.meta-fallida--alerta {
+  border-left-color: #d97706;
+}
+
+.meta-fallida__detalle {
+  color: var(--color-texto-suave);
+  font-size: 0.82rem;
+  margin-top: 0.15rem;
+}
+
+/* ----- Tabla anual ----- */
+
+.tabla-anual__titulo th {
+  background: var(--color-primario) !important;
+  color: #fff !important;
+  text-align: center;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.08em;
+}
+
+.tabla-anual__fila-area td {
+  background: #e2e8f0;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.tabla-anual__objetivo,
+.tabla-anual__indicador {
+  max-width: 220px;
+  font-size: 0.78rem;
+}
+
+.tabla-anual__promedio {
+  background: var(--color-fondo);
+}
+
+.celda-meta-ok {
+  background: #dcfce7 !important;
+  color: #166534;
+  font-weight: 600;
+}
+
+.celda-meta-alerta {
+  background: #fef3c7 !important;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.celda-meta-fail {
+  background: #fee2e2 !important;
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.celda-meta-clicable {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.tabla-anual__leyenda {
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+  margin-bottom: 1.5rem;
+}
+
+.leyenda {
+  padding: 0.1rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.leyenda--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.leyenda--alerta {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.leyenda--fail {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .indicadores__filtros {
   display: flex;
   align-items: flex-end;

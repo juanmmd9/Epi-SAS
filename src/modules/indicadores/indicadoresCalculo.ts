@@ -1,11 +1,13 @@
 // Formulas de indicadores extraidas de la version vanilla (js/indicadores.js).
 // G = tiempo de respuesta (min), H = tiempo de mantenimiento (min), I = G + H.
 
+import { AREAS_CON_PM } from "../../lib/areas";
 import { mapaCitasDelAnio } from "../cronograma/cronogramaCalculo";
 import type { ExcepcionCronograma } from "../cronograma/types";
 import type { HojaVida } from "../hojas/types";
 import type { RegistroPreventivo } from "../preventivo/types";
 import type { RegistroCorrectivo } from "../correctivo/types";
+import { periodoDe, type HorasProgramadas } from "./horasService";
 
 export interface TiemposCorrectivo {
   g: number | null;
@@ -203,4 +205,174 @@ export function clasificarCitasPreventivas(
 export function formatearNumero(valor: number | null | undefined, decimales = 2): string {
   if (valor === null || valor === undefined || Number.isNaN(valor)) return "—";
   return Number(valor).toFixed(decimales);
+}
+
+// ----- Tabla anual de indicadores y metas -----
+
+/** Areas con indicadores correctivos en la tabla anual (igual que vanilla). */
+export const AREAS_CORRECTIVO_TABLA = ["Confeccion", "Plasticos", "Tejidos"];
+
+export type EstadoMeta = "ok" | "alerta" | "fail" | "sin-dato";
+
+export function estadoMetaPreventivo(valor: number | null): EstadoMeta {
+  if (valor === null || Number.isNaN(valor)) return "sin-dato";
+  return valor >= 100 ? "ok" : "fail";
+}
+
+export function estadoMetaTiempoRespuesta(valor: number | null): EstadoMeta {
+  if (valor === null || Number.isNaN(valor)) return "sin-dato";
+  if (valor <= 10) return "ok";
+  if (valor <= 15) return "alerta";
+  return "fail";
+}
+
+export function estadoMetaHorasPerdidas(valor: number | null): EstadoMeta {
+  if (valor === null || Number.isNaN(valor)) return "sin-dato";
+  if (valor <= 1) return "ok";
+  if (valor <= 2) return "alerta";
+  return "fail";
+}
+
+export function horasProgramadasDe(
+  horas: HorasProgramadas[],
+  anio: number,
+  mes: number,
+  area: string,
+): number | null {
+  const registro = horas.find((h) => h.periodo === periodoDe(anio, mes) && h.area === area);
+  return registro && registro.horas > 0 ? registro.horas : null;
+}
+
+/** % de cumplimiento PM de todas las areas con preventivo en un mes. */
+export function cumplimientoPreventivoGlobal(
+  maquinas: HojaVida[],
+  excepciones: ExcepcionCronograma[],
+  preventivo: RegistroPreventivo[],
+  anio: number,
+  mes: number,
+): number | null {
+  let totalCitas = 0;
+  let totalCumplidas = 0;
+  for (const area of AREAS_CON_PM) {
+    const datos = clasificarCitasPreventivas(maquinas, excepciones, preventivo, area, anio, mes);
+    totalCitas += datos.total;
+    totalCumplidas += datos.cumplidas.length;
+  }
+  if (totalCitas === 0) return null;
+  return Math.round((totalCumplidas / totalCitas) * 100);
+}
+
+/** Promedio mensual del tiempo de respuesta G (min) de un area. */
+export function promedioRespuestaArea(
+  correctivos: RegistroCorrectivo[],
+  anio: number,
+  mes: number,
+  area: string,
+  tipoMantenimiento: string,
+): number | null {
+  const filas = filtrarCorrectivos(correctivos, area, anio, mes, tipoMantenimiento).map(
+    (registro) => ({ registro, tiempos: calcularTiemposCorrectivo(registro) }),
+  );
+  const resumen = calcularResumenCorrectivo(filas);
+  if (resumen.cantidad === 0) return null;
+  return resumen.promedioG;
+}
+
+/** % de horas perdidas por correctivo respecto a las horas programadas. */
+export function porcentajeHorasPerdidasArea(
+  correctivos: RegistroCorrectivo[],
+  horas: HorasProgramadas[],
+  anio: number,
+  mes: number,
+  area: string,
+  tipoMantenimiento: string,
+): number | null {
+  const filas = filtrarCorrectivos(correctivos, area, anio, mes, tipoMantenimiento).map(
+    (registro) => ({ registro, tiempos: calcularTiemposCorrectivo(registro) }),
+  );
+  const resumen = calcularResumenCorrectivo(filas);
+  const horasProgramadas = horasProgramadasDe(horas, anio, mes, area);
+  if (!horasProgramadas || resumen.cantidad === 0) return null;
+  return (resumen.horas / horasProgramadas) * 100;
+}
+
+export function promedioValoresMensuales(valores: (number | null)[]): number | null {
+  const validos = valores.filter((v): v is number => v !== null && !Number.isNaN(v));
+  if (validos.length === 0) return null;
+  return validos.reduce((suma, v) => suma + v, 0) / validos.length;
+}
+
+export interface MetaIncumplida {
+  area: string;
+  indicador: string;
+  meta: string;
+  valor: string;
+  mes: number;
+  anio: number;
+  severidad: EstadoMeta;
+}
+
+export function metasIncumplidasMes(
+  maquinas: HojaVida[],
+  excepciones: ExcepcionCronograma[],
+  preventivo: RegistroPreventivo[],
+  correctivos: RegistroCorrectivo[],
+  horas: HorasProgramadas[],
+  anio: number,
+  mes: number,
+  tipoMantenimiento: string,
+  areaFiltro = "",
+): MetaIncumplida[] {
+  const incumplidas: MetaIncumplida[] = [];
+
+  const pm = cumplimientoPreventivoGlobal(maquinas, excepciones, preventivo, anio, mes);
+  if (estadoMetaPreventivo(pm) !== "ok" && pm !== null) {
+    incumplidas.push({
+      area: "Todas las areas PM",
+      indicador: "CUMPLIMIENTO A MANTENIMIENTOS PREVENTIVOS",
+      meta: "100%",
+      valor: `${pm}%`,
+      mes,
+      anio,
+      severidad: estadoMetaPreventivo(pm),
+    });
+  }
+
+  const areas = areaFiltro
+    ? AREAS_CORRECTIVO_TABLA.includes(areaFiltro)
+      ? [areaFiltro]
+      : []
+    : AREAS_CORRECTIVO_TABLA;
+
+  for (const area of areas) {
+    const respuesta = promedioRespuestaArea(correctivos, anio, mes, area, tipoMantenimiento);
+    if (estadoMetaTiempoRespuesta(respuesta) !== "ok" && respuesta !== null) {
+      incumplidas.push({
+        area,
+        indicador: `TIEMPO DE RESPUESTA PROMEDIO DEL SERVICIO DE MANTENIMIENTO CORRECTIVO (${area.toUpperCase()})`,
+        meta: "10 MINUTOS",
+        valor: `${formatearNumero(respuesta)} min`,
+        mes,
+        anio,
+        severidad: estadoMetaTiempoRespuesta(respuesta),
+      });
+    }
+
+    const horasPerdidas = porcentajeHorasPerdidasArea(
+      correctivos, horas, anio, mes, area, tipoMantenimiento,
+    );
+    if (estadoMetaHorasPerdidas(horasPerdidas) !== "ok" && horasPerdidas !== null) {
+      incumplidas.push({
+        area,
+        indicador: `PORCENTAJE DE HORAS PERDIDAS POR MANTENIMIENTO CORRECTIVO (${area.toUpperCase()})`,
+        meta: "1%",
+        valor: `${formatearNumero(horasPerdidas)}%`,
+        mes,
+        anio,
+        severidad: estadoMetaHorasPerdidas(horasPerdidas),
+      });
+    }
+  }
+
+  return incumplidas;
 }
