@@ -14,8 +14,14 @@ function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__marca">
-        <img src="/Image/EPI-Logo.png" alt="Logo EPI" />
-        <span>Portal Mantenimiento</span>
+        <img
+          className="sidebar__logo"
+          src="/Image/EPI-Logo.png"
+          alt="EPI — Empresa de Producción Industrial"
+          width={286}
+          height={90}
+        />
+        <span className="sidebar__titulo">Portal Mantenimiento</span>
       </div>
       <nav className="sidebar__nav">
         {enlaces.map((enlace) => (

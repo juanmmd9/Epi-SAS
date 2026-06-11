@@ -48,6 +48,13 @@
   grid-column: 1 / -1;
 }
 
+.preventivo-form__ayuda {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #b45309;
+  line-height: 1.35;
+}
+
 .preventivo-form__acciones {
   display: flex;
   gap: 0.6rem;

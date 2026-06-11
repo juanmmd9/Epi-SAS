@@ -13,7 +13,14 @@ export async function listarCorrectivo(): Promise<RegistroCorrectivo[]> {
 }
 
 export async function crearCorrectivo(input: CorrectivoInput): Promise<RegistroCorrectivo> {
-  const { data, error } = await supabase.from(TABLA).insert(input).select().single();
+  const { personal_id, ...resto } = input;
+  const payload: Record<string, unknown> = { ...resto };
+  if (personal_id) payload.personal_id = personal_id;
+
+  let { data, error } = await supabase.from(TABLA).insert(payload).select().single();
+  if (error && personal_id && /personal_id|personal/i.test(error.message)) {
+    ({ data, error } = await supabase.from(TABLA).insert(resto).select().single());
+  }
   if (error) throw new Error(error.message);
   return data as RegistroCorrectivo;
 }
@@ -22,12 +29,14 @@ export async function actualizarCorrectivo(
   id: string,
   input: CorrectivoInput,
 ): Promise<RegistroCorrectivo> {
-  const { data, error } = await supabase
-    .from(TABLA)
-    .update(input)
-    .eq("id", id)
-    .select()
-    .single();
+  const { personal_id, ...resto } = input;
+  const payload: Record<string, unknown> = { ...resto };
+  if (personal_id) payload.personal_id = personal_id;
+
+  let { data, error } = await supabase.from(TABLA).update(payload).eq("id", id).select().single();
+  if (error && personal_id && /personal_id|personal/i.test(error.message)) {
+    ({ data, error } = await supabase.from(TABLA).update(resto).eq("id", id).select().single());
+  }
   if (error) throw new Error(error.message);
   return data as RegistroCorrectivo;
 }

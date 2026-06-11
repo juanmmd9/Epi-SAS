@@ -1,9 +1,18 @@
 import { supabase } from "../../services/supabase";
+import { normalizarArea } from "../../lib/areas";
 import type { HojaVida, HojaVidaDatos, HojaVidaInput } from "./types";
+import { normalizarHojaDesdeDb } from "./hojasFiltro";
 
 const TABLA = "hojas_vida";
 const BUCKET = "adjuntos-preventivo";
 const CARPETA_FOTOS = "fotos-hojas";
+
+function normalizarInput(input: HojaVidaInput): HojaVidaInput {
+  return {
+    ...input,
+    area: normalizarArea(input.area) || input.area,
+  };
+}
 
 export async function listarHojas(): Promise<HojaVida[]> {
   const { data, error } = await supabase
@@ -11,7 +20,7 @@ export async function listarHojas(): Promise<HojaVida[]> {
     .select("*")
     .order("creado_en", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []) as HojaVida[];
+  return (data ?? []).map((item) => normalizarHojaDesdeDb(item as HojaVida));
 }
 
 export async function subirFotoMaquina(archivo: File): Promise<string> {
@@ -26,27 +35,31 @@ export async function crearHoja(
   input: HojaVidaInput,
   fotoUrl: string | null,
 ): Promise<HojaVida> {
+  const payload = normalizarInput(input);
   const { data, error } = await supabase
     .from(TABLA)
-    .insert({ ...input, foto_url: fotoUrl, activa: true })
+    .insert({ ...payload, foto_url: fotoUrl, activa: true })
     .select()
     .single();
   if (error) throw new Error(error.message);
-  return data as HojaVida;
+  return normalizarHojaDesdeDb(data as HojaVida);
 }
 
 export async function actualizarHoja(
   id: string,
   cambios: Partial<HojaVidaInput> & { foto_url?: string | null },
 ): Promise<HojaVida> {
+  const payload = cambios.area
+    ? { ...cambios, area: normalizarArea(cambios.area) || cambios.area }
+    : cambios;
   const { data, error } = await supabase
     .from(TABLA)
-    .update({ ...cambios, actualizado_en: new Date().toISOString() })
+    .update({ ...payload, actualizado_en: new Date().toISOString() })
     .eq("id", id)
     .select()
     .single();
   if (error) throw new Error(error.message);
-  return data as HojaVida;
+  return normalizarHojaDesdeDb(data as HojaVida);
 }
 
 export async function cambiarEstadoHoja(
@@ -69,7 +82,7 @@ export async function cambiarEstadoHoja(
     .select()
     .single();
   if (error) throw new Error(error.message);
-  return data as HojaVida;
+  return normalizarHojaDesdeDb(data as HojaVida);
 }
 
 export async function eliminarHoja(id: string): Promise<void> {

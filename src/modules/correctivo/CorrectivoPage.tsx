@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { AREAS_SISTEMA } from "../../lib/areas";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
+import { listarPersonalActivo } from "../personal/personalService";
+import SelectorPersonal from "../personal/SelectorPersonal";
+import {
+  construirDatosPersonal,
+  idsDesdeRegistroCorrectivo,
+  nombresPersonalEnRegistro,
+} from "../personal/personalVinculo";
+import type { Persona } from "../personal/types";
 import {
   actualizarCorrectivo,
   calcularTiempoRespuesta,
@@ -40,20 +49,23 @@ const formularioVacio = {
 function CorrectivoPage() {
   const [registros, setRegistros] = useState<RegistroCorrectivo[]>([]);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
+  const [personal, setPersonal] = useState<Persona[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [campos, setCampos] = useState(formularioVacio);
+  const [personalIds, setPersonalIds] = useState<string[]>([]);
   const [tipos, setTipos] = useState<string[]>([]);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [filtroArea, setFiltroArea] = useState("");
 
   useEffect(() => {
-    Promise.all([listarCorrectivo(), listarHojas()])
-      .then(([regs, hojas]) => {
+    Promise.all([listarCorrectivo(), listarHojas(), listarPersonalActivo()])
+      .then(([regs, hojas, tecnicos]) => {
         setRegistros(regs);
         setMaquinas(hojas);
+        setPersonal(tecnicos);
       })
       .catch((e: Error) => setError("No se pudieron cargar los datos: " + e.message))
       .finally(() => setCargando(false));
@@ -89,9 +101,29 @@ function CorrectivoPage() {
     );
   }
 
+  function nombresTecnicos(registro: RegistroCorrectivo): string {
+    const ids = idsDesdeRegistroCorrectivo(registro);
+    return nombresPersonalEnRegistro(ids, personal, registro.datos.personalNombres);
+  }
+
+  function actualizarQuienRevisa(ids: string[]) {
+    const nombres = ids
+      .map((id) => personal.find((p) => p.id === id)?.nombre)
+      .filter(Boolean);
+    if (nombres.length > 0) {
+      setCampos((c) => ({ ...c, quienRevisa: nombres.join(", ") }));
+    }
+  }
+
+  function manejarPersonalIds(ids: string[]) {
+    setPersonalIds(ids);
+    actualizarQuienRevisa(ids);
+  }
+
   function cancelarEdicion() {
     setEditandoId(null);
     setCampos(formularioVacio);
+    setPersonalIds([]);
     setTipos([]);
   }
 
@@ -115,6 +147,7 @@ function CorrectivoPage() {
       horaCierre: registro.datos.horaCierre,
       quienRevisa: registro.datos.quienRevisa,
     });
+    setPersonalIds(idsDesdeRegistroCorrectivo(registro));
     setTipos(registro.datos.tiposSolicitud);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -129,13 +162,28 @@ function CorrectivoPage() {
       return;
     }
 
+    if (personal.length > 0 && personalIds.length === 0) {
+      setError("Selecciona al menos un técnico responsable.");
+      return;
+    }
+
+    const idsValidos = personalIds.filter((id) => personal.some((p) => p.id === id));
+    if (personalIds.length > 0 && idsValidos.length === 0) {
+      setError("Los técnicos seleccionados no son válidos.");
+      return;
+    }
+
     setGuardando(true);
     try {
       const numeroSolicitud = editandoId
         ? (registros.find((r) => r.id === editandoId)?.datos.numeroSolicitud ?? 0)
         : siguienteNumeroSolicitud(registros);
 
+      const datosPersonal = construirDatosPersonal(idsValidos, personal);
+      const nombresTecnicosTexto = datosPersonal.personalNombres.join(", ");
+
       const input = {
+        ...(datosPersonal.personalId ? { personal_id: datosPersonal.personalId } : {}),
         area: campos.area,
         fecha: campos.fecha,
         datos: {
@@ -158,7 +206,8 @@ function CorrectivoPage() {
           solucionSolicitud: campos.solucionSolicitud.trim(),
           fechaCierre: campos.fechaCierre,
           horaCierre: campos.horaCierre,
-          quienRevisa: campos.quienRevisa.trim(),
+          quienRevisa: campos.quienRevisa.trim() || nombresTecnicosTexto,
+          ...datosPersonal,
         },
       };
 
@@ -196,7 +245,8 @@ function CorrectivoPage() {
     <section className="correctivo">
       <h1>Mantenimiento correctivo</h1>
       <p className="correctivo__descripcion">
-        Solicitudes de servicio de mantenimiento por área.
+        Solicitudes de servicio de mantenimiento por área.{" "}
+        <Link to="/personal">Gestionar personal</Link>
       </p>
 
       <form className="correctivo-form" onSubmit={manejarEnvio}>
@@ -297,6 +347,13 @@ function CorrectivoPage() {
           </div>
         </fieldset>
 
+        <SelectorPersonal
+          personal={personal}
+          seleccionados={personalIds}
+          onChange={manejarPersonalIds}
+          leyenda="Técnicos responsables * (puedes marcar 2 o más)"
+        />
+
         <div className="correctivo-form__grid">
           <label className="correctivo-form__completa">
             Descripción de solicitud *
@@ -321,7 +378,9 @@ function CorrectivoPage() {
           <label>
             Quién revisa
             <input value={campos.quienRevisa}
-              onChange={(e) => actualizar("quienRevisa", e.target.value)} />
+              onChange={(e) => actualizar("quienRevisa", e.target.value)}
+              placeholder="Se completa con los técnicos seleccionados"
+            />
           </label>
         </div>
 
@@ -373,6 +432,7 @@ function CorrectivoPage() {
                 <th>Fecha</th>
                 <th>Área</th>
                 <th>Máquina</th>
+                <th>Técnicos</th>
                 <th>Estado</th>
                 <th>Tipo</th>
                 <th>Descripción</th>
@@ -393,6 +453,7 @@ function CorrectivoPage() {
                       <span className="correctivo__codigo"> {registro.datos.codigoMaquina}</span>
                     )}
                   </td>
+                  <td>{nombresTecnicos(registro)}</td>
                   <td>{registro.datos.estadoMaquina}</td>
                   <td>{registro.datos.tiposSolicitud.join(", ")}</td>
                   <td className="correctivo__descripcion-celda">

@@ -34,10 +34,17 @@ export interface CorrectivoDatos {
   fechaCierre: string;
   horaCierre: string;
   quienRevisa: string;
+  personalIds?: string[];
+  personalNombres?: string[];
+  /** @deprecated usar personalIds */
+  personalId?: string;
+  /** @deprecated usar personalNombres */
+  personalNombre?: string;
 }
 
 export interface RegistroCorrectivo {
   id: string;
+  personal_id: string | null;
   area: string;
   fecha: string;
   datos: CorrectivoDatos;
@@ -45,6 +52,7 @@ export interface RegistroCorrectivo {
 }
 
 export interface CorrectivoInput {
+  personal_id?: string | null;
   area: string;
   fecha: string;
   datos: CorrectivoDatos;

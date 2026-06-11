@@ -76,6 +76,20 @@ create table if not exists horas_programadas (
   unique (periodo, area)
 );
 
+-- Personal de mantenimiento
+create table if not exists personal (
+  id uuid primary key default gen_random_uuid(),
+  nombre text not null,
+  cargo text,
+  area text,
+  activo boolean not null default true,
+  creado_en timestamptz not null default now()
+);
+
+-- Vinculo opcional con personal (ejecutar si la tabla ya existia)
+alter table preventivo add column if not exists personal_id uuid references personal (id) on delete set null;
+alter table correctivo add column if not exists personal_id uuid references personal (id) on delete set null;
+
 -- ===================== SEGURIDAD (RLS temporal) ======================
 -- Por ahora acceso abierto para desarrollar el piloto.
 -- Antes de publicar la app se reemplazara por politicas con login.
@@ -87,14 +101,32 @@ alter table cronograma enable row level security;
 alter table cronograma_excepciones enable row level security;
 alter table no_conformidades enable row level security;
 alter table horas_programadas enable row level security;
+alter table personal enable row level security;
 
+drop policy if exists "acceso temporal" on hojas_vida;
 create policy "acceso temporal" on hojas_vida for all using (true) with check (true);
+
+drop policy if exists "acceso temporal" on preventivo;
 create policy "acceso temporal" on preventivo for all using (true) with check (true);
+
+drop policy if exists "acceso temporal" on correctivo;
 create policy "acceso temporal" on correctivo for all using (true) with check (true);
+
+drop policy if exists "acceso temporal" on cronograma;
 create policy "acceso temporal" on cronograma for all using (true) with check (true);
+
+drop policy if exists "acceso temporal" on cronograma_excepciones;
 create policy "acceso temporal" on cronograma_excepciones for all using (true) with check (true);
+
+drop policy if exists "acceso temporal" on no_conformidades;
 create policy "acceso temporal" on no_conformidades for all using (true) with check (true);
+
+drop policy if exists "acceso temporal" on horas_programadas;
 create policy "acceso temporal" on horas_programadas for all using (true) with check (true);
+
+drop policy if exists "acceso temporal" on personal;
+drop policy if exists "acceso temporal personal" on personal;
+create policy "acceso temporal" on personal for all using (true) with check (true);
 
 -- ========================= STORAGE (archivos) ========================
 -- Bucket para adjuntos de preventivo (PDF/Word) y PDFs de NC generados
@@ -105,15 +137,19 @@ values
   ('pdfs-nc', 'pdfs-nc', true)
 on conflict (id) do nothing;
 
+drop policy if exists "leer archivos epi" on storage.objects;
 create policy "leer archivos epi" on storage.objects
   for select using (bucket_id in ('adjuntos-preventivo', 'pdfs-nc'));
 
+drop policy if exists "subir archivos epi" on storage.objects;
 create policy "subir archivos epi" on storage.objects
   for insert with check (bucket_id in ('adjuntos-preventivo', 'pdfs-nc'));
 
+drop policy if exists "actualizar archivos epi" on storage.objects;
 create policy "actualizar archivos epi" on storage.objects
   for update using (bucket_id in ('adjuntos-preventivo', 'pdfs-nc'))
   with check (bucket_id in ('adjuntos-preventivo', 'pdfs-nc'));
 
+drop policy if exists "borrar archivos epi" on storage.objects;
 create policy "borrar archivos epi" on storage.objects
   for delete using (bucket_id in ('adjuntos-preventivo', 'pdfs-nc'));

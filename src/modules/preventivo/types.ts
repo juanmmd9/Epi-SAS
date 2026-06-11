@@ -1,11 +1,18 @@
 export interface PreventivoDatos {
   equipo?: string;
   adjuntoNombre?: string;
+  personalIds?: string[];
+  personalNombres?: string[];
+  /** @deprecated usar personalIds */
+  personalId?: string;
+  /** @deprecated usar personalNombres */
+  personalNombre?: string;
 }
 
 export interface RegistroPreventivo {
   id: string;
   hoja_id: string | null;
+  personal_id: string | null;
   area: string;
   fecha: string;
   descripcion: string | null;
@@ -16,6 +23,7 @@ export interface RegistroPreventivo {
 
 export interface PreventivoInput {
   hoja_id: string;
+  personal_id?: string | null;
   area: string;
   fecha: string;
   descripcion: string;

@@ -1,4 +1,5 @@
 import { supabase } from "../../services/supabase";
+import { normalizarArea } from "../../lib/areas";
 import { aFechaIso } from "../../lib/fechas";
 import { generarPdfGcRe009, nombreArchivoPdf } from "../formatos/gcre009Pdf";
 import {
@@ -78,7 +79,7 @@ function mapearHoja(registro: HojaVanilla, fotoUrl: string | null) {
   return {
     codigo: registro.codigo?.trim() || null,
     nombre: registro.nombre?.trim() || "Sin nombre",
-    area: registro.area || "Sin area",
+    area: normalizarArea(registro.area) || registro.area || "Sin area",
     frecuencia_pm_meses:
       Number.parseInt(String(registro.frecuenciaPreventivoMeses), 10) > 0
         ? Number.parseInt(String(registro.frecuenciaPreventivoMeses), 10)

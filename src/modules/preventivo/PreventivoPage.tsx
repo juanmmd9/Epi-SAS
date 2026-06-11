@@ -1,8 +1,19 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { AREAS_CON_PM } from "../../lib/areas";
+import { AREAS_CON_PM, areaTienePreventivo } from "../../lib/areas";
 import { listarHojas } from "../hojas/hojasService";
+import { filtrarHojasParaPreventivo, filtrarHojasPorArea, hojaEstaActiva } from "../hojas/hojasFiltro";
 import type { HojaVida } from "../hojas/types";
+import AvisoSetupPersonal from "../../components/setup/AvisoSetupPersonal";
+import { listarPersonalActivo, existeTablaPersonal } from "../personal/personalService";
+import { faltaTablaPersonal as esErrorTablaPersonal } from "../personal/personalSetup";
+import SelectorPersonal from "../personal/SelectorPersonal";
+import {
+  construirDatosPersonal,
+  idsDesdeRegistroPreventivo,
+  nombresPersonalEnRegistro,
+} from "../personal/personalVinculo";
+import type { Persona } from "../personal/types";
 import {
   actualizarPreventivo,
   crearPreventivo,
@@ -15,7 +26,12 @@ import {
 import type { RegistroPreventivo } from "./types";
 import "./preventivo.css";
 
-const formularioVacio = { area: "", maquinaId: "", fecha: "", descripcion: "" };
+const formularioVacio = {
+  area: "",
+  maquinaId: "",
+  fecha: "",
+  descripcion: "",
+};
 
 interface EstadoNavegacion {
   registrarPm?: { maquinaId: string; area: string; fecha: string };
@@ -25,16 +41,21 @@ function PreventivoPage() {
   const ubicacion = useLocation();
   const [registros, setRegistros] = useState<RegistroPreventivo[]>([]);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
+  const [personal, setPersonal] = useState<Persona[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [campos, setCampos] = useState(formularioVacio);
+  const [personalIds, setPersonalIds] = useState<string[]>([]);
   const [adjunto, setAdjunto] = useState<File | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [filtroArea, setFiltroArea] = useState("");
+  const [faltaTablaPersonal, setFaltaTablaPersonal] = useState(false);
 
   useEffect(() => {
+    setCargando(true);
+    setError(null);
     Promise.all([listarPreventivo(), listarHojas()])
       .then(([regs, hojas]) => {
         setRegistros(regs);
@@ -42,6 +63,20 @@ function PreventivoPage() {
       })
       .catch((e: Error) => setError("No se pudieron cargar los datos: " + e.message))
       .finally(() => setCargando(false));
+
+    listarPersonalActivo()
+      .then((tecnicos) => {
+        setPersonal(tecnicos);
+        setFaltaTablaPersonal(false);
+      })
+      .catch((e: Error) => {
+        setPersonal([]);
+        if (esErrorTablaPersonal(e.message)) setFaltaTablaPersonal(true);
+      });
+
+    existeTablaPersonal()
+      .then((ok) => setFaltaTablaPersonal(!ok))
+      .catch(() => setFaltaTablaPersonal(true));
   }, []);
 
   // Precarga del formulario al llegar desde el panel de inicio (clic en una cita)
@@ -51,14 +86,22 @@ function PreventivoPage() {
     const { maquinaId, area, fecha } = estado.registrarPm;
     setEditandoId(null);
     setCampos({ area, maquinaId, fecha, descripcion: "" });
+    setPersonalIds([]);
     setMensaje("Datos cargados desde el panel de inicio. Completa la actividad y el soporte.");
     window.history.replaceState({}, "");
   }, [ubicacion.state]);
 
   const maquinasDelArea = useMemo(
-    () => maquinas.filter((m) => m.area === campos.area && m.activa),
-    [maquinas, campos.area],
+    () => filtrarHojasParaPreventivo(maquinas, campos.area, campos.maquinaId),
+    [maquinas, campos.area, campos.maquinaId],
   );
+
+  const maquinasInactivasEnArea = useMemo(() => {
+    if (!campos.area) return 0;
+    return filtrarHojasPorArea(maquinas, campos.area).filter(
+      (m) => areaTienePreventivo(m.area) && !hojaEstaActiva(m),
+    ).length;
+  }, [maquinas, campos.area]);
 
   const registrosFiltrados = useMemo(
     () => (filtroArea ? registros.filter((r) => r.area === filtroArea) : registros),
@@ -71,6 +114,11 @@ function PreventivoPage() {
     return registro.datos.equipo ?? "Máquina eliminada";
   }
 
+  function nombresTecnicos(registro: RegistroPreventivo): string {
+    const ids = idsDesdeRegistroPreventivo(registro);
+    return nombresPersonalEnRegistro(ids, personal, registro.datos.personalNombres);
+  }
+
   function iniciarEdicion(registro: RegistroPreventivo) {
     setEditandoId(registro.id);
     setCampos({
@@ -79,6 +127,7 @@ function PreventivoPage() {
       fecha: registro.fecha,
       descripcion: registro.descripcion ?? "",
     });
+    setPersonalIds(idsDesdeRegistroPreventivo(registro));
     setAdjunto(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -86,6 +135,7 @@ function PreventivoPage() {
   function cancelarEdicion() {
     setEditandoId(null);
     setCampos(formularioVacio);
+    setPersonalIds([]);
     setAdjunto(null);
   }
 
@@ -114,15 +164,29 @@ function PreventivoPage() {
       }
     }
 
+    if (personal.length > 0 && personalIds.length === 0) {
+      setError("Selecciona al menos un técnico que realizó la actividad.");
+      return;
+    }
+
+    const idsValidos = personalIds.filter((id) => personal.some((p) => p.id === id));
+    if (personalIds.length > 0 && idsValidos.length === 0) {
+      setError("Los técnicos seleccionados no son válidos.");
+      return;
+    }
+
     setGuardando(true);
     try {
+      const datosPersonal = construirDatosPersonal(idsValidos, personal);
       const input = {
         hoja_id: maquina.id,
+        ...(datosPersonal.personalId ? { personal_id: datosPersonal.personalId } : {}),
         area: maquina.area,
         fecha: campos.fecha,
         descripcion: campos.descripcion.trim(),
         datos: {
           equipo: maquina.nombre,
+          ...datosPersonal,
           ...(adjunto ? { adjuntoNombre: adjunto.name } : {}),
         },
       };
@@ -167,7 +231,13 @@ function PreventivoPage() {
       <p className="preventivo__descripcion">
         Registro de actividades preventivas con soporte adjunto.{" "}
         <Link to="/preventivo/cronograma">Ver cronograma anual</Link>
+        {" · "}
+        <Link to="/personal">Gestionar personal</Link>
       </p>
+
+      {faltaTablaPersonal && (
+        <AvisoSetupPersonal titulo="Para asignar técnicos, crea primero la tabla personal en Supabase" />
+      )}
 
       <form className="preventivo-form" onSubmit={manejarEnvio}>
         <h2>{editandoId ? "Editar registro" : "Registrar actividad"}</h2>
@@ -207,10 +277,32 @@ function PreventivoPage() {
               {maquinasDelArea.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.nombre} ({m.codigo ?? "sin código"})
+                  {!hojaEstaActiva(m) ? " — inactiva" : ""}
                 </option>
               ))}
             </select>
+            {campos.area && maquinasDelArea.length === 0 && (
+              <span className="preventivo-form__ayuda">
+                {maquinas.length === 0
+                  ? "No hay máquinas en hojas de vida. Regístralas primero."
+                  : maquinasInactivasEnArea > 0
+                    ? `Hay ${maquinasInactivasEnArea} máquina(s) inactiva(s) en esta área. Reactívalas en Hojas de vida.`
+                    : `No hay máquinas activas en ${campos.area}. Revisa el área asignada en Hojas de vida.`}
+              </span>
+            )}
           </label>
+
+          <SelectorPersonal
+            personal={personal}
+            seleccionados={personalIds}
+            onChange={setPersonalIds}
+            disabled={faltaTablaPersonal}
+            leyenda={
+              personal.length > 0
+                ? "Realizado por * (puedes marcar 2 o más técnicos)"
+                : "Realizado por (opcional — registra personal primero)"
+            }
+          />
 
           <label>
             Fecha *
@@ -282,6 +374,7 @@ function PreventivoPage() {
                 <th>Fecha</th>
                 <th>Área</th>
                 <th>Máquina</th>
+                <th>Técnicos</th>
                 <th>Actividad</th>
                 <th>Soporte</th>
                 <th>Acciones</th>
@@ -293,6 +386,7 @@ function PreventivoPage() {
                   <td>{registro.fecha}</td>
                   <td>{registro.area}</td>
                   <td>{nombreMaquina(registro)}</td>
+                  <td>{nombresTecnicos(registro)}</td>
                   <td>{registro.descripcion}</td>
                   <td>
                     {registro.adjunto_url ? (

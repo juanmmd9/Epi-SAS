@@ -33,11 +33,18 @@ export async function crearPreventivo(
   input: PreventivoInput,
   adjuntoUrl: string,
 ): Promise<RegistroPreventivo> {
-  const { data, error } = await supabase
-    .from(TABLA)
-    .insert({ ...input, adjunto_url: adjuntoUrl })
-    .select()
-    .single();
+  const { personal_id, ...resto } = input;
+  const payload: Record<string, unknown> = { ...resto, adjunto_url: adjuntoUrl };
+  if (personal_id) payload.personal_id = personal_id;
+
+  let { data, error } = await supabase.from(TABLA).insert(payload).select().single();
+  if (error && personal_id && /personal_id|personal/i.test(error.message)) {
+    ({ data, error } = await supabase
+      .from(TABLA)
+      .insert({ ...resto, adjunto_url: adjuntoUrl })
+      .select()
+      .single());
+  }
   if (error) throw new Error(error.message);
   return data as RegistroPreventivo;
 }

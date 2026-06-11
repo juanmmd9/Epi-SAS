@@ -2,7 +2,7 @@
 // Calcula las fechas de PM de cada maquina a partir de su primer PM y
 // frecuencia en meses, aplicando excepciones (dias excluidos o agregados).
 
-import { areaTienePreventivo } from "../../lib/areas";
+import { areaTienePreventivo, coincideArea } from "../../lib/areas";
 import {
   ajustarDiaPorMes,
   parseFechaIso,
@@ -115,7 +115,7 @@ export function mapaCitasDelAnio(
     }
   }
 
-  const maquinasArea = maquinas.filter((m) => m.area === area);
+  const maquinasArea = maquinas.filter((m) => coincideArea(m.area, area));
 
   for (const maquina of maquinasArea) {
     for (const ocurrencia of ocurrenciasEnAnio(maquina, anioVista)) {

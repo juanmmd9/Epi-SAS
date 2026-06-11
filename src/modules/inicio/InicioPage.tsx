@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AREAS_CON_PM } from "../../lib/areas";
+import { AREAS_CON_PM, coincideArea } from "../../lib/areas";
 import { aFechaIso, NOMBRES_MESES, valorFecha } from "../../lib/fechas";
 import { mapaCitasDelAnio } from "../cronograma/cronogramaCalculo";
 import { listarExcepciones } from "../cronograma/cronogramaService";
@@ -40,7 +40,7 @@ function construirDatosArea(
   excepciones: ExcepcionCronograma[],
   preventivo: RegistroPreventivo[],
 ): DatosArea {
-  const maquinasArea = maquinas.filter((m) => m.area === area);
+  const maquinasArea = maquinas.filter((m) => coincideArea(m.area, area));
   const mapa = mapaCitasDelAnio(maquinas, excepciones, area, anio);
 
   // Indice de PM completados: por fecha exacta y por maquina+mes
