@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AREAS_SISTEMA } from "../../lib/areas";
 import HojaForm from "./HojaForm";
 import {
@@ -13,12 +14,14 @@ import type { HojaVida, HojaVidaInput } from "./types";
 import "./hojas.css";
 
 function HojasPage() {
+  const navigate = useNavigate();
   const [hojas, setHojas] = useState<HojaVida[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filtroArea, setFiltroArea] = useState("");
+  const [maquinaSeleccionada, setMaquinaSeleccionada] = useState("");
   const [hojaEnEdicion, setHojaEnEdicion] = useState<HojaVida | null>(null);
 
   useEffect(() => {
@@ -32,6 +35,27 @@ function HojasPage() {
     () => (filtroArea ? hojas.filter((h) => h.area === filtroArea) : hojas),
     [hojas, filtroArea],
   );
+
+  const hojasParaSelector = useMemo(
+    () =>
+      [...hojasFiltradas].sort((a, b) =>
+        `${a.area} ${a.nombre}`.localeCompare(`${b.area} ${b.nombre}`, "es"),
+      ),
+    [hojasFiltradas],
+  );
+
+  useEffect(() => {
+    if (!maquinaSeleccionada) return;
+    if (!hojasParaSelector.some((h) => h.id === maquinaSeleccionada)) {
+      setMaquinaSeleccionada("");
+    }
+  }, [hojasParaSelector, maquinaSeleccionada]);
+
+  function abrirHojaDeVida(id?: string) {
+    const destino = id || maquinaSeleccionada;
+    if (!destino) return;
+    navigate(`/hojas-de-vida/${destino}`);
+  }
 
   async function manejarGuardar(input: HojaVidaInput, foto: File | null) {
     setGuardando(true);
@@ -120,16 +144,49 @@ function HojasPage() {
       {mensaje && <p className="hojas__mensaje hojas__mensaje--ok">{mensaje}</p>}
       {error && <p className="hojas__mensaje hojas__mensaje--error">{error}</p>}
 
+      <section className="hojas__consulta">
+        <h2>Consultar hoja de vida</h2>
+        <p>Selecciona una máquina para ver sus datos completos y el historial de mantenimientos.</p>
+        <div className="hojas__consulta-fila">
+          <label>
+            Área
+            <select value={filtroArea} onChange={(e) => setFiltroArea(e.target.value)}>
+              <option value="">Todas las áreas</option>
+              {AREAS_SISTEMA.map((area) => (
+                <option key={area} value={area}>
+                  {area}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="hojas__consulta-maquina">
+            Máquina
+            <select
+              value={maquinaSeleccionada}
+              onChange={(e) => setMaquinaSeleccionada(e.target.value)}
+            >
+              <option value="">Selecciona una máquina</option>
+              {hojasParaSelector.map((hoja) => (
+                <option key={hoja.id} value={hoja.id}>
+                  {hoja.codigo ? `${hoja.codigo} — ` : ""}
+                  {hoja.nombre} ({hoja.area})
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="btn btn--primario"
+            disabled={!maquinaSeleccionada}
+            onClick={() => abrirHojaDeVida()}
+          >
+            Ver hoja de vida
+          </button>
+        </div>
+      </section>
+
       <div className="hojas__filtros">
         <h2>Máquinas registradas ({hojasFiltradas.length})</h2>
-        <select value={filtroArea} onChange={(e) => setFiltroArea(e.target.value)}>
-          <option value="">Todas las áreas</option>
-          {AREAS_SISTEMA.map((area) => (
-            <option key={area} value={area}>
-              {area}
-            </option>
-          ))}
-        </select>
       </div>
 
       {cargando && <p>Cargando máquinas...</p>}
@@ -172,6 +229,13 @@ function HojasPage() {
               )}
             </div>
             <div className="tarjeta-maquina__acciones">
+              <button
+                type="button"
+                className="btn btn--primario"
+                onClick={() => abrirHojaDeVida(hoja.id)}
+              >
+                Ver hoja de vida
+              </button>
               <button className="btn" onClick={() => setHojaEnEdicion(hoja)}>
                 Editar
               </button>

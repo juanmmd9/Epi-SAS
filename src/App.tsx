@@ -5,6 +5,7 @@ import PreventivoPage from "./modules/preventivo/PreventivoPage";
 import CronogramaPage from "./modules/cronograma/CronogramaPage";
 import CorrectivoPage from "./modules/correctivo/CorrectivoPage";
 import HojasPage from "./modules/hojas/HojasPage";
+import HojaDetallePage from "./modules/hojas/HojaDetallePage";
 import IndicadoresPage from "./modules/indicadores/IndicadoresPage";
 import FormatosPage from "./modules/formatos/FormatosPage";
 import Gcre009Page from "./modules/formatos/Gcre009Page";
@@ -19,6 +20,7 @@ function App() {
         <Route path="preventivo/cronograma" element={<CronogramaPage />} />
         <Route path="correctivo" element={<CorrectivoPage />} />
         <Route path="hojas-de-vida" element={<HojasPage />} />
+        <Route path="hojas-de-vida/:id" element={<HojaDetallePage />} />
         <Route path="indicadores" element={<IndicadoresPage />} />
         <Route path="formatos" element={<FormatosPage />} />
         <Route path="formatos/gc-re-009" element={<Gcre009Page />} />

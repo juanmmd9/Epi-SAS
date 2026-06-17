@@ -1,5 +1,7 @@
 import { supabase } from "../../services/supabase";
 import { normalizarArea } from "../../lib/areas";
+import type { RegistroCorrectivo } from "../correctivo/types";
+import type { RegistroPreventivo } from "../preventivo/types";
 import type { HojaVida, HojaVidaDatos, HojaVidaInput } from "./types";
 import { normalizarHojaDesdeDb } from "./hojasFiltro";
 
@@ -21,6 +23,51 @@ export async function listarHojas(): Promise<HojaVida[]> {
     .order("creado_en", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []).map((item) => normalizarHojaDesdeDb(item as HojaVida));
+}
+
+export async function obtenerHojaPorId(id: string): Promise<HojaVida | null> {
+  const { data, error } = await supabase.from(TABLA).select("*").eq("id", id).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? normalizarHojaDesdeDb(data as HojaVida) : null;
+}
+
+export interface HistorialMaquina {
+  preventivos: RegistroPreventivo[];
+  correctivos: RegistroCorrectivo[];
+}
+
+function coincideCorrectivoConHoja(hoja: HojaVida, registro: RegistroCorrectivo): boolean {
+  const datos = registro.datos;
+  if (datos.maquinaId === hoja.id) return true;
+  const codigoHoja = (hoja.codigo || "").trim().toLowerCase();
+  const codigoRegistro = (datos.codigoMaquina || "").trim().toLowerCase();
+  if (codigoHoja && codigoRegistro === codigoHoja) return true;
+  const nombreHoja = hoja.nombre.trim().toLowerCase();
+  const nombreRegistro = (datos.maquinaEquipoLocacion || "").trim().toLowerCase();
+  return Boolean(nombreHoja && nombreRegistro === nombreHoja);
+}
+
+export async function obtenerHistorialMaquina(hoja: HojaVida): Promise<HistorialMaquina> {
+  const [preventivoRes, correctivoRes] = await Promise.all([
+    supabase
+      .from("preventivo")
+      .select("*")
+      .eq("hoja_id", hoja.id)
+      .order("fecha", { ascending: false }),
+    supabase.from("correctivo").select("*").order("fecha", { ascending: false }),
+  ]);
+
+  if (preventivoRes.error) throw new Error(preventivoRes.error.message);
+  if (correctivoRes.error) throw new Error(correctivoRes.error.message);
+
+  const correctivos = ((correctivoRes.data ?? []) as RegistroCorrectivo[]).filter((registro) =>
+    coincideCorrectivoConHoja(hoja, registro),
+  );
+
+  return {
+    preventivos: (preventivoRes.data ?? []) as RegistroPreventivo[],
+    correctivos,
+  };
 }
 
 export async function subirFotoMaquina(archivo: File): Promise<string> {
