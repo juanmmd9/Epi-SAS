@@ -5,6 +5,7 @@ create table if not exists public.personal (
   nombre text not null,
   cargo text,
   area text,
+  cedula text,
   activo boolean not null default true,
   creado_en timestamptz not null default now()
 );

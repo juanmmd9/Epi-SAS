@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { areaTienePreventivo } from "../../lib/areas";
+import type { PrefillMtre045DesdePreventivo } from "../formatos/mtre045Types";
+import {
+  idsDesdeRegistroPreventivo,
+  nombresPersonalEnRegistro,
+} from "../personal/personalVinculo";
+import { listarPersonalActivo } from "../personal/personalService";
+import type { Persona } from "../personal/types";
 import { obtenerHistorialMaquina, obtenerHojaPorId } from "./hojasService";
 import type { HistorialMaquina } from "./hojasService";
 import type { HojaVida } from "./types";
@@ -11,8 +18,13 @@ function HojaDetallePage() {
   const navigate = useNavigate();
   const [hoja, setHoja] = useState<HojaVida | null>(null);
   const [historial, setHistorial] = useState<HistorialMaquina | null>(null);
+  const [personal, setPersonal] = useState<Persona[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    listarPersonalActivo().then(setPersonal).catch(() => setPersonal([]));
+  }, []);
 
   useEffect(() => {
     if (!id) {
@@ -63,6 +75,27 @@ function HojaDetallePage() {
 
   const totalMantenimientos =
     (historial?.preventivos.length ?? 0) + (historial?.correctivos.length ?? 0);
+
+  async function abrirMtre045(registro: HistorialMaquina["preventivos"][number]) {
+    if (!hoja) return;
+    const prefill: PrefillMtre045DesdePreventivo = {
+      preventivoId: registro.id,
+      numeroReporte: registro.id.slice(0, 8).toUpperCase(),
+      fecha: registro.fecha,
+      equipo: hoja.nombre,
+      marca: hoja.datos.marca ?? "",
+      serie: hoja.datos.serial ?? hoja.codigo ?? "",
+      area: registro.area,
+      actividadRealizada: registro.descripcion ?? "",
+      responsableMantenimiento: nombresPersonalEnRegistro(
+        idsDesdeRegistroPreventivo(registro),
+        personal,
+        registro.datos.personalNombres,
+      ),
+      mtre045: registro.datos.mtre045,
+    };
+    navigate("/formatos/mt-re-045", { state: { mtre045: prefill } });
+  }
 
   return (
     <section className="hojas hoja-detalle">
@@ -172,7 +205,7 @@ function HojaDetallePage() {
                       <th>Fecha</th>
                       <th>Descripción</th>
                       <th>Personal</th>
-                      <th>Adjunto</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -186,13 +219,13 @@ function HojaDetallePage() {
                             "—"}
                         </td>
                         <td>
-                          {registro.adjunto_url ? (
-                            <a href={registro.adjunto_url} target="_blank" rel="noreferrer">
-                              {registro.datos.adjuntoNombre || "Ver archivo"}
-                            </a>
-                          ) : (
-                            "—"
-                          )}
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => void abrirMtre045(registro)}
+                          >
+                            MT-RE-045
+                          </button>
                         </td>
                       </tr>
                     ))}

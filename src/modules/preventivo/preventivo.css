@@ -3,6 +3,17 @@
   margin-top: 0;
 }
 
+.preventivo__soporte-fisico {
+  font-size: 0.8rem;
+  color: var(--color-texto-suave);
+  word-break: break-word;
+}
+
+.preventivo__soporte-legacy {
+  font-size: 0.8rem;
+  color: #b45309;
+}
+
 .preventivo-form {
   background: var(--color-superficie);
   border: 1px solid var(--color-borde);

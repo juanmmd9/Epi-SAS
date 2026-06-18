@@ -8,6 +8,8 @@ const enlaces = [
   { ruta: "/indicadores", texto: "Indicadores" },
   { ruta: "/formatos", texto: "Formatos" },
   { ruta: "/personal", texto: "Personal" },
+  { ruta: "/personal/permisos", texto: "Permisos" },
+  { ruta: "/personal/matriz", texto: "Matriz conocimientos" },
 ];
 
 function Sidebar() {

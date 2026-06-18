@@ -3,6 +3,7 @@ export interface Persona {
   nombre: string;
   cargo: string | null;
   area: string | null;
+  cedula: string | null;
   activo: boolean;
   creado_en: string;
 }
@@ -11,6 +12,7 @@ export interface PersonaInput {
   nombre: string;
   cargo: string | null;
   area: string | null;
+  cedula: string | null;
 }
 
 export interface EstadisticasPersona {

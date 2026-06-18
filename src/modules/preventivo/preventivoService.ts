@@ -2,15 +2,6 @@ import { supabase } from "../../services/supabase";
 import type { PreventivoInput, RegistroPreventivo } from "./types";
 
 const TABLA = "preventivo";
-const BUCKET = "adjuntos-preventivo";
-
-export const EXTENSIONES_ADJUNTO = [".pdf", ".doc", ".docx"];
-export const MAX_ADJUNTO_BYTES = 5 * 1024 * 1024;
-
-export function esAdjuntoValido(archivo: File): boolean {
-  const nombre = archivo.name.toLowerCase();
-  return EXTENSIONES_ADJUNTO.some((ext) => nombre.endsWith(ext));
-}
 
 export async function listarPreventivo(): Promise<RegistroPreventivo[]> {
   const { data, error } = await supabase
@@ -21,27 +12,16 @@ export async function listarPreventivo(): Promise<RegistroPreventivo[]> {
   return (data ?? []) as RegistroPreventivo[];
 }
 
-export async function subirAdjunto(archivo: File): Promise<string> {
-  const extension = archivo.name.split(".").pop() || "pdf";
-  const ruta = `adjuntos/${crypto.randomUUID()}.${extension}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(ruta, archivo);
-  if (error) throw new Error(error.message);
-  return supabase.storage.from(BUCKET).getPublicUrl(ruta).data.publicUrl;
-}
-
-export async function crearPreventivo(
-  input: PreventivoInput,
-  adjuntoUrl: string,
-): Promise<RegistroPreventivo> {
+export async function crearPreventivo(input: PreventivoInput): Promise<RegistroPreventivo> {
   const { personal_id, ...resto } = input;
-  const payload: Record<string, unknown> = { ...resto, adjunto_url: adjuntoUrl };
+  const payload: Record<string, unknown> = { ...resto, adjunto_url: null };
   if (personal_id) payload.personal_id = personal_id;
 
   let { data, error } = await supabase.from(TABLA).insert(payload).select().single();
   if (error && personal_id && /personal_id|personal/i.test(error.message)) {
     ({ data, error } = await supabase
       .from(TABLA)
-      .insert({ ...resto, adjunto_url: adjuntoUrl })
+      .insert({ ...resto, adjunto_url: null })
       .select()
       .single());
   }
@@ -51,7 +31,7 @@ export async function crearPreventivo(
 
 export async function actualizarPreventivo(
   id: string,
-  cambios: Partial<PreventivoInput> & { adjunto_url?: string },
+  cambios: Partial<PreventivoInput>,
 ): Promise<RegistroPreventivo> {
   const { data, error } = await supabase
     .from(TABLA)

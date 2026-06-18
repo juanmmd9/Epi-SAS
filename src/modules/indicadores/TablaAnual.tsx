@@ -13,6 +13,7 @@ import {
   estadoMetaPreventivo,
   estadoMetaTiempoRespuesta,
   formatearNumero,
+  formatearNumeroMax,
   porcentajeHorasPerdidasArea,
   promedioRespuestaArea,
   promedioValoresMensuales,
@@ -57,6 +58,13 @@ function claseDeEstado(estado: EstadoMeta): string {
   if (estado === "alerta") return "celda-meta-alerta";
   if (estado === "fail") return "celda-meta-fail";
   return "";
+}
+
+function formatearPromedioAnual(valor: number, fila: FilaIndicador): string {
+  if (fila.indicador.includes("CUMPLIMIENTO") || fila.indicador.includes("HORAS PERDIDAS")) {
+    return `${formatearNumeroMax(valor, 3)}%`;
+  }
+  return formatearNumeroMax(valor, 3);
 }
 
 function TablaAnual({
@@ -204,7 +212,7 @@ function TablaAnual({
                       );
                     })}
                     <td className={"tabla-anual__promedio " + claseDeEstado(estadoPromedio)}>
-                      <strong>{promedio === null ? "—" : fila.formatear(promedio)}</strong>
+                      <strong>{promedio === null ? "—" : formatearPromedioAnual(promedio, fila)}</strong>
                     </td>
                   </tr>
                 </Fragment>

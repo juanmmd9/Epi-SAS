@@ -1,6 +1,13 @@
+import type { Mtre045Datos } from "../formatos/mtre045Types";
+
 export interface PreventivoDatos {
   equipo?: string;
+  /** @deprecated ya no se suben archivos a la nube */
   adjuntoNombre?: string;
+  /** Ruta o ubicación del soporte impreso en carpeta física */
+  soporteFisico?: string;
+  /** Reporte MT-RE-045 vinculado */
+  mtre045?: Mtre045Datos;
   personalIds?: string[];
   personalNombres?: string[];
   /** @deprecated usar personalIds */

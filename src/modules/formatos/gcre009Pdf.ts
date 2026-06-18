@@ -268,12 +268,5 @@ export function urlVistaPreviaPdf(pdfBytes: Uint8Array): string {
 }
 
 export async function obtenerPdfRegistro(registro: RegistroNc): Promise<Uint8Array> {
-  try {
-    return await generarPdfGcRe009(registro.datos, registro.numero);
-  } catch (error) {
-    if (!registro.pdf_url) throw error;
-    const respuesta = await fetch(registro.pdf_url);
-    if (!respuesta.ok) throw error;
-    return new Uint8Array(await respuesta.arrayBuffer());
-  }
+  return generarPdfGcRe009(registro.datos, registro.numero);
 }

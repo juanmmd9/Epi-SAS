@@ -207,6 +207,17 @@ export function formatearNumero(valor: number | null | undefined, decimales = 2)
   return Number(valor).toFixed(decimales);
 }
 
+/** Formatea con hasta N decimales, sin ceros finales innecesarios. */
+export function formatearNumeroMax(
+  valor: number | null | undefined,
+  maxDecimales = 3,
+): string {
+  if (valor === null || valor === undefined || Number.isNaN(valor)) return "—";
+  const factor = 10 ** maxDecimales;
+  const redondeado = Math.round(valor * factor) / factor;
+  return redondeado.toFixed(maxDecimales).replace(/\.?0+$/, "") || "0";
+}
+
 // ----- Tabla anual de indicadores y metas -----
 
 /** Areas con indicadores correctivos en la tabla anual (igual que vanilla). */
@@ -299,7 +310,8 @@ export function porcentajeHorasPerdidasArea(
 export function promedioValoresMensuales(valores: (number | null)[]): number | null {
   const validos = valores.filter((v): v is number => v !== null && !Number.isNaN(v));
   if (validos.length === 0) return null;
-  return validos.reduce((suma, v) => suma + v, 0) / validos.length;
+  const promedio = validos.reduce((suma, v) => suma + v, 0) / validos.length;
+  return Math.round(promedio * 1000) / 1000;
 }
 
 export interface MetaIncumplida {

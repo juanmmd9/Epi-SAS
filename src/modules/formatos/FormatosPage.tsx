@@ -23,9 +23,28 @@ function FormatosPage() {
 
       <article className="formato-card">
         <h2>GC-RE-009</h2>
-        <p>Reporte de no conformidades y acciones correctivas con generación de PDF sobre la plantilla oficial.</p>
+        <p>Reporte de no conformidades y acciones correctivas. Los datos se guardan en el sistema; el formato impreso se archiva en carpeta física.</p>
         <Link to="/formatos/gc-re-009" className="btn btn--primario">
           Abrir formato GC-RE-009
+        </Link>
+      </article>
+
+      <article className="formato-card">
+        <h2>MT-RE-045</h2>
+        <p>
+          Reporte de mantenimiento preventivo laboratorio. Vista previa del PDF e
+          impresión directa desde el navegador.
+        </p>
+        <Link to="/formatos/mt-re-045" className="btn btn--primario">
+          Abrir formato MT-RE-045
+        </Link>
+      </article>
+
+      <article className="formato-card">
+        <h2>GH-RE-030</h2>
+        <p>Solicitud de permiso del personal: salidas, llegadas y tiempo concedido. Imprimir y archivar en carpeta física.</p>
+        <Link to="/formatos/gh-re-030" className="btn btn--primario">
+          Abrir formato GH-RE-030
         </Link>
       </article>
 

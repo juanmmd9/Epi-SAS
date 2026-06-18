@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { NOMBRES_MESES } from "../../lib/fechas";
 import { AREAS_SISTEMA } from "../../lib/areas";
 import AvisoSetupPersonal from "../../components/setup/AvisoSetupPersonal";
@@ -24,7 +25,7 @@ import { faltaTablaPersonal as esErrorTablaPersonal } from "./personalSetup";
 import type { Persona } from "./types";
 import "./personal.css";
 
-const formularioVacio = { nombre: "", cargo: "", area: "" };
+const formularioVacio = { nombre: "", cargo: "", area: "", cedula: "" };
 
 function PersonalPage() {
   const [personas, setPersonas] = useState<Persona[]>([]);
@@ -106,6 +107,7 @@ function PersonalPage() {
       nombre: persona.nombre,
       cargo: persona.cargo ?? "",
       area: persona.area ?? "",
+      cedula: persona.cedula ?? "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -125,6 +127,7 @@ function PersonalPage() {
       nombre,
       cargo: campos.cargo.trim() || null,
       area: campos.area || null,
+      cedula: campos.cedula.trim() || null,
     };
 
     setGuardando(true);
@@ -184,11 +187,26 @@ function PersonalPage() {
 
   return (
     <section className="personal">
-      <h1>Personal de mantenimiento</h1>
-      <p className="personal__descripcion">
-        Registra técnicos y revisa cuántas máquinas y actividades ha atendido cada
-        persona en preventivo y correctivo.
-      </p>
+      <header className="personal__encabezado">
+        <div>
+          <h1>Personal de mantenimiento</h1>
+          <p className="personal__descripcion">
+            Registra técnicos y revisa cuántas máquinas y actividades ha atendido cada
+            persona en preventivo y correctivo.
+          </p>
+        </div>
+        <div className="personal__enlaces-cabecera">
+          <Link className="btn" to="/personal/permisos">
+            Control de permisos
+          </Link>
+          <Link className="btn" to="/personal/horario">
+            Horario y festivos
+          </Link>
+          <Link className="btn btn--primario" to="/personal/matriz">
+            Matriz de conocimientos
+          </Link>
+        </div>
+      </header>
 
       {faltaTabla && <AvisoSetupPersonal />}
 
@@ -210,6 +228,14 @@ function PersonalPage() {
               value={campos.cargo}
               onChange={(e) => setCampos((c) => ({ ...c, cargo: e.target.value }))}
               placeholder="Ej. Técnico mecánico"
+            />
+          </label>
+          <label>
+            No. cédula
+            <input
+              value={campos.cedula}
+              onChange={(e) => setCampos((c) => ({ ...c, cedula: e.target.value }))}
+              placeholder="Ej. 1234567890"
             />
           </label>
           <label>
@@ -257,6 +283,7 @@ function PersonalPage() {
               <thead>
                 <tr>
                   <th>Nombre</th>
+                  <th>Cédula</th>
                   <th>Cargo</th>
                   <th>Área</th>
                   <th>Estado</th>
@@ -267,6 +294,7 @@ function PersonalPage() {
                 {personas.map((persona) => (
                   <tr key={persona.id} className={persona.activo ? "" : "inactiva"}>
                     <td>{persona.nombre}</td>
+                    <td>{persona.cedula ?? "—"}</td>
                     <td>{persona.cargo ?? "—"}</td>
                     <td>{persona.area ?? "—"}</td>
                     <td>
@@ -277,6 +305,19 @@ function PersonalPage() {
                       )}
                     </td>
                     <td className="personal__acciones">
+                      <Link
+                        className="btn"
+                        to="/formatos/gh-re-030"
+                        state={{
+                          permiso: {
+                            personalId: persona.id,
+                            nombre: persona.nombre,
+                            cedula: persona.cedula ?? "",
+                          },
+                        }}
+                      >
+                        Permiso
+                      </Link>
                       <button className="btn" onClick={() => iniciarEdicion(persona)}>
                         Editar
                       </button>

@@ -1,7 +1,6 @@
 import { supabase } from "../../services/supabase";
 import { normalizarArea } from "../../lib/areas";
 import { aFechaIso } from "../../lib/fechas";
-import { generarPdfGcRe009, nombreArchivoPdf } from "../formatos/gcre009Pdf";
 import {
   filaPlanVacia,
   filaSeguimientoVacia,
@@ -20,7 +19,6 @@ import type {
 } from "./types";
 
 const BUCKET_ADJUNTOS = "adjuntos-preventivo";
-const BUCKET_NC = "pdfs-nc";
 
 async function subirBytes(
   bucket: string,
@@ -263,33 +261,18 @@ async function importarPreventivo(
   let importadas = 0;
   for (const registro of lista) {
     const hojaId = registro.maquinaId ? mapaHojas.get(registro.maquinaId) ?? null : null;
-    let adjuntoUrl: string | null = null;
-    if (registro.archivo?.startsWith("data:")) {
-      try {
-        adjuntoUrl = await subirDesdeDataUrl(
-          registro.archivo,
-          BUCKET_ADJUNTOS,
-          "adjuntos",
-          registro.archivoNombre || "preventivo",
-        );
-      } catch {
-        advertencias.push(`Adjunto preventivo ${registro.fecha}: no se pudo subir.`);
-      }
-    } else if (registro.archivoEnIdb) {
-      advertencias.push(
-        `Preventivo ${registro.fecha}: el adjunto estaba en IndexedDB y no viene en el JSON.`,
-      );
-    }
-
     const { error } = await supabase.from("preventivo").insert({
       hoja_id: hojaId,
       area: registro.area || "",
       fecha: registro.fecha || new Date().toISOString().slice(0, 10),
       descripcion: (registro.descripcion || registro.actividad || "").trim(),
-      adjunto_url: adjuntoUrl,
+      adjunto_url: null,
       datos: {
         equipo: registro.equipo || "",
         adjuntoNombre: registro.archivoNombre || "",
+        soporteFisico: registro.archivoNombre
+          ? `Respaldo local: ${registro.archivoNombre}`
+          : undefined,
       },
     });
     if (error) advertencias.push(`Preventivo ${registro.fecha}: ${error.message}`);
@@ -337,27 +320,12 @@ async function importarNoConformidades(
   let importadas = 0;
   for (const registro of lista) {
     const datos = mapearNc(registro);
-    const { data, error } = await supabase
-      .from("no_conformidades")
-      .insert({ datos })
-      .select()
-      .single();
+    const { error } = await supabase.from("no_conformidades").insert({ datos });
     if (error) {
       advertencias.push(`NC ${registro.numero ?? "?"}: ${error.message}`);
       continue;
     }
-    try {
-      const pdfBytes = await generarPdfGcRe009(datos, data.numero);
-      const ruta = `${data.id}/${nombreArchivoPdf(data.numero)}`;
-      const pdfUrl = await subirBytes(BUCKET_NC, ruta, pdfBytes, "application/pdf");
-      await supabase.from("no_conformidades").update({ pdf_url: pdfUrl }).eq("id", data.id);
-      importadas += 1;
-    } catch (e) {
-      advertencias.push(
-        `NC ${data.numero}: guardada pero sin PDF (${e instanceof Error ? e.message : "error"}).`,
-      );
-      importadas += 1;
-    }
+    importadas += 1;
   }
   return importadas;
 }

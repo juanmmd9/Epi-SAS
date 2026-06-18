@@ -1,3 +1,17 @@
+.personal__enlaces-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.personal__encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
 .personal__descripcion {
   color: var(--color-texto-suave);
   margin-top: 0;

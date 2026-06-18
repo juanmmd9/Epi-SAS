@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AREAS_CON_PM, areaTienePreventivo } from "../../lib/areas";
 import { listarHojas } from "../hojas/hojasService";
 import { filtrarHojasParaPreventivo, filtrarHojasPorArea, hojaEstaActiva } from "../hojas/hojasFiltro";
@@ -18,11 +18,9 @@ import {
   actualizarPreventivo,
   crearPreventivo,
   eliminarPreventivo,
-  esAdjuntoValido,
   listarPreventivo,
-  MAX_ADJUNTO_BYTES,
-  subirAdjunto,
 } from "./preventivoService";
+import type { PrefillMtre045DesdePreventivo } from "../formatos/mtre045Types";
 import type { RegistroPreventivo } from "./types";
 import "./preventivo.css";
 
@@ -39,6 +37,7 @@ interface EstadoNavegacion {
 
 function PreventivoPage() {
   const ubicacion = useLocation();
+  const navigate = useNavigate();
   const [registros, setRegistros] = useState<RegistroPreventivo[]>([]);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
   const [personal, setPersonal] = useState<Persona[]>([]);
@@ -48,7 +47,6 @@ function PreventivoPage() {
   const [error, setError] = useState<string | null>(null);
   const [campos, setCampos] = useState(formularioVacio);
   const [personalIds, setPersonalIds] = useState<string[]>([]);
-  const [adjunto, setAdjunto] = useState<File | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [filtroArea, setFiltroArea] = useState("");
   const [faltaTablaPersonal, setFaltaTablaPersonal] = useState(false);
@@ -87,7 +85,7 @@ function PreventivoPage() {
     setEditandoId(null);
     setCampos({ area, maquinaId, fecha, descripcion: "" });
     setPersonalIds([]);
-    setMensaje("Datos cargados desde el panel de inicio. Completa la actividad y el soporte.");
+    setMensaje("Datos cargados desde el panel de inicio. Completa la actividad y guarda.");
     window.history.replaceState({}, "");
   }, [ubicacion.state]);
 
@@ -128,7 +126,6 @@ function PreventivoPage() {
       descripcion: registro.descripcion ?? "",
     });
     setPersonalIds(idsDesdeRegistroPreventivo(registro));
-    setAdjunto(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -136,7 +133,35 @@ function PreventivoPage() {
     setEditandoId(null);
     setCampos(formularioVacio);
     setPersonalIds([]);
-    setAdjunto(null);
+  }
+
+  function construirPrefillMtre045(registro: RegistroPreventivo): PrefillMtre045DesdePreventivo {
+    const hoja = maquinas.find((m) => m.id === registro.hoja_id);
+    return {
+      preventivoId: registro.id,
+      numeroReporte: registro.id.slice(0, 8).toUpperCase(),
+      fecha: registro.fecha,
+      equipo: hoja?.nombre ?? registro.datos.equipo ?? "",
+      marca: hoja?.datos.marca ?? "",
+      serie: hoja?.datos.serial ?? hoja?.codigo ?? "",
+      area: registro.area,
+      actividadRealizada: registro.descripcion ?? "",
+      responsableMantenimiento: nombresTecnicos(registro),
+      mtre045: registro.datos.mtre045,
+    };
+  }
+
+  function abrirMtre045(registro: RegistroPreventivo) {
+    navigate("/formatos/mt-re-045", { state: { mtre045: construirPrefillMtre045(registro) } });
+  }
+
+  function abrirMtre045FormularioActual() {
+    if (!editandoId) {
+      setError("Guarda el registro primero para abrir el MT-RE-045 con el número vinculado.");
+      return;
+    }
+    const registro = registros.find((r) => r.id === editandoId);
+    if (registro) abrirMtre045(registro);
   }
 
   async function manejarEnvio(evento: FormEvent) {
@@ -148,20 +173,6 @@ function PreventivoPage() {
     if (!maquina) {
       setError("Selecciona una máquina válida registrada en hojas de vida.");
       return;
-    }
-    if (!editandoId && !adjunto) {
-      setError("Debes seleccionar un archivo PDF o Word.");
-      return;
-    }
-    if (adjunto) {
-      if (!esAdjuntoValido(adjunto)) {
-        setError("Solo se permiten archivos PDF, DOC o DOCX.");
-        return;
-      }
-      if (adjunto.size > MAX_ADJUNTO_BYTES) {
-        setError("El archivo debe pesar máximo 5 MB.");
-        return;
-      }
     }
 
     if (personal.length > 0 && personalIds.length === 0) {
@@ -187,24 +198,25 @@ function PreventivoPage() {
         datos: {
           equipo: maquina.nombre,
           ...datosPersonal,
-          ...(adjunto ? { adjuntoNombre: adjunto.name } : {}),
         },
       };
 
       if (editandoId) {
-        const cambios = adjunto
-          ? { ...input, adjunto_url: await subirAdjunto(adjunto) }
-          : input;
-        const actualizado = await actualizarPreventivo(editandoId, cambios);
+        const actualizado = await actualizarPreventivo(editandoId, input);
         setRegistros((previos) =>
           previos.map((r) => (r.id === actualizado.id ? actualizado : r)),
         );
-        setMensaje("Registro actualizado correctamente.");
+        setMensaje(
+          "Registro actualizado. Abra el formato MT-RE-045 para imprimir el reporte.",
+        );
       } else {
-        const url = await subirAdjunto(adjunto!);
-        const creado = await crearPreventivo(input, url);
+        const creado = await crearPreventivo(input);
         setRegistros((previos) => [creado, ...previos]);
-        setMensaje("Registro guardado correctamente.");
+        setEditandoId(creado.id);
+        setMensaje(
+          "Registro guardado. Abra el formato MT-RE-045 para imprimir el reporte.",
+        );
+        return;
       }
       cancelarEdicion();
     } catch (e) {
@@ -229,7 +241,8 @@ function PreventivoPage() {
     <section className="preventivo">
       <h1>Mantenimiento preventivo</h1>
       <p className="preventivo__descripcion">
-        Registro de actividades preventivas con soporte adjunto.{" "}
+        Registro de actividades preventivas. Los datos quedan en el sistema; use el formato{" "}
+        <strong>MT-RE-045</strong> para imprimir el reporte y archive el documento firmado.{" "}
         <Link to="/preventivo/cronograma">Ver cronograma anual</Link>
         {" · "}
         <Link to="/personal">Gestionar personal</Link>
@@ -314,15 +327,6 @@ function PreventivoPage() {
             />
           </label>
 
-          <label>
-            Soporte (PDF/Word{editandoId ? ", opcional al editar" : ""}) {editandoId ? "" : "*"}
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx"
-              onChange={(e) => setAdjunto(e.target.files?.[0] ?? null)}
-            />
-          </label>
-
           <label className="preventivo-form__descripcion">
             Actividad / descripción *
             <textarea
@@ -337,6 +341,14 @@ function PreventivoPage() {
         <div className="preventivo-form__acciones">
           <button type="submit" className="btn btn--primario" disabled={guardando}>
             {guardando ? "Guardando..." : editandoId ? "Guardar cambios" : "Registrar"}
+          </button>
+          <button
+            type="button"
+            className="btn"
+            disabled={guardando || !editandoId}
+            onClick={abrirMtre045FormularioActual}
+          >
+            MT-RE-045
           </button>
           {editandoId && (
             <button type="button" className="btn" onClick={cancelarEdicion}>
@@ -376,7 +388,6 @@ function PreventivoPage() {
                 <th>Máquina</th>
                 <th>Técnicos</th>
                 <th>Actividad</th>
-                <th>Soporte</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -388,16 +399,10 @@ function PreventivoPage() {
                   <td>{nombreMaquina(registro)}</td>
                   <td>{nombresTecnicos(registro)}</td>
                   <td>{registro.descripcion}</td>
-                  <td>
-                    {registro.adjunto_url ? (
-                      <a href={registro.adjunto_url} target="_blank" rel="noreferrer">
-                        {registro.datos.adjuntoNombre ?? "Ver soporte"}
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
                   <td className="preventivo__acciones">
+                    <button className="btn" onClick={() => abrirMtre045(registro)}>
+                      MT-RE-045
+                    </button>
                     <button className="btn" onClick={() => iniciarEdicion(registro)}>
                       Editar
                     </button>

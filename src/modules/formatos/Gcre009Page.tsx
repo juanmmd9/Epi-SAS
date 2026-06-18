@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AREAS_SISTEMA } from "../../lib/areas";
+import { imprimirPdf } from "../../lib/imprimirPdf";
 import {
-  abrirPdfEnNavegador,
-  descargarPdf,
+  generarPdfGcRe009,
   obtenerPdfRegistro,
   urlVistaPreviaPdf,
 } from "./gcre009Pdf";
@@ -104,7 +104,7 @@ function Gcre009Page() {
     });
   }
 
-  async function manejarGuardar(evento: FormEvent, mostrarPdf = true) {
+  async function manejarGuardar(evento: FormEvent) {
     evento.preventDefault();
     setError(null);
     setMensaje(null);
@@ -116,19 +116,16 @@ function Gcre009Page() {
 
     setGuardando(true);
     try {
-      const { registro, pdfBytes } = await guardarNoConformidad(datos, editandoId);
+      const registro = await guardarNoConformidad(datos, editandoId);
       setRegistros((previos) => {
         const sinActual = previos.filter((r) => r.id !== registro.id);
         return [registro, ...sinActual];
       });
-      setMensaje(`Registro No. ${registro.numero} guardado con PDF en la nube.`);
-      if (mostrarPdf) {
-        mostrarPreview(pdfBytes);
-        abrirPdfEnNavegador(pdfBytes);
-        limpiarFormulario();
-      } else {
-        nuevoRegistro();
-      }
+      setEditandoId(registro.id);
+      setNumeroActual(registro.numero);
+      setMensaje(
+        `Registro No. ${registro.numero} guardado. Use «Imprimir formato» y archive el papel en carpeta física.`,
+      );
     } catch (e) {
       setError("No fue posible guardar: " + (e as Error).message);
     } finally {
@@ -136,33 +133,42 @@ function Gcre009Page() {
     }
   }
 
-  async function verPdf(registro: RegistroNc) {
+  async function manejarImprimir() {
     setError(null);
-    setCargandoPdfId(registro.id);
+    if (!numeroActual) {
+      setError("Guarda el permiso primero para obtener el número oficial antes de imprimir.");
+      return;
+    }
+    setCargandoPdfId(editandoId ?? "formulario");
     try {
-      const pdfBytes = await obtenerPdfRegistro(registro);
+      const pdfBytes = await generarPdfGcRe009(datos, numeroActual);
       mostrarPreview(pdfBytes);
-      abrirPdfEnNavegador(pdfBytes);
+      imprimirPdf(pdfBytes);
     } catch (e) {
-      setError("No se pudo generar el PDF: " + (e as Error).message);
+      setError("No se pudo generar el formato para imprimir: " + (e as Error).message);
     } finally {
       setCargandoPdfId(null);
     }
   }
 
-  async function descargarRegistro(registro: RegistroNc) {
+  async function imprimirRegistro(registro: RegistroNc) {
+    setError(null);
+    setCargandoPdfId(registro.id);
     try {
       const pdfBytes = await obtenerPdfRegistro(registro);
-      descargarPdf(pdfBytes, registro.numero);
+      mostrarPreview(pdfBytes);
+      imprimirPdf(pdfBytes);
     } catch (e) {
-      setError("No se pudo descargar: " + (e as Error).message);
+      setError("No se pudo generar el formato para imprimir: " + (e as Error).message);
+    } finally {
+      setCargandoPdfId(null);
     }
   }
 
   async function eliminarRegistro(registro: RegistroNc) {
     if (!window.confirm(`¿Eliminar el registro GC-RE-009 No. ${registro.numero}?`)) return;
     try {
-      await eliminarNoConformidad(registro.id, registro.pdf_url);
+      await eliminarNoConformidad(registro.id);
       setRegistros((previos) => previos.filter((r) => r.id !== registro.id));
       if (editandoId === registro.id) nuevoRegistro();
     } catch (e) {
@@ -177,8 +183,9 @@ function Gcre009Page() {
           <Link to="/formatos" className="btn">← Volver a formatos</Link>
           <h1>GC-RE-009 — No conformidades y acciones correctivas</h1>
           <p className="formatos__descripcion">
-            Complete el formulario y pulse <strong>Guardar y ver PDF</strong>. Los datos se
-            escriben sobre la plantilla oficial y el archivo queda en Supabase.
+            Complete el formulario y pulse <strong>Guardar</strong>. Los datos quedan en el
+            sistema; cuando necesite el formato oficial use <strong>Imprimir</strong> y archive
+            el documento firmado en carpeta física.
           </p>
         </div>
         <button type="button" className="btn" onClick={nuevoRegistro}>
@@ -196,7 +203,7 @@ function Gcre009Page() {
 
       <div className="formatos__layout">
         <div className="formatos__formulario">
-          <form className="gcre-form" onSubmit={(e) => manejarGuardar(e, true)}>
+          <form className="gcre-form" onSubmit={(e) => void manejarGuardar(e)}>
             <div className="gcre-form__grid-3">
               <label>
                 No. registro
@@ -578,15 +585,15 @@ function Gcre009Page() {
 
             <div className="gcre-form__acciones">
               <button type="submit" className="btn btn--primario" disabled={guardando}>
-                {guardando ? "Guardando..." : "Guardar y ver PDF"}
+                {guardando ? "Guardando..." : editandoId ? "Guardar cambios" : "Guardar"}
               </button>
               <button
                 type="button"
                 className="btn"
-                disabled={guardando}
-                onClick={(e) => manejarGuardar(e, false)}
+                disabled={guardando || cargandoPdfId === (editandoId ?? "formulario")}
+                onClick={() => void manejarImprimir()}
               >
-                Solo guardar
+                {cargandoPdfId === (editandoId ?? "formulario") ? "Generando..." : "Imprimir formato"}
               </button>
             </div>
           </form>
@@ -622,12 +629,9 @@ function Gcre009Page() {
                 <button
                   className="btn"
                   disabled={cargandoPdfId === registro.id}
-                  onClick={() => verPdf(registro)}
+                  onClick={() => void imprimirRegistro(registro)}
                 >
-                  {cargandoPdfId === registro.id ? "Generando..." : "Ver PDF"}
-                </button>
-                <button className="btn" onClick={() => descargarRegistro(registro)}>
-                  Descargar
+                  {cargandoPdfId === registro.id ? "Generando..." : "Imprimir"}
                 </button>
                 <button className="btn" onClick={() => cargarRegistro(registro)}>Editar</button>
                 <button className="btn btn--peligro" onClick={() => eliminarRegistro(registro)}>
@@ -642,7 +646,7 @@ function Gcre009Page() {
       {pdfPreview && (
         <section className="formatos__preview" ref={previewRef}>
           <div className="formatos__preview-cabecera">
-            <h2>Vista previa del PDF generado</h2>
+            <h2>Vista previa para impresión</h2>
             <a className="btn" href={pdfPreview} target="_blank" rel="noreferrer">
               Abrir en pestaña nueva
             </a>
