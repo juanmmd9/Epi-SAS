@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { AREAS_SISTEMA } from "../../lib/areas";
 import HojaForm from "./HojaForm";
 import {
@@ -134,12 +135,14 @@ function HojasPage() {
         todos los usuarios del portal.
       </p>
 
-      <HojaForm
-        hojaEnEdicion={hojaEnEdicion}
-        guardando={guardando}
-        onGuardar={manejarGuardar}
-        onCancelarEdicion={() => setHojaEnEdicion(null)}
-      />
+      <SoloConPermiso permiso="editar.hojas">
+        <HojaForm
+          hojaEnEdicion={hojaEnEdicion}
+          guardando={guardando}
+          onGuardar={manejarGuardar}
+          onCancelarEdicion={() => setHojaEnEdicion(null)}
+        />
+      </SoloConPermiso>
 
       {mensaje && <p className="hojas__mensaje hojas__mensaje--ok">{mensaje}</p>}
       {error && <p className="hojas__mensaje hojas__mensaje--error">{error}</p>}
@@ -236,21 +239,25 @@ function HojasPage() {
               >
                 Ver hoja de vida
               </button>
-              <button className="btn" onClick={() => setHojaEnEdicion(hoja)}>
-                Editar
-              </button>
-              {hoja.activa ? (
-                <button className="btn btn--advertencia" onClick={() => manejarBaja(hoja)}>
-                  Dar de baja
+              <SoloConPermiso permiso="editar.hojas">
+                <button className="btn" onClick={() => setHojaEnEdicion(hoja)}>
+                  Editar
                 </button>
-              ) : (
-                <button className="btn btn--primario" onClick={() => manejarReactivar(hoja)}>
-                  Reactivar
+                {hoja.activa ? (
+                  <button className="btn btn--advertencia" onClick={() => manejarBaja(hoja)}>
+                    Dar de baja
+                  </button>
+                ) : (
+                  <button className="btn btn--primario" onClick={() => manejarReactivar(hoja)}>
+                    Reactivar
+                  </button>
+                )}
+              </SoloConPermiso>
+              <SoloConPermiso permiso="eliminar.registros">
+                <button className="btn btn--peligro" onClick={() => manejarEliminar(hoja)}>
+                  Eliminar
                 </button>
-              )}
-              <button className="btn btn--peligro" onClick={() => manejarEliminar(hoja)}>
-                Eliminar
-              </button>
+              </SoloConPermiso>
             </div>
           </article>
         ))}

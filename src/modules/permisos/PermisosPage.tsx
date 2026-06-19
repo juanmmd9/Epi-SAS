@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { imprimirPdf } from "../../lib/imprimirPdf";
 import { listarPersonal } from "../personal/personalService";
 import type { Persona } from "../personal/types";
@@ -323,13 +324,15 @@ function PermisosPage() {
                         >
                           {imprimiendo ? "..." : "Imprimir"}
                         </button>
-                        <button
-                          type="button"
-                          className="btn btn--peligro"
-                          onClick={() => void manejarEliminar(permiso)}
-                        >
-                          Eliminar
-                        </button>
+                        <SoloConPermiso permiso="eliminar.registros">
+                          <button
+                            type="button"
+                            className="btn btn--peligro"
+                            onClick={() => void manejarEliminar(permiso)}
+                          >
+                            Eliminar
+                          </button>
+                        </SoloConPermiso>
                       </div>
                     </td>
                   </tr>

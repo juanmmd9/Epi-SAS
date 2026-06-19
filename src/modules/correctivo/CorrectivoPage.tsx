@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { AREAS_SISTEMA } from "../../lib/areas";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
@@ -47,6 +49,7 @@ const formularioVacio = {
 };
 
 function CorrectivoPage() {
+  const { puede } = useAuth();
   const [registros, setRegistros] = useState<RegistroCorrectivo[]>([]);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
   const [personal, setPersonal] = useState<Persona[]>([]);
@@ -249,7 +252,8 @@ function CorrectivoPage() {
         <Link to="/personal">Gestionar personal</Link>
       </p>
 
-      <form className="correctivo-form" onSubmit={manejarEnvio}>
+      <SoloConPermiso permiso="crear.correctivo">
+        <form className="correctivo-form" onSubmit={manejarEnvio}>
         <h2>
           {editandoId
             ? "Editar solicitud"
@@ -395,6 +399,11 @@ function CorrectivoPage() {
           )}
         </div>
       </form>
+      </SoloConPermiso>
+
+      {!puede("crear.correctivo") && (
+        <p className="correctivo__descripcion">Modo consulta: solo puedes ver las solicitudes.</p>
+      )}
 
       {mensaje && <p className="correctivo__mensaje correctivo__mensaje--ok">{mensaje}</p>}
       {error && <p className="correctivo__mensaje correctivo__mensaje--error">{error}</p>}
@@ -462,12 +471,16 @@ function CorrectivoPage() {
                   <td>{registro.datos.tiempoRespuesta || "—"}</td>
                   <td>{registro.datos.fechaCierre || "Abierta"}</td>
                   <td className="correctivo__acciones">
-                    <button className="btn" onClick={() => iniciarEdicion(registro)}>
-                      Editar
-                    </button>
-                    <button className="btn btn--peligro" onClick={() => manejarEliminar(registro)}>
-                      Eliminar
-                    </button>
+                    <SoloConPermiso permiso="crear.correctivo">
+                      <button className="btn" onClick={() => iniciarEdicion(registro)}>
+                        Editar
+                      </button>
+                    </SoloConPermiso>
+                    <SoloConPermiso permiso="eliminar.registros">
+                      <button className="btn btn--peligro" onClick={() => manejarEliminar(registro)}>
+                        Eliminar
+                      </button>
+                    </SoloConPermiso>
                   </td>
                 </tr>
               ))}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import { DIAS_SEMANA } from "./types";
 import {
   crearFestivo,
@@ -41,6 +42,7 @@ function AvisoSetupHorario() {
 }
 
 function HorarioLaboralPage() {
+  const { puede } = useAuth();
   const anioActual = new Date().getFullYear();
   const [anio, setAnio] = useState(anioActual);
   const [filas, setFilas] = useState<HorarioLaboral[]>([]);
@@ -187,6 +189,10 @@ function HorarioLaboralPage() {
     } catch (e) {
       setError("No se pudo eliminar: " + (e as Error).message);
     }
+  }
+
+  if (!puede("ver.horario")) {
+    return <Navigate to="/" replace />;
   }
 
   return (

@@ -1,14 +1,20 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import AvisoSetupPersonal from "../../components/setup/AvisoSetupPersonal";
+import { useAuth } from "../auth/AuthContext";
+import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { listarPersonal } from "../personal/personalService";
 import type { Persona } from "../personal/types";
 import {
   agruparPorCategoria,
   calcularResumenFila,
+  calcularResumenPersona,
   claseNivelH,
+  claseSemaforoRatio,
   construirMapaValores,
+  formatearPorcentajeMatriz,
   obtenerValorCelda,
+  porcentajeHsobreD,
 } from "./matrizCalculo";
 import { HOJAS_MATRIZ } from "./matrizCatalogo";
 import {
@@ -59,7 +65,11 @@ interface CeldaProps {
 }
 
 function CeldaMatriz({ valor, campo, competencia, celda, onGuardar }: CeldaProps) {
+  const { perfil, puede } = useAuth();
   const [guardando, setGuardando] = useState(false);
+  const puedeEditar =
+    puede("editar.matriz.catalogo") ||
+    (puede("editar.matriz.celdas") && perfil?.personal_id === celda.personal_id);
   const clase =
     campo === "nivel_h" ? claseNivelH(celda.nivel_h, celda.nivel_d) : `matriz-celda--${campo}`;
 
@@ -74,11 +84,14 @@ function CeldaMatriz({ valor, campo, competencia, celda, onGuardar }: CeldaProps
     }
   }
 
+  const porcentaje =
+    campo === "nivel_h" ? porcentajeHsobreD(celda.nivel_h, celda.nivel_d) : null;
+
   return (
     <td className={`matriz-celda ${clase}`}>
       <select
         value={valor}
-        disabled={guardando}
+        disabled={guardando || !puedeEditar}
         onChange={(e) => void manejarCambio(Number.parseInt(e.target.value, 10))}
         aria-label={`${campo} ${competencia.descripcion}`}
       >
@@ -88,6 +101,13 @@ function CeldaMatriz({ valor, campo, competencia, celda, onGuardar }: CeldaProps
           </option>
         ))}
       </select>
+      {campo === "nivel_h" && (
+        <span
+          className={`matriz-celda__pct matriz-celda__pct--${claseSemaforoRatio(porcentaje)}`}
+        >
+          {formatearPorcentajeMatriz(porcentaje)}
+        </span>
+      )}
     </td>
   );
 }
@@ -205,6 +225,14 @@ function MatrizPage() {
     }
   }
 
+  const resumenPorPersona = useMemo(() => {
+    const mapa = new Map<string, ReturnType<typeof calcularResumenPersona>>();
+    personas.forEach((persona) => {
+      mapa.set(persona.id, calcularResumenPersona(persona.id, competencias, mapaValores));
+    });
+    return mapa;
+  }, [personas, competencias, mapaValores]);
+
   const brechas = useMemo(() => {
     return competencias
       .map((competencia) => {
@@ -261,22 +289,24 @@ function MatrizPage() {
             ))}
           </select>
         </label>
-        <button
-          type="button"
-          className="btn btn--primario"
-          disabled={inicializando || faltaTabla}
-          onClick={() => void manejarInicializarCatalogo()}
-        >
-          {competencias.length === 0 ? "Cargar catálogo Excel" : "Catálogo ya cargado"}
-        </button>
-        <button
-          type="button"
-          className="btn"
-          disabled={inicializando || faltaTabla || competencias.length === 0}
-          onClick={() => void manejarInicializarCeldas()}
-        >
-          Inicializar celdas del equipo
-        </button>
+        <SoloConPermiso permiso="editar.matriz.catalogo">
+          <button
+            type="button"
+            className="btn btn--primario"
+            disabled={inicializando || faltaTabla}
+            onClick={() => void manejarInicializarCatalogo()}
+          >
+            {competencias.length === 0 ? "Cargar catálogo Excel" : "Catálogo ya cargado"}
+          </button>
+          <button
+            type="button"
+            className="btn"
+            disabled={inicializando || faltaTabla || competencias.length === 0}
+            onClick={() => void manejarInicializarCeldas()}
+          >
+            Inicializar celdas del equipo
+          </button>
+        </SoloConPermiso>
       </div>
 
       {mensaje && <p className="matriz__mensaje matriz__mensaje--ok">{mensaje}</p>}
@@ -320,11 +350,19 @@ function MatrizPage() {
                 <th className="matriz__col-num">#</th>
                 <th className="matriz__col-desc">Conocimiento / habilidad</th>
                 <th className="matriz__col-meta">Meta D</th>
-                {personas.map((persona) => (
-                  <th key={persona.id} colSpan={3} className="matriz__col-persona">
-                    {persona.nombre}
-                  </th>
-                ))}
+                {personas.map((persona) => {
+                  const resumen = resumenPorPersona.get(persona.id);
+                  return (
+                    <th key={persona.id} colSpan={3} className="matriz__col-persona">
+                      <div className="matriz__persona-nombre">{persona.nombre}</div>
+                      <div
+                        className={`matriz__persona-pct matriz__semaforo--${resumen?.claseSemaforo ?? ""}`}
+                      >
+                        {formatearPorcentajeMatriz(resumen?.semaforo ?? null)}
+                      </div>
+                    </th>
+                  );
+                })}
                 <th colSpan={4} className="matriz__col-totales">
                   Totales
                 </th>

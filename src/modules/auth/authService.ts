@@ -1,0 +1,37 @@
+import { supabase } from "../../services/supabase";
+import type { UsuarioPortal } from "./roles";
+
+const TABLA = "usuarios_portal";
+
+export async function obtenerPerfilUsuario(userId: string): Promise<UsuarioPortal | null> {
+  const { data, error } = await supabase
+    .from(TABLA)
+    .select("id, email, nombre, rol, personal_id, activo")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw new Error(error.message);
+  }
+
+  if (!data || !data.activo) return null;
+  return data as UsuarioPortal;
+}
+
+export async function iniciarSesion(email: string, password: string): Promise<void> {
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(error.message);
+}
+
+export async function cerrarSesion(): Promise<void> {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw new Error(error.message);
+}
+
+export async function existeTablaUsuarios(): Promise<boolean> {
+  const { error } = await supabase.from(TABLA).select("id").limit(1);
+  if (!error) return true;
+  if (/usuarios_portal|schema cache|does not exist/i.test(error.message)) return false;
+  throw new Error(error.message);
+}

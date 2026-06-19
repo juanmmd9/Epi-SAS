@@ -171,6 +171,21 @@
 
 .matriz__col-persona {
   min-width: 7.5rem;
+  vertical-align: middle;
+}
+
+.matriz__persona-nombre {
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.matriz__persona-pct {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .matriz__col-totales {
@@ -204,6 +219,31 @@
 .matriz-celda {
   padding: 0.15rem;
   text-align: center;
+}
+
+.matriz-celda__pct {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 4px;
+  padding: 0.1rem 0.2rem;
+}
+
+.matriz-celda__pct--ok {
+  color: #14532d;
+  background: #bbf7d0;
+}
+
+.matriz-celda__pct--alerta {
+  color: #713f12;
+  background: #fef08a;
+}
+
+.matriz-celda__pct--fail {
+  color: #7f1d1d;
+  background: #fecaca;
 }
 
 .matriz-celda select {

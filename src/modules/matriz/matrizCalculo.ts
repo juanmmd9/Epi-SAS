@@ -36,6 +36,47 @@ export function obtenerValorCelda(
   };
 }
 
+export function porcentajeHsobreD(nivelH: number, nivelD: number): number | null {
+  if (nivelD === 0) return null;
+  return nivelH / nivelD;
+}
+
+export function formatearPorcentajeMatriz(ratio: number | null): string {
+  if (ratio === null || Number.isNaN(ratio)) return "—";
+  return `${Math.round(ratio * 100)}%`;
+}
+
+export function claseSemaforoRatio(ratio: number | null): ResumenFilaMatriz["claseSemaforo"] {
+  if (ratio === null || Number.isNaN(ratio)) return "";
+  if (ratio >= 1) return "ok";
+  if (ratio >= 0.75) return "alerta";
+  return "fail";
+}
+
+export function calcularResumenPersona(
+  personalId: string,
+  competencias: CompetenciaMatriz[],
+  mapa: Map<string, ValorMatrizCelda>,
+): ResumenFilaMatriz {
+  let sumaI = 0;
+  let sumaD = 0;
+  let sumaH = 0;
+
+  competencias.forEach((competencia) => {
+    const celda = obtenerValorCelda(mapa, personalId, competencia);
+    sumaI += celda.nivel_i;
+    sumaD += celda.nivel_d;
+    sumaH += celda.nivel_h;
+  });
+
+  if (sumaD === 0) {
+    return { sumaI, sumaD, sumaH, semaforo: null, claseSemaforo: "" };
+  }
+
+  const semaforo = sumaH / sumaD;
+  return { sumaI, sumaD, sumaH, semaforo, claseSemaforo: claseSemaforoRatio(semaforo) };
+}
+
 export function calcularResumenFila(
   competencia: CompetenciaMatriz,
   personalIds: string[],
@@ -57,11 +98,7 @@ export function calcularResumenFila(
   }
 
   const semaforo = sumaH / sumaD;
-  let claseSemaforo: ResumenFilaMatriz["claseSemaforo"] = "fail";
-  if (semaforo >= 1) claseSemaforo = "ok";
-  else if (semaforo >= 0.75) claseSemaforo = "alerta";
-
-  return { sumaI, sumaD, sumaH, semaforo, claseSemaforo };
+  return { sumaI, sumaD, sumaH, semaforo, claseSemaforo: claseSemaforoRatio(semaforo) };
 }
 
 export function claseNivelH(nivelH: number, nivelD: number): string {

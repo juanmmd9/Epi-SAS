@@ -1,18 +1,13 @@
 import { NavLink } from "react-router-dom";
-
-const enlaces = [
-  { ruta: "/", texto: "Inicio" },
-  { ruta: "/preventivo", texto: "Mant. preventivo" },
-  { ruta: "/correctivo", texto: "Mant. correctivo" },
-  { ruta: "/hojas-de-vida", texto: "Hojas de vida" },
-  { ruta: "/indicadores", texto: "Indicadores" },
-  { ruta: "/formatos", texto: "Formatos" },
-  { ruta: "/personal", texto: "Personal" },
-  { ruta: "/personal/permisos", texto: "Permisos" },
-  { ruta: "/personal/matriz", texto: "Matriz conocimientos" },
-];
+import { useAuth } from "../../modules/auth/AuthContext";
+import { ETIQUETAS_ROL, enlacesParaRol } from "../../modules/auth/roles";
+import "../../modules/auth/auth.css";
+import "./Layout.css";
 
 function Sidebar() {
+  const { perfil, salir } = useAuth();
+  const enlaces = enlacesParaRol(perfil?.rol);
+
   return (
     <aside className="sidebar">
       <div className="sidebar__marca">
@@ -39,6 +34,15 @@ function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      {perfil && (
+        <div className="sidebar__usuario">
+          <span className="sidebar__usuario-nombre">{perfil.nombre || perfil.email}</span>
+          <span className="sidebar__usuario-rol">{ETIQUETAS_ROL[perfil.rol]}</span>
+          <button type="button" className="btn sidebar__cerrar-sesion" onClick={() => void salir()}>
+            Cerrar sesión
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

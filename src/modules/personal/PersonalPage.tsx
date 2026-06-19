@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import { NOMBRES_MESES } from "../../lib/fechas";
 import { AREAS_SISTEMA } from "../../lib/areas";
 import AvisoSetupPersonal from "../../components/setup/AvisoSetupPersonal";
@@ -28,6 +29,7 @@ import "./personal.css";
 const formularioVacio = { nombre: "", cargo: "", area: "", cedula: "" };
 
 function PersonalPage() {
+  const { puede } = useAuth();
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [preventivo, setPreventivo] = useState<RegistroPreventivo[]>([]);
   const [correctivo, setCorrectivo] = useState<RegistroCorrectivo[]>([]);
@@ -185,6 +187,10 @@ function PersonalPage() {
     }
   }
 
+  if (!puede("ver.personal")) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <section className="personal">
       <header className="personal__encabezado">
@@ -196,6 +202,11 @@ function PersonalPage() {
           </p>
         </div>
         <div className="personal__enlaces-cabecera">
+          {puede("gestionar.usuarios") && (
+            <Link className="btn btn--primario" to="/personal/usuarios">
+              Usuarios del portal
+            </Link>
+          )}
           <Link className="btn" to="/personal/permisos">
             Control de permisos
           </Link>

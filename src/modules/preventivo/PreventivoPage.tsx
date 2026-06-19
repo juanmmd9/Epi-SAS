@@ -5,6 +5,8 @@ import { listarHojas } from "../hojas/hojasService";
 import { filtrarHojasParaPreventivo, filtrarHojasPorArea, hojaEstaActiva } from "../hojas/hojasFiltro";
 import type { HojaVida } from "../hojas/types";
 import AvisoSetupPersonal from "../../components/setup/AvisoSetupPersonal";
+import { useAuth } from "../auth/AuthContext";
+import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { listarPersonalActivo, existeTablaPersonal } from "../personal/personalService";
 import { faltaTablaPersonal as esErrorTablaPersonal } from "../personal/personalSetup";
 import SelectorPersonal from "../personal/SelectorPersonal";
@@ -36,6 +38,7 @@ interface EstadoNavegacion {
 }
 
 function PreventivoPage() {
+  const { puede } = useAuth();
   const ubicacion = useLocation();
   const navigate = useNavigate();
   const [registros, setRegistros] = useState<RegistroPreventivo[]>([]);
@@ -252,7 +255,8 @@ function PreventivoPage() {
         <AvisoSetupPersonal titulo="Para asignar técnicos, crea primero la tabla personal en Supabase" />
       )}
 
-      <form className="preventivo-form" onSubmit={manejarEnvio}>
+      <SoloConPermiso permiso="crear.preventivo">
+        <form className="preventivo-form" onSubmit={manejarEnvio}>
         <h2>{editandoId ? "Editar registro" : "Registrar actividad"}</h2>
         <div className="preventivo-form__grid">
           <label>
@@ -356,7 +360,12 @@ function PreventivoPage() {
             </button>
           )}
         </div>
-      </form>
+        </form>
+      </SoloConPermiso>
+
+      {!puede("crear.preventivo") && (
+        <p className="preventivo__descripcion">Modo consulta: solo puedes ver los registros.</p>
+      )}
 
       {mensaje && <p className="preventivo__mensaje preventivo__mensaje--ok">{mensaje}</p>}
       {error && <p className="preventivo__mensaje preventivo__mensaje--error">{error}</p>}
@@ -400,18 +409,24 @@ function PreventivoPage() {
                   <td>{nombresTecnicos(registro)}</td>
                   <td>{registro.descripcion}</td>
                   <td className="preventivo__acciones">
-                    <button className="btn" onClick={() => abrirMtre045(registro)}>
-                      MT-RE-045
-                    </button>
-                    <button className="btn" onClick={() => iniciarEdicion(registro)}>
-                      Editar
-                    </button>
-                    <button
-                      className="btn btn--peligro"
-                      onClick={() => manejarEliminar(registro)}
-                    >
-                      Eliminar
-                    </button>
+                    <SoloConPermiso permiso="ver.formatos">
+                      <button className="btn" onClick={() => abrirMtre045(registro)}>
+                        MT-RE-045
+                      </button>
+                    </SoloConPermiso>
+                    <SoloConPermiso permiso="crear.preventivo">
+                      <button className="btn" onClick={() => iniciarEdicion(registro)}>
+                        Editar
+                      </button>
+                    </SoloConPermiso>
+                    <SoloConPermiso permiso="eliminar.registros">
+                      <button
+                        className="btn btn--peligro"
+                        onClick={() => manejarEliminar(registro)}
+                      >
+                        Eliminar
+                      </button>
+                    </SoloConPermiso>
                   </td>
                 </tr>
               ))}
