@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AREAS_CON_PM, areaTienePreventivo } from "../../lib/areas";
+import { AREAS_CON_PM, areaTienePreventivo, coincideArea } from "../../lib/areas";
 import { listarHojas } from "../hojas/hojasService";
 import { filtrarHojasParaPreventivo, filtrarHojasPorArea, hojaEstaActiva } from "../hojas/hojasFiltro";
 import type { HojaVida } from "../hojas/types";
@@ -22,8 +22,28 @@ import {
   eliminarPreventivo,
   listarPreventivo,
 } from "./preventivoService";
-import type { PrefillMtre045DesdePreventivo } from "../formatos/mtre045Types";
+import {
+  construirMtre045AlGuardar,
+  construirMtre045DesdePreventivo,
+  etiquetaEquipoPm,
+} from "../formatos/mtre045DesdePreventivo";
+import Mtre045CamposFormulario, {
+  camposFormatoMtre045Vacios,
+  extraerCamposFormato,
+  type CamposFormatoMtre045,
+} from "../formatos/Mtre045CamposFormulario";
+import type { Mtre045Datos } from "../formatos/mtre045Types";
 import type { RegistroPreventivo } from "./types";
+import {
+  calcularMapaNumerosReporte,
+  clavesGrupoAfectadas,
+  datosConNumeroReporte,
+  formatearNumeroReporte,
+  numeroReporteDeRegistro,
+  numeroReporteParaRegistro,
+  sincronizarNumerosReporteEnGrupos,
+  sincronizarNumerosReportePendientes,
+} from "./numeroReportePm";
 import "./preventivo.css";
 
 const formularioVacio = {
@@ -49,6 +69,9 @@ function PreventivoPage() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [campos, setCampos] = useState(formularioVacio);
+  const [formatoMtre045, setFormatoMtre045] = useState<CamposFormatoMtre045>(
+    camposFormatoMtre045Vacios(),
+  );
   const [personalIds, setPersonalIds] = useState<string[]>([]);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [filtroArea, setFiltroArea] = useState("");
@@ -58,8 +81,9 @@ function PreventivoPage() {
     setCargando(true);
     setError(null);
     Promise.all([listarPreventivo(), listarHojas()])
-      .then(([regs, hojas]) => {
-        setRegistros(regs);
+      .then(async ([regs, hojas]) => {
+        const sincronizados = await sincronizarNumerosReportePendientes(regs);
+        setRegistros(sincronizados);
         setMaquinas(hojas);
       })
       .catch((e: Error) => setError("No se pudieron cargar los datos: " + e.message))
@@ -78,7 +102,15 @@ function PreventivoPage() {
     existeTablaPersonal()
       .then((ok) => setFaltaTablaPersonal(!ok))
       .catch(() => setFaltaTablaPersonal(true));
-  }, []);
+  }, [ubicacion.key]);
+
+  useEffect(() => {
+    if (!campos.maquinaId) return;
+    const maquina = maquinas.find((m) => m.id === campos.maquinaId);
+    if (maquina && !coincideArea(campos.area, maquina.area)) {
+      setCampos((c) => ({ ...c, area: maquina.area }));
+    }
+  }, [maquinas, campos.maquinaId, campos.area]);
 
   // Precarga del formulario al llegar desde el panel de inicio (clic en una cita)
   useEffect(() => {
@@ -87,10 +119,44 @@ function PreventivoPage() {
     const { maquinaId, area, fecha } = estado.registrarPm;
     setEditandoId(null);
     setCampos({ area, maquinaId, fecha, descripcion: "" });
+    setFormatoMtre045(camposFormatoMtre045Vacios());
     setPersonalIds([]);
     setMensaje("Datos cargados desde el panel de inicio. Completa la actividad y guarda.");
     window.history.replaceState({}, "");
   }, [ubicacion.state]);
+
+  const mapaNumerosReporte = useMemo(
+    () => calcularMapaNumerosReporte(registros),
+    [registros],
+  );
+
+  const numeroReporteVista = useMemo(() => {
+    if (!campos.area || !campos.fecha) return null;
+    const idBorrador = editandoId ?? "__borrador__";
+    const registroBorrador: RegistroPreventivo = {
+      id: idBorrador,
+      hoja_id: campos.maquinaId || null,
+      personal_id: null,
+      area: campos.area,
+      fecha: campos.fecha,
+      descripcion: campos.descripcion,
+      adjunto_url: null,
+      datos: {},
+      creado_en:
+        registros.find((r) => r.id === editandoId)?.creado_en ?? new Date().toISOString(),
+    };
+    const lista = editandoId
+      ? registros.map((r) =>
+          r.id === editandoId ? { ...r, area: campos.area, fecha: campos.fecha } : r,
+        )
+      : [...registros, registroBorrador];
+    return formatearNumeroReporte(numeroReporteParaRegistro(lista, registroBorrador));
+  }, [campos.area, campos.fecha, campos.maquinaId, campos.descripcion, editandoId, registros]);
+
+  const maquinaSeleccionada = useMemo(
+    () => maquinas.find((m) => m.id === campos.maquinaId),
+    [maquinas, campos.maquinaId],
+  );
 
   const maquinasDelArea = useMemo(
     () => filtrarHojasParaPreventivo(maquinas, campos.area, campos.maquinaId),
@@ -111,8 +177,13 @@ function PreventivoPage() {
 
   function nombreMaquina(registro: RegistroPreventivo): string {
     const maquina = maquinas.find((m) => m.id === registro.hoja_id);
-    if (maquina) return `${maquina.nombre} (${maquina.codigo ?? "sin código"})`;
-    return registro.datos.equipo ?? "Máquina eliminada";
+    if (maquina) {
+      return etiquetaEquipoPm(maquina.nombre, maquina.codigo);
+    }
+    const codigo = registro.datos.codigo?.trim();
+    return codigo
+      ? etiquetaEquipoPm(registro.datos.equipo ?? "Máquina", codigo)
+      : registro.datos.equipo ?? "Máquina eliminada";
   }
 
   function nombresTecnicos(registro: RegistroPreventivo): string {
@@ -129,33 +200,49 @@ function PreventivoPage() {
       descripcion: registro.descripcion ?? "",
     });
     setPersonalIds(idsDesdeRegistroPreventivo(registro));
+    setFormatoMtre045(extraerCamposFormato(registro.datos.mtre045));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function cancelarEdicion() {
     setEditandoId(null);
     setCampos(formularioVacio);
+    setFormatoMtre045(camposFormatoMtre045Vacios());
     setPersonalIds([]);
   }
 
-  function construirPrefillMtre045(registro: RegistroPreventivo): PrefillMtre045DesdePreventivo {
+  function construirMtre045DesdeFormulario(preventivoId: string): Mtre045Datos | null {
+    if (!maquinaSeleccionada) return null;
+    const lista = registros.map((r) =>
+      r.id === preventivoId
+        ? { ...r, area: maquinaSeleccionada.area, fecha: campos.fecha }
+        : r,
+    );
+    const registro = lista.find((r) => r.id === preventivoId);
+    if (!registro) return null;
+    const numero = formatearNumeroReporte(numeroReporteParaRegistro(lista, registro));
+    return construirMtre045AlGuardar({
+      preventivoId,
+      maquina: maquinaSeleccionada,
+      fecha: campos.fecha,
+      descripcion: campos.descripcion.trim(),
+      personalIds: personalIds.filter((id) => personal.some((p) => p.id === id)),
+      personal,
+      formato: formatoMtre045,
+      numeroReporte: numero,
+    });
+  }
+
+  function construirMtre045DesdeRegistro(registro: RegistroPreventivo): Mtre045Datos {
     const hoja = maquinas.find((m) => m.id === registro.hoja_id);
-    return {
-      preventivoId: registro.id,
-      numeroReporte: registro.id.slice(0, 8).toUpperCase(),
-      fecha: registro.fecha,
-      equipo: hoja?.nombre ?? registro.datos.equipo ?? "",
-      marca: hoja?.datos.marca ?? "",
-      serie: hoja?.datos.serial ?? hoja?.codigo ?? "",
-      area: registro.area,
-      actividadRealizada: registro.descripcion ?? "",
-      responsableMantenimiento: nombresTecnicos(registro),
-      mtre045: registro.datos.mtre045,
-    };
+    const numero = numeroReporteDeRegistro(registro, mapaNumerosReporte);
+    return construirMtre045DesdePreventivo(registro, hoja, personal, { numeroReporte: numero });
   }
 
   function abrirMtre045(registro: RegistroPreventivo) {
-    navigate("/formatos/mt-re-045", { state: { mtre045: construirPrefillMtre045(registro) } });
+    navigate("/formatos/mt-re-045", {
+      state: { mtre045Datos: construirMtre045DesdeRegistro(registro) },
+    });
   }
 
   function abrirMtre045FormularioActual() {
@@ -163,8 +250,12 @@ function PreventivoPage() {
       setError("Guarda el registro primero para abrir el MT-RE-045 con el número vinculado.");
       return;
     }
-    const registro = registros.find((r) => r.id === editandoId);
-    if (registro) abrirMtre045(registro);
+    const datos = construirMtre045DesdeFormulario(editandoId);
+    if (!datos) {
+      setError("Selecciona una máquina válida.");
+      return;
+    }
+    navigate("/formatos/mt-re-045", { state: { mtre045Datos: datos } });
   }
 
   async function manejarEnvio(evento: FormEvent) {
@@ -192,36 +283,93 @@ function PreventivoPage() {
     setGuardando(true);
     try {
       const datosPersonal = construirDatosPersonal(idsValidos, personal);
-      const input = {
+      const datosBase = {
+        equipo: maquina.nombre,
+        codigo: maquina.codigo ?? "",
+        marca: maquina.datos?.marca ?? "",
+        serial: maquina.datos?.serial ?? "",
+        ...datosPersonal,
+      };
+
+      const inputBase = {
         hoja_id: maquina.id,
         ...(datosPersonal.personalId ? { personal_id: datosPersonal.personalId } : {}),
         area: maquina.area,
         fecha: campos.fecha,
         descripcion: campos.descripcion.trim(),
-        datos: {
-          equipo: maquina.nombre,
-          ...datosPersonal,
-        },
+        datos: datosBase,
       };
 
       if (editandoId) {
-        const actualizado = await actualizarPreventivo(editandoId, input);
-        setRegistros((previos) =>
-          previos.map((r) => (r.id === actualizado.id ? actualizado : r)),
+        const registroAnterior = registros.find((r) => r.id === editandoId);
+        const listaTentativa = registros.map((r) =>
+          r.id === editandoId
+            ? {
+                ...r,
+                ...inputBase,
+                descripcion: inputBase.descripcion,
+              }
+            : r,
         );
-        setMensaje(
-          "Registro actualizado. Abra el formato MT-RE-045 para imprimir el reporte.",
+        const numero = formatearNumeroReporte(
+          numeroReporteParaRegistro(listaTentativa, listaTentativa.find((r) => r.id === editandoId)!),
         );
+        const mtre045 = construirMtre045AlGuardar({
+          preventivoId: editandoId,
+          maquina,
+          fecha: campos.fecha,
+          descripcion: campos.descripcion.trim(),
+          personalIds: idsValidos,
+          personal,
+          formato: formatoMtre045,
+          numeroReporte: numero,
+        });
+        const actualizado = await actualizarPreventivo(editandoId, {
+          ...inputBase,
+          datos: datosConNumeroReporte({ ...datosBase, mtre045 }, numero),
+        });
+        let listaFinal = registros.map((r) => (r.id === actualizado.id ? actualizado : r));
+        const claves = clavesGrupoAfectadas(registroAnterior, maquina.area, campos.fecha);
+        listaFinal = await sincronizarNumerosReporteEnGrupos(
+          listaFinal,
+          claves,
+          calcularMapaNumerosReporte(listaFinal),
+        );
+        setRegistros(listaFinal);
+        setMensaje("Registro y reporte MT-RE-045 guardados. Puede imprimir desde el botón MT-RE-045.");
+        cancelarEdicion();
       } else {
-        const creado = await crearPreventivo(input);
-        setRegistros((previos) => [creado, ...previos]);
-        setEditandoId(creado.id);
-        setMensaje(
-          "Registro guardado. Abra el formato MT-RE-045 para imprimir el reporte.",
+        const creado = await crearPreventivo(inputBase);
+        const listaTentativa = [...registros, { ...creado, ...inputBase }];
+        const numero = formatearNumeroReporte(
+          numeroReporteParaRegistro(listaTentativa, creado),
         );
-        return;
+        const mtre045 = construirMtre045AlGuardar({
+          preventivoId: creado.id,
+          maquina,
+          fecha: campos.fecha,
+          descripcion: campos.descripcion.trim(),
+          personalIds: idsValidos,
+          personal,
+          formato: formatoMtre045,
+          numeroReporte: numero,
+        });
+        const actualizado = await actualizarPreventivo(creado.id, {
+          datos: datosConNumeroReporte({ ...creado.datos, ...datosBase, mtre045 }, numero),
+        });
+        let listaFinal = [actualizado, ...registros];
+        const claves = clavesGrupoAfectadas(null, maquina.area, campos.fecha);
+        listaFinal = await sincronizarNumerosReporteEnGrupos(
+          listaFinal,
+          claves,
+          calcularMapaNumerosReporte(listaFinal),
+        );
+        setRegistros(listaFinal);
+        setEditandoId(actualizado.id);
+        setMensaje(
+          "Registro y reporte MT-RE-045 guardados. Use «Ver / Imprimir MT-RE-045» o el botón en la tabla.",
+        );
       }
-      cancelarEdicion();
     } catch (e) {
       setError("No fue posible guardar: " + (e as Error).message);
     } finally {
@@ -233,7 +381,14 @@ function PreventivoPage() {
     if (!window.confirm("¿Eliminar este registro de mantenimiento preventivo?")) return;
     try {
       await eliminarPreventivo(registro.id);
-      setRegistros((previos) => previos.filter((r) => r.id !== registro.id));
+      let lista = registros.filter((r) => r.id !== registro.id);
+      const claves = clavesGrupoAfectadas(null, registro.area, registro.fecha);
+      lista = await sincronizarNumerosReporteEnGrupos(
+        lista,
+        claves,
+        calcularMapaNumerosReporte(lista),
+      );
+      setRegistros(lista);
       if (editandoId === registro.id) cancelarEdicion();
     } catch (e) {
       setError("No fue posible eliminar: " + (e as Error).message);
@@ -244,8 +399,8 @@ function PreventivoPage() {
     <section className="preventivo">
       <h1>Mantenimiento preventivo</h1>
       <p className="preventivo__descripcion">
-        Registro de actividades preventivas. Los datos quedan en el sistema; use el formato{" "}
-        <strong>MT-RE-045</strong> para imprimir el reporte y archive el documento firmado.{" "}
+        Registre la actividad y los datos del formato <strong>MT-RE-045</strong> en un solo
+        formulario. Al guardar queda listo para imprimir.{" "}
         <Link to="/preventivo/cronograma">Ver cronograma anual</Link>
         {" · "}
         <Link to="/personal">Gestionar personal</Link>
@@ -332,15 +487,49 @@ function PreventivoPage() {
           </label>
 
           <label className="preventivo-form__descripcion">
-            Actividad / descripción *
+            Actividad realizada (PM) *
             <textarea
               required
               rows={3}
               value={campos.descripcion}
               onChange={(e) => setCampos((c) => ({ ...c, descripcion: e.target.value }))}
-              placeholder="Ej. Cambio de aceite, revisión de correas..."
+              placeholder="Ej. Cambio de aceite, revisión de correas, lubricación..."
             />
           </label>
+
+          {maquinaSeleccionada && (
+            <div className="preventivo-form__equipo-info">
+              <div>
+                <span>Equipo</span>
+                {etiquetaEquipoPm(maquinaSeleccionada.nombre, maquinaSeleccionada.codigo)}
+              </div>
+              <div>
+                <span>Marca</span>
+                {maquinaSeleccionada.datos?.marca || "—"}
+              </div>
+              <div>
+                <span>Serie</span>
+                {maquinaSeleccionada.datos?.serial || "—"}
+              </div>
+              <div>
+                <span>Área</span>
+                {maquinaSeleccionada.area}
+              </div>
+              {numeroReporteVista && (
+                <div>
+                  <span>Nº reporte (mes)</span>
+                  <strong>{numeroReporteVista}</strong>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="preventivo-form__seccion-formato">
+            <Mtre045CamposFormulario
+              datos={formatoMtre045}
+              onChange={(cambios) => setFormatoMtre045((prev) => ({ ...prev, ...cambios }))}
+            />
+          </div>
         </div>
         <div className="preventivo-form__acciones">
           <button type="submit" className="btn btn--primario" disabled={guardando}>
@@ -352,7 +541,7 @@ function PreventivoPage() {
             disabled={guardando || !editandoId}
             onClick={abrirMtre045FormularioActual}
           >
-            MT-RE-045
+            Ver / Imprimir MT-RE-045
           </button>
           {editandoId && (
             <button type="button" className="btn" onClick={cancelarEdicion}>
@@ -393,6 +582,7 @@ function PreventivoPage() {
             <thead>
               <tr>
                 <th>Fecha</th>
+                <th>Nº</th>
                 <th>Área</th>
                 <th>Máquina</th>
                 <th>Técnicos</th>
@@ -404,6 +594,7 @@ function PreventivoPage() {
               {registrosFiltrados.map((registro) => (
                 <tr key={registro.id}>
                   <td>{registro.fecha}</td>
+                  <td>{numeroReporteDeRegistro(registro, mapaNumerosReporte) || "—"}</td>
                   <td>{registro.area}</td>
                   <td>{nombreMaquina(registro)}</td>
                   <td>{nombresTecnicos(registro)}</td>

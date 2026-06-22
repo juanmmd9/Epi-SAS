@@ -9,7 +9,7 @@ import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
 import { listarPreventivo } from "../preventivo/preventivoService";
 import type { RegistroPreventivo } from "../preventivo/types";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   calcularResumenCorrectivo,
   calcularTiemposCorrectivo,
@@ -52,6 +52,7 @@ function ListaCitas({ items, clase, vacio }: { items: CitaClasificada[]; clase: 
 function IndicadoresPage() {
   const hoy = new Date();
   const navegar = useNavigate();
+  const ubicacion = useLocation();
   const [panel, setPanel] = useState<"detalle" | "tabla">("detalle");
   const [area, setArea] = useState("");
   const [mes, setMes] = useState(hoy.getMonth() + 1);
@@ -69,6 +70,7 @@ function IndicadoresPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setCargando(true);
     Promise.all([
       listarCorrectivo(),
       listarHojas(),
@@ -85,7 +87,7 @@ function IndicadoresPage() {
       })
       .catch((e: Error) => setError("No se pudieron cargar los datos: " + e.message))
       .finally(() => setCargando(false));
-  }, []);
+  }, [ubicacion.key]);
 
   const horasProgramadasActual = useMemo(() => {
     if (!area) return null;
@@ -170,6 +172,8 @@ function IndicadoresPage() {
       <h1>Indicadores de mantenimiento</h1>
       <p className="indicadores__descripcion">
         Tiempos de respuesta correctivos y cumplimiento del cronograma preventivo.
+        Solo se consideran máquinas activas (en circulación). Las que están fuera de
+        servicio no cuentan como pendientes ni afectan el porcentaje.
       </p>
 
       <div className="indicadores__pestanas">

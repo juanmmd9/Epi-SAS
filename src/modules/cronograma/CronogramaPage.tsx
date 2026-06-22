@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { AREAS_CON_PM } from "../../lib/areas";
-import { diasEnMes, NOMBRES_MESES } from "../../lib/fechas";
+import { AREAS_CON_PM, coincideArea } from "../../lib/areas";
+import { aFechaIso, diasEnMes, NOMBRES_MESES } from "../../lib/fechas";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
+import { listarPreventivo } from "../preventivo/preventivoService";
+import { indicesPmCompletado, pmCompletado } from "../preventivo/pmCompletado";
+import type { RegistroPreventivo } from "../preventivo/types";
 import { mapaCitasDelAnio, ocurrenciasEnAnio } from "./cronogramaCalculo";
 import {
   crearExcepcion,
@@ -23,15 +26,17 @@ function CronogramaPage() {
   const [anio, setAnio] = useState(anioActual);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
   const [excepciones, setExcepciones] = useState<ExcepcionCronograma[]>([]);
+  const [preventivo, setPreventivo] = useState<RegistroPreventivo[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [diaSeleccionado, setDiaSeleccionado] = useState<{ mes: number; dia: number } | null>(null);
 
   useEffect(() => {
-    Promise.all([listarHojas(), listarExcepciones()])
-      .then(([hojas, excs]) => {
+    Promise.all([listarHojas(), listarExcepciones(), listarPreventivo()])
+      .then(([hojas, excs, prev]) => {
         setMaquinas(hojas);
         setExcepciones(excs);
+        setPreventivo(prev);
       })
       .catch((e: Error) => setError("No se pudieron cargar los datos: " + e.message))
       .finally(() => setCargando(false));
@@ -42,10 +47,15 @@ function CronogramaPage() {
     [maquinas, excepciones, area, anio],
   );
 
+  const indicesCompletado = useMemo(
+    () => indicesPmCompletado(preventivo, anio),
+    [preventivo, anio],
+  );
+
   const resumenMaquinas = useMemo(
     () =>
       maquinas
-        .filter((m) => m.area === area && m.primer_pm)
+        .filter((m) => coincideArea(m.area, area) && m.primer_pm)
         .sort((a, b) => a.nombre.localeCompare(b.nombre))
         .map((m) => ({
           maquina: m,
@@ -177,6 +187,14 @@ function CronogramaPage() {
         <p className="cronograma__total">
           {totalCitas} cita(s) programada(s) en {area} para {anio}
         </p>
+        <div className="cronograma__leyenda">
+          <span className="cronograma__leyenda-item cronograma__leyenda-item--pendiente">
+            Pendiente
+          </span>
+          <span className="cronograma__leyenda-item cronograma__leyenda-item--cumplido">
+            Cumplido
+          </span>
+        </div>
       </div>
 
       {error && <p className="cronograma__error">{error}</p>}
@@ -193,6 +211,10 @@ function CronogramaPage() {
                 <div className="mes__dias">
                   {Array.from({ length: dias }, (_, i) => i + 1).map((dia) => {
                     const citas = mapaCitas.get(`${mes}|${dia}`) ?? [];
+                    const fechaIso = aFechaIso(anio, mes, dia);
+                    const todasCumplidas =
+                      citas.length > 0 &&
+                      citas.every((c) => pmCompletado(c.maquinaId, fechaIso, indicesCompletado));
                     const seleccionado =
                       diaSeleccionado?.mes === mes && diaSeleccionado?.dia === dia;
                     return (
@@ -200,10 +222,19 @@ function CronogramaPage() {
                         key={dia}
                         className={
                           "mes__dia" +
-                          (citas.length > 0 ? " mes__dia--con-pm" : "") +
+                          (citas.length > 0
+                            ? todasCumplidas
+                              ? " mes__dia--cumplida"
+                              : " mes__dia--con-pm"
+                            : "") +
                           (seleccionado ? " mes__dia--seleccionado" : "")
                         }
-                        title={citas.map((c) => `${c.nombre} (${c.codigo})`).join(", ")}
+                        title={citas
+                          .map((c) => {
+                            const hecho = pmCompletado(c.maquinaId, fechaIso, indicesCompletado);
+                            return `${c.nombre} (${c.codigo})${hecho ? " ✓ cumplido" : ""}`;
+                          })
+                          .join(", ")}
                         onClick={() => setDiaSeleccionado({ mes, dia })}
                       >
                         {dia}
@@ -224,15 +255,24 @@ function CronogramaPage() {
           </h2>
           {citasDelDia.length === 0 && <p>No hay máquinas programadas este día.</p>}
           <ul>
-            {citasDelDia.map((cita) => (
-              <li key={cita.maquinaId}>
-                <strong>{cita.nombre}</strong> ({cita.codigo}) · cada {cita.frecuencia}m
-                {cita.origen === "manual" && <em> · agregada manualmente</em>}
-                <button className="btn btn--peligro" onClick={() => quitarCita(cita)}>
-                  Quitar este día
-                </button>
-              </li>
-            ))}
+            {citasDelDia.map((cita) => {
+              const fechaIso = aFechaIso(anio, diaSeleccionado.mes, diaSeleccionado.dia);
+              const cumplida = pmCompletado(cita.maquinaId, fechaIso, indicesCompletado);
+              return (
+                <li
+                  key={cita.maquinaId}
+                  className={cumplida ? "dia-detalle__cita dia-detalle__cita--cumplida" : "dia-detalle__cita"}
+                >
+                  {cumplida && <span className="dia-detalle__check">✓</span>}
+                  <strong>{cita.nombre}</strong> ({cita.codigo}) · cada {cita.frecuencia}m
+                  {cumplida && <em className="dia-detalle__estado"> · PM registrado</em>}
+                  {cita.origen === "manual" && <em> · agregada manualmente</em>}
+                  <button className="btn btn--peligro" onClick={() => quitarCita(cita)}>
+                    Quitar este día
+                  </button>
+                </li>
+              );
+            })}
           </ul>
           {maquinasAgregables.length > 0 && (
             <label className="dia-detalle__agregar">
@@ -270,10 +310,12 @@ function CronogramaPage() {
                 {ocurrencias.length === 0
                   ? "Sin fechas en este año"
                   : ocurrencias
-                      .map(
-                        (o) =>
-                          `${String(o.dia).padStart(2, "0")} ${NOMBRES_MESES_CORTOS_TEXTO[o.mes - 1]}`,
-                      )
+                      .map((o) => {
+                        const fechaIso = aFechaIso(anio, o.mes, o.dia);
+                        const cumplida = pmCompletado(maquina.id, fechaIso, indicesCompletado);
+                        const texto = `${String(o.dia).padStart(2, "0")} ${NOMBRES_MESES_CORTOS_TEXTO[o.mes - 1]}`;
+                        return cumplida ? `✓ ${texto}` : texto;
+                      })
                       .join(", ")}
                 {!maquina.activa && <em> · fuera de circulación</em>}
               </li>

@@ -4,6 +4,7 @@ export interface Mtre045Datos {
   numeroReporte: string;
   fecha: string;
   equipo: string;
+  codigo: string;
   marca: string;
   serie: string;
   area: string;
@@ -26,6 +27,7 @@ export interface PrefillMtre045DesdePreventivo {
   numeroReporte: string;
   fecha: string;
   equipo: string;
+  codigo: string;
   marca: string;
   serie: string;
   area: string;
@@ -39,6 +41,7 @@ export function formularioMtre045Vacio(): Mtre045Datos {
     numeroReporte: "",
     fecha: new Date().toISOString().slice(0, 10),
     equipo: "",
+    codigo: "",
     marca: "",
     serie: "",
     area: "",
@@ -59,20 +62,34 @@ export function formularioMtre045Vacio(): Mtre045Datos {
 export function prefillMtre045DesdePreventivo(
   datos: PrefillMtre045DesdePreventivo,
 ): Mtre045Datos {
-  if (datos.mtre045) {
-    return { ...datos.mtre045, preventivoId: datos.preventivoId };
-  }
-  return {
+  const desdePm: Mtre045Datos = {
     ...formularioMtre045Vacio(),
     preventivoId: datos.preventivoId,
     numeroReporte: datos.numeroReporte,
     fecha: datos.fecha,
     equipo: datos.equipo,
+    codigo: datos.codigo,
     marca: datos.marca,
     serie: datos.serie,
     area: datos.area,
     actividadRealizada: datos.actividadRealizada,
     responsableMantenimiento: datos.responsableMantenimiento,
+  };
+
+  if (!datos.mtre045) return desdePm;
+
+  return {
+    ...datos.mtre045,
+    ...desdePm,
+    cambioRepuestos: datos.mtre045.cambioRepuestos,
+    verificacionEquipoPm: datos.mtre045.verificacionEquipoPm,
+    actividadCorrectivo: datos.mtre045.actividadCorrectivo,
+    cambioRepuestosCorrectivo: datos.mtre045.cambioRepuestosCorrectivo,
+    verificacionCorrectivo: datos.mtre045.verificacionCorrectivo,
+    inspeccionVisual: datos.mtre045.inspeccionVisual,
+    pruebasFuncionamiento: datos.mtre045.pruebasFuncionamiento,
+    noAprobo: datos.mtre045.noAprobo,
+    responsableVerificacion: datos.mtre045.responsableVerificacion,
   };
 }
 

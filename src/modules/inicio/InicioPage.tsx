@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AREAS_CON_PM, coincideArea } from "../../lib/areas";
 import { aFechaIso, NOMBRES_MESES, valorFecha } from "../../lib/fechas";
 import { mapaCitasDelAnio } from "../cronograma/cronogramaCalculo";
 import { listarExcepciones } from "../cronograma/cronogramaService";
 import type { CitaCronograma, ExcepcionCronograma } from "../cronograma/types";
+import { hojaEstaActiva } from "../hojas/hojasFiltro";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
 import { listarPreventivo } from "../preventivo/preventivoService";
+import { indicesPmCompletado, pmCompletado } from "../preventivo/pmCompletado";
 import type { RegistroPreventivo } from "../preventivo/types";
-import ImportadorRespaldo from "../importador/ImportadorRespaldo";
 import "./inicio.css";
 
 interface CitaMes extends CitaCronograma {
@@ -41,16 +42,9 @@ function construirDatosArea(
   preventivo: RegistroPreventivo[],
 ): DatosArea {
   const maquinasArea = maquinas.filter((m) => coincideArea(m.area, area));
+  const maquinasPorId = new Map(maquinasArea.map((m) => [m.id, m]));
   const mapa = mapaCitasDelAnio(maquinas, excepciones, area, anio);
-
-  // Indice de PM completados: por fecha exacta y por maquina+mes
-  const completadasExactas = new Set<string>();
-  const completadasPorMes = new Set<string>();
-  for (const registro of preventivo) {
-    if (!registro.hoja_id || !registro.fecha?.startsWith(String(anio))) continue;
-    completadasExactas.add(`${registro.hoja_id}|${registro.fecha}`);
-    completadasPorMes.add(`${registro.hoja_id}|${registro.fecha.slice(0, 7)}`);
-  }
+  const indicesCompletado = indicesPmCompletado(preventivo, anio);
 
   const hoy = new Date();
   const valorHoy = valorFecha(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate());
@@ -66,10 +60,11 @@ function construirDatosArea(
       const [mesClave, diaClave] = clave.split("|").map(Number);
       if (mesClave !== mes) continue;
       for (const cita of citas) {
+        const maquina = maquinasPorId.get(cita.maquinaId);
+        if (maquina && !hojaEstaActiva(maquina)) continue;
+
         const fechaIso = aFechaIso(anio, mes, diaClave);
-        const completada =
-          completadasExactas.has(`${cita.maquinaId}|${fechaIso}`) ||
-          completadasPorMes.has(`${cita.maquinaId}|${fechaIso.slice(0, 7)}`);
+        const completada = pmCompletado(cita.maquinaId, fechaIso, indicesCompletado);
         citasMes.push({ ...cita, dia: diaClave, completada });
         totalCitas += 1;
         if (completada) citasCompletadas += 1;
@@ -95,7 +90,7 @@ function construirDatosArea(
   return {
     area,
     totalMaquinas: maquinasArea.length,
-    maquinasActivas: maquinasArea.filter((m) => m.activa).length,
+    maquinasActivas: maquinasArea.filter((m) => hojaEstaActiva(m)).length,
     totalCitas,
     citasCompletadas,
     porMes,
@@ -106,6 +101,7 @@ function construirDatosArea(
 function InicioPage() {
   const anioActual = new Date().getFullYear();
   const mesActual = new Date().getMonth() + 1;
+  const ubicacion = useLocation();
   const navegar = useNavigate();
   const [anio, setAnio] = useState(anioActual);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
@@ -116,6 +112,20 @@ function InicioPage() {
 
   useEffect(() => {
     recargarDatos();
+  }, [ubicacion.key]);
+
+  useEffect(() => {
+    function alVolverAlPanel() {
+      if (document.visibilityState === "visible") {
+        recargarDatos();
+      }
+    }
+    window.addEventListener("focus", alVolverAlPanel);
+    document.addEventListener("visibilitychange", alVolverAlPanel);
+    return () => {
+      window.removeEventListener("focus", alVolverAlPanel);
+      document.removeEventListener("visibilitychange", alVolverAlPanel);
+    };
   }, []);
 
   function recargarDatos() {
@@ -155,8 +165,6 @@ function InicioPage() {
       </div>
 
       {error && <p className="inicio__error">{error}</p>}
-
-      <ImportadorRespaldo onImportado={recargarDatos} />
 
       {cargando && <p>Cargando panel...</p>}
 
@@ -200,7 +208,7 @@ function InicioPage() {
                   {datos.porMes.length === 0 ? (
                     <p className="area-card__vacio">
                       Hay máquinas pero ningún PM calculado para {anio}. Revisa primer
-                      PM y frecuencia.
+                      PM, frecuencia y que la máquina esté activa.
                     </p>
                   ) : (
                     <div className="area-card__meses">
@@ -211,6 +219,9 @@ function InicioPage() {
                             "mes-bloque" +
                             (anio === anioActual && bloque.mes === mesActual
                               ? " mes-bloque--actual"
+                              : "") +
+                            (bloque.completadas === bloque.citas.length && bloque.citas.length > 0
+                              ? " mes-bloque--todo-cumplido"
                               : "")
                           }
                         >

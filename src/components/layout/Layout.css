@@ -3,6 +3,91 @@
   min-height: 100vh;
 }
 
+.layout__cuerpo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.layout__topbar {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  border-bottom: 1px solid #1e293b;
+}
+
+.layout__topbar-titulo {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.layout__menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.layout__menu-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.layout__menu-icon {
+  display: block;
+  width: 1.15rem;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+  position: relative;
+}
+
+.layout__menu-icon::before,
+.layout__menu-icon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.layout__menu-icon::before {
+  top: -6px;
+}
+
+.layout__menu-icon::after {
+  top: 6px;
+}
+
+.layout__overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(15, 23, 42, 0.55);
+  cursor: pointer;
+}
+
 .sidebar {
   width: var(--sidebar-ancho);
   flex-shrink: 0;
@@ -50,6 +135,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sidebar__enlace {
@@ -76,4 +162,51 @@
   flex: 1;
   padding: 1.5rem 2rem;
   min-width: 0;
+}
+
+body.layout-menu-abierto {
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .layout__topbar {
+    display: flex;
+  }
+
+  .layout__overlay {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    width: min(88vw, 280px);
+    height: 100vh;
+    height: 100dvh;
+    transform: translateX(-105%);
+    transition: transform 0.22s ease;
+    box-shadow: none;
+  }
+
+  .sidebar--abierto {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .layout__contenido {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .layout__contenido {
+    padding: 0.75rem;
+  }
+
+  .sidebar__enlace {
+    padding: 0.65rem 0.75rem;
+    font-size: 1rem;
+  }
 }

@@ -72,6 +72,78 @@
   margin-top: 1rem;
 }
 
+.preventivo-form__seccion-formato {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+}
+
+.preventivo-form__equipo-info {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  font-size: 0.82rem;
+}
+
+.preventivo-form__equipo-info span {
+  color: var(--color-texto-suave);
+  font-weight: 600;
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.mtre045-campos-form {
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  padding: 1rem 1rem 0.25rem;
+  margin: 0;
+  background: #fafbfc;
+}
+
+.mtre045-campos-form legend {
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0 0.35rem;
+  color: var(--color-texto);
+}
+
+.mtre045-campos-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.mtre045-campos-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+}
+
+.mtre045-campos-form input,
+.mtre045-campos-form select,
+.mtre045-campos-form textarea {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-texto);
+}
+
+.mtre045-campos-form__ancho {
+  grid-column: 1 / -1;
+}
+
 .preventivo__mensaje {
   padding: 0.6rem 0.9rem;
   border-radius: 8px;

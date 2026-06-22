@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
-import { AREAS_SISTEMA } from "../../lib/areas";
+import { AREAS_SISTEMA, coincideArea } from "../../lib/areas";
 import HojaForm from "./HojaForm";
 import {
   actualizarHoja,
@@ -15,6 +15,7 @@ import type { HojaVida, HojaVidaInput } from "./types";
 import "./hojas.css";
 
 function HojasPage() {
+  const ubicacion = useLocation();
   const navigate = useNavigate();
   const [hojas, setHojas] = useState<HojaVida[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -30,10 +31,26 @@ function HojasPage() {
       .then(setHojas)
       .catch((e: Error) => setError("No se pudieron cargar las máquinas: " + e.message))
       .finally(() => setCargando(false));
+  }, [ubicacion.key]);
+
+  useEffect(() => {
+    function alVolver() {
+      if (document.visibilityState === "visible") {
+        listarHojas()
+          .then(setHojas)
+          .catch(() => undefined);
+      }
+    }
+    window.addEventListener("focus", alVolver);
+    document.addEventListener("visibilitychange", alVolver);
+    return () => {
+      window.removeEventListener("focus", alVolver);
+      document.removeEventListener("visibilitychange", alVolver);
+    };
   }, []);
 
   const hojasFiltradas = useMemo(
-    () => (filtroArea ? hojas.filter((h) => h.area === filtroArea) : hojas),
+    () => (filtroArea ? hojas.filter((h) => coincideArea(h.area, filtroArea)) : hojas),
     [hojas, filtroArea],
   );
 
@@ -71,7 +88,14 @@ function HojasPage() {
           previas.map((h) => (h.id === actualizada.id ? actualizada : h)),
         );
         setHojaEnEdicion(null);
-        setMensaje(`Máquina "${actualizada.nombre}" actualizada.`);
+        if (!coincideArea(hojaEnEdicion.area, actualizada.area)) {
+          setFiltroArea(actualizada.area);
+          setMensaje(
+            `Máquina "${actualizada.nombre}" actualizada. Área cambiada a ${actualizada.area}.`,
+          );
+        } else {
+          setMensaje(`Máquina "${actualizada.nombre}" actualizada.`);
+        }
       } else {
         const creada = await crearHoja(input, fotoUrl);
         setHojas((previas) => [creada, ...previas]);

@@ -41,9 +41,34 @@
 }
 
 .cronograma__total {
-  margin: 0 0 0.3rem auto;
+  margin: 0;
   color: var(--color-texto-suave);
   font-size: 0.9rem;
+}
+
+.cronograma__leyenda {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.cronograma__leyenda-item {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+}
+
+.cronograma__leyenda-item--pendiente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.cronograma__leyenda-item--cumplido {
+  background: #bbf7d0;
+  color: #14532d;
 }
 
 .cronograma__error {
@@ -98,6 +123,13 @@
   font-weight: 700;
 }
 
+.mes__dia--cumplida {
+  background: #bbf7d0;
+  color: #14532d;
+  border-color: #86efac;
+  font-weight: 700;
+}
+
 .mes__dia--seleccionado {
   outline: 2px solid var(--color-primario);
 }
@@ -126,6 +158,24 @@
   gap: 0.6rem;
   flex-wrap: wrap;
   font-size: 0.92rem;
+}
+
+.dia-detalle__cita--cumplida {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+}
+
+.dia-detalle__check {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.dia-detalle__estado {
+  color: #166534;
+  font-style: normal;
+  font-weight: 600;
 }
 
 .dia-detalle__agregar {

@@ -1,3 +1,5 @@
+@import "./styles/responsive.css";
+
 :root {
   --color-primario: #2563eb;
   --color-primario-oscuro: #1d4ed8;

@@ -1,10 +1,17 @@
 // Formulas de indicadores extraidas de la version vanilla (js/indicadores.js).
 // G = tiempo de respuesta (min), H = tiempo de mantenimiento (min), I = G + H.
 
-import { AREAS_CON_PM } from "../../lib/areas";
-import { mapaCitasDelAnio } from "../cronograma/cronogramaCalculo";
+import { AREAS_CON_PM, coincideArea } from "../../lib/areas";
+import { aFechaIso, diasEnMes } from "../../lib/fechas";
+import { maquinaActivaEnFecha, mapaCitasDelAnio } from "../cronograma/cronogramaCalculo";
 import type { ExcepcionCronograma } from "../cronograma/types";
+import { hojaEstaActiva } from "../hojas/hojasFiltro";
 import type { HojaVida } from "../hojas/types";
+import {
+  indicesPmCompletado,
+  pmCompletado,
+  vincularPreventivoConHojas,
+} from "../preventivo/pmCompletado";
 import type { RegistroPreventivo } from "../preventivo/types";
 import type { RegistroCorrectivo } from "../correctivo/types";
 import { periodoDe, type HorasProgramadas } from "./horasService";
@@ -128,6 +135,22 @@ function mesSiguiente(anio: number, mes: number): { anio: number; mes: number } 
   return mes >= 12 ? { anio: anio + 1, mes: 1 } : { anio, mes: mes + 1 };
 }
 
+/** True si la máquina estuvo en circulación al menos un día del mes. */
+function maquinaEnCirculacionEnMes(maquina: HojaVida, anio: number, mes: number): boolean {
+  for (let dia = 1; dia <= diasEnMes(anio, mes); dia++) {
+    if (maquinaActivaEnFecha(maquina, anio, mes, dia)) return true;
+  }
+  return false;
+}
+
+function maquinasEnCirculacionParaMes(
+  maquinas: HojaVida[],
+  anio: number,
+  mes: number,
+): HojaVida[] {
+  return maquinas.filter((m) => maquinaEnCirculacionEnMes(m, anio, mes));
+}
+
 export function clasificarCitasPreventivas(
   maquinas: HojaVida[],
   excepciones: ExcepcionCronograma[],
@@ -136,14 +159,19 @@ export function clasificarCitasPreventivas(
   anio: number,
   mes: number,
 ): ClasificacionPreventivo {
-  const mapa = mapaCitasDelAnio(maquinas, excepciones, area, anio);
+  const preventivoVinculado = vincularPreventivoConHojas(preventivo, maquinas);
+  const indicesPm = indicesPmCompletado(preventivoVinculado, anio);
+  const maquinasVigentes = maquinas.filter(hojaEstaActiva);
+  const maquinasPorId = new Map(maquinasVigentes.map((m) => [m.id, m]));
+  const maquinasMes = maquinasEnCirculacionParaMes(maquinasVigentes, anio, mes);
+  const mapa = mapaCitasDelAnio(maquinasMes, excepciones, area, anio);
 
   const cumplidas: CitaClasificada[] = [];
   const reprogramadas: CitaClasificada[] = [];
   const pendientes: CitaClasificada[] = [];
 
-  function pmEjecutado(maquinaId: string): RegistroPreventivo | undefined {
-    return preventivo.find(
+  function buscarPmEnMes(maquinaId: string): RegistroPreventivo | undefined {
+    return preventivoVinculado.find(
       (r) => r.hoja_id === maquinaId && registroEnMes(r.fecha, anio, mes),
     );
   }
@@ -152,29 +180,57 @@ export function clasificarCitasPreventivas(
     const [mesClave, diaClave] = clave.split("|").map(Number);
     if (mesClave !== mes) continue;
     for (const cita of citas) {
+      const maquina = maquinasPorId.get(cita.maquinaId);
+      if (!maquina || !hojaEstaActiva(maquina)) continue;
+      if (!maquinaActivaEnFecha(maquina, anio, mes, diaClave)) continue;
+
       const base: CitaClasificada = {
         maquinaId: cita.maquinaId,
         nombre: cita.nombre,
         codigo: cita.codigo,
         dia: diaClave,
       };
-      const pm = pmEjecutado(cita.maquinaId);
-      if (pm) {
-        cumplidas.push({ ...base, fechaPm: pm.fecha });
+      const fechaCita = aFechaIso(anio, mes, diaClave);
+      if (pmCompletado(cita.maquinaId, fechaCita, indicesPm)) {
+        const pm = buscarPmEnMes(cita.maquinaId);
+        cumplidas.push({ ...base, fechaPm: pm?.fecha });
       } else {
         pendientes.push(base);
       }
     }
   }
 
+  const yaContadas = new Set([
+    ...cumplidas.map((c) => c.maquinaId),
+    ...pendientes.map((c) => c.maquinaId),
+  ]);
+  for (const maquina of maquinasMes) {
+    if (area && !coincideArea(maquina.area, area)) continue;
+    if (yaContadas.has(maquina.id)) continue;
+    const pm = buscarPmEnMes(maquina.id);
+    if (!pm) continue;
+    const diaPm = Number.parseInt(pm.fecha.slice(8, 10), 10) || 1;
+    cumplidas.push({
+      maquinaId: maquina.id,
+      nombre: maquina.nombre,
+      codigo: maquina.codigo ?? "",
+      dia: diaPm,
+      fechaPm: pm.fecha,
+    });
+  }
+
   // Citas excluidas este mes que reaparecen el mes siguiente = reprogramadas
   const siguiente = mesSiguiente(anio, mes);
-  const mapaSiguiente = mapaCitasDelAnio(maquinas, excepciones, area, siguiente.anio);
+  const maquinasMesSiguiente = maquinasEnCirculacionParaMes(maquinasVigentes, siguiente.anio, siguiente.mes);
+  const mapaSiguiente = mapaCitasDelAnio(maquinasMesSiguiente, excepciones, area, siguiente.anio);
   for (const excepcion of excepciones) {
     const d = excepcion.datos;
-    if (d.tipo !== "excluir" || d.area !== area || d.anio !== anio || d.mes !== mes) continue;
-    const maquina = maquinas.find((m) => m.id === d.maquinaId);
-    if (!maquina) continue;
+    if (d.tipo !== "excluir" || !coincideArea(d.area, area) || d.anio !== anio || d.mes !== mes) {
+      continue;
+    }
+    const maquina = maquinasVigentes.find((m) => m.id === d.maquinaId);
+    if (!maquina || !hojaEstaActiva(maquina)) continue;
+    if (!maquinaActivaEnFecha(maquina, anio, mes, d.dia)) continue;
 
     let destino: CitaClasificada["destino"];
     for (const [clave, citas] of mapaSiguiente) {
@@ -186,17 +242,27 @@ export function clasificarCitasPreventivas(
       }
     }
     if (destino) {
-      reprogramadas.push({
+      const pm = buscarPmEnMes(maquina.id);
+      const baseReprogramada: CitaClasificada = {
         maquinaId: maquina.id,
         nombre: maquina.nombre,
         codigo: maquina.codigo ?? "",
         dia: d.dia,
         destino,
-      });
+      };
+      if (pm) {
+        if (!cumplidas.some((c) => c.maquinaId === maquina.id)) {
+          const diaPm = Number.parseInt(pm.fecha.slice(8, 10), 10) || d.dia;
+          cumplidas.push({ ...baseReprogramada, dia: diaPm, fechaPm: pm.fecha });
+        }
+      } else {
+        reprogramadas.push(baseReprogramada);
+      }
     }
   }
 
-  const total = cumplidas.length + pendientes.length + reprogramadas.length;
+  // Solo citas del mes con PM pendiente cuentan contra el %; reprogramadas son informativas.
+  const total = cumplidas.length + pendientes.length;
   const porcentaje = total > 0 ? Math.round((cumplidas.length / total) * 100) : 0;
 
   return { cumplidas, reprogramadas, pendientes, total, porcentaje };
@@ -261,7 +327,12 @@ export function cumplimientoPreventivoGlobal(
   preventivo: RegistroPreventivo[],
   anio: number,
   mes: number,
+  referencia = new Date(),
 ): number | null {
+  const anioRef = referencia.getFullYear();
+  const mesRef = referencia.getMonth() + 1;
+  if (anio > anioRef || (anio === anioRef && mes > mesRef)) return null;
+
   let totalCitas = 0;
   let totalCumplidas = 0;
   for (const area of AREAS_CON_PM) {

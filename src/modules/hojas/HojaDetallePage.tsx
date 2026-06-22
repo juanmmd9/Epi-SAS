@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { areaTienePreventivo } from "../../lib/areas";
-import type { PrefillMtre045DesdePreventivo } from "../formatos/mtre045Types";
-import {
-  idsDesdeRegistroPreventivo,
-  nombresPersonalEnRegistro,
-} from "../personal/personalVinculo";
+import { construirMtre045DesdePreventivo } from "../formatos/mtre045DesdePreventivo";
 import { listarPersonalActivo } from "../personal/personalService";
 import type { Persona } from "../personal/types";
 import { obtenerHistorialMaquina, obtenerHojaPorId } from "./hojasService";
@@ -78,23 +74,8 @@ function HojaDetallePage() {
 
   async function abrirMtre045(registro: HistorialMaquina["preventivos"][number]) {
     if (!hoja) return;
-    const prefill: PrefillMtre045DesdePreventivo = {
-      preventivoId: registro.id,
-      numeroReporte: registro.id.slice(0, 8).toUpperCase(),
-      fecha: registro.fecha,
-      equipo: hoja.nombre,
-      marca: hoja.datos.marca ?? "",
-      serie: hoja.datos.serial ?? hoja.codigo ?? "",
-      area: registro.area,
-      actividadRealizada: registro.descripcion ?? "",
-      responsableMantenimiento: nombresPersonalEnRegistro(
-        idsDesdeRegistroPreventivo(registro),
-        personal,
-        registro.datos.personalNombres,
-      ),
-      mtre045: registro.datos.mtre045,
-    };
-    navigate("/formatos/mt-re-045", { state: { mtre045: prefill } });
+    const datos = construirMtre045DesdePreventivo(registro, hoja, personal);
+    navigate("/formatos/mt-re-045", { state: { mtre045Datos: datos } });
   }
 
   return (

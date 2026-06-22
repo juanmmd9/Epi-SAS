@@ -4,12 +4,17 @@ import { ETIQUETAS_ROL, enlacesParaRol } from "../../modules/auth/roles";
 import "../../modules/auth/auth.css";
 import "./Layout.css";
 
-function Sidebar() {
+interface Props {
+  abierto: boolean;
+  onCerrar: () => void;
+}
+
+function Sidebar({ abierto, onCerrar }: Props) {
   const { perfil, salir } = useAuth();
   const enlaces = enlacesParaRol(perfil?.rol);
 
   return (
-    <aside className="sidebar">
+    <aside className={"sidebar" + (abierto ? " sidebar--abierto" : "")}>
       <div className="sidebar__marca">
         <img
           className="sidebar__logo"
@@ -29,6 +34,7 @@ function Sidebar() {
             className={({ isActive }) =>
               "sidebar__enlace" + (isActive ? " sidebar__enlace--activo" : "")
             }
+            onClick={onCerrar}
           >
             {enlace.texto}
           </NavLink>

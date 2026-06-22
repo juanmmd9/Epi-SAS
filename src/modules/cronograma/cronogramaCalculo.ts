@@ -2,7 +2,7 @@
 // Calcula las fechas de PM de cada maquina a partir de su primer PM y
 // frecuencia en meses, aplicando excepciones (dias excluidos o agregados).
 
-import { areaTienePreventivo, coincideArea } from "../../lib/areas";
+import { areaTienePreventivo, coincideArea, normalizarArea } from "../../lib/areas";
 import {
   ajustarDiaPorMes,
   parseFechaIso,
@@ -12,21 +12,28 @@ import {
 import type { HojaVida } from "../hojas/types";
 import type { CitaCronograma, ExcepcionCronograma, OcurrenciaPm } from "./types";
 
-function maquinaActivaEnFecha(
+/** Indica si la máquina debe aparecer en el PM de esa fecha (respeta baja de circulación). */
+export function maquinaActivaEnFecha(
   maquina: HojaVida,
   anio: number,
   mes: number,
   dia: number,
 ): boolean {
+  // Activa en hoja de vida = en circulación (aunque quede fechaBaja antigua por error)
+  if (maquina.activa !== false) return true;
+
   const fechaBaja = parseFechaIso(maquina.datos.fechaBaja);
-  if (!maquina.activa && !fechaBaja) return false;
-  if (!fechaBaja) return maquina.activa;
-  return valorFecha(anio, mes, dia) < valorFecha(fechaBaja.anio, fechaBaja.mes, fechaBaja.dia);
+  if (!fechaBaja) return false;
+
+  const valorPm = valorFecha(anio, mes, dia);
+  const valorBaja = valorFecha(fechaBaja.anio, fechaBaja.mes, fechaBaja.dia);
+  return valorPm < valorBaja;
 }
 
 /** Fechas de PM automaticas de una maquina dentro de un anio. */
 export function ocurrenciasEnAnio(maquina: HojaVida, anioVista: number): OcurrenciaPm[] {
-  if (!areaTienePreventivo(maquina.area)) return [];
+  const area = normalizarArea(maquina.area);
+  if (!areaTienePreventivo(area)) return [];
   const base = parseFechaIso(maquina.primer_pm);
   if (!base) return [];
 
@@ -86,7 +93,7 @@ function coincideExcepcion(
   const d = excepcion.datos;
   return (
     d.tipo === tipo &&
-    d.area === area &&
+    coincideArea(d.area, area) &&
     d.maquinaId === maquinaId &&
     d.anio === anio &&
     d.mes === mes &&
@@ -143,9 +150,10 @@ export function mapaCitasDelAnio(
 
   for (const excepcion of excepciones) {
     const d = excepcion.datos;
-    if (d.tipo !== "agregar" || d.area !== area || d.anio !== anioVista) continue;
+    if (d.tipo !== "agregar" || !coincideArea(d.area, area) || d.anio !== anioVista) continue;
     const maquina = maquinasArea.find((m) => m.id === d.maquinaId);
     if (!maquina) continue;
+    if (!maquinaActivaEnFecha(maquina, d.anio, d.mes, d.dia)) continue;
     agregar(d.mes, d.dia, {
       maquinaId: maquina.id,
       nombre: maquina.nombre,

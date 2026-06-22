@@ -1,11 +1,45 @@
 .mtre045-preview {
   background: #fff;
   border: 1px solid #333;
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.25rem 1.5rem;
   max-width: 52rem;
   margin: 0 auto;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: #111;
+  line-height: 1.35;
+}
+
+.mtre045-preview__meta {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+}
+
+.mtre045-preview__meta td {
+  border: 1px solid #333;
+  padding: 0.35rem 0.5rem;
+  vertical-align: top;
+}
+
+.mtre045-preview__meta-derecha {
+  text-align: right;
+  width: 42%;
+}
+
+.mtre045-preview__procedimiento {
+  margin: 0.5rem 0 0.15rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mtre045-preview__titulo-principal {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .mtre045-preview__titulo {
@@ -117,8 +151,45 @@
   white-space: pre-wrap;
 }
 
-.mtre045-preview__celda-area {
+.mtre045-preview__celda-alta {
+  min-height: 3.5rem;
+}
+
+.mtre045-preview__celda-repuestos {
+  vertical-align: top;
+  min-height: 6rem;
+}
+
+.mtre045-preview__lista-num {
+  margin: 0;
+  padding-left: 1.35rem;
+  font-size: 0.78rem;
+}
+
+.mtre045-preview__lista-num li {
+  min-height: 0.95rem;
+}
+
+.mtre045-preview__celda-an {
+  text-align: center;
+}
+
+.mtre045-preview__nombre-firma {
+  min-height: 1.1rem;
   font-weight: 600;
+}
+
+.mtre045-preview__tabla--encabezado {
+  margin-bottom: 0.75rem;
+}
+
+.mtre045-preview__tabla--encabezado .mtre045-preview__th-num {
+  width: 22%;
+}
+
+.mtre045-preview__td-valor {
+  font-weight: 600;
+  width: 28%;
 }
 
 .mtre045-filtros-pm {
@@ -249,6 +320,11 @@
   grid-column: 1 / -1;
 }
 
+.mtre045-form__solo-lectura {
+  background: #f1f5f9;
+  color: var(--color-texto-suave);
+}
+
 .mtre045-form__acciones {
   display: flex;
   flex-wrap: wrap;
@@ -310,4 +386,68 @@
   border-radius: 8px;
   background: #fff;
   flex-wrap: wrap;
+}
+
+.mtre045-item-pm__codigo {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: #e2e8f0;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.mtre045-item-pm__desc {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-texto-suave);
+}
+
+@media print {
+  body.imprimiendo-formato aside,
+  body.imprimiendo-formato .formatos__cabecera,
+  body.imprimiendo-formato .mtre045-page__layout,
+  body.imprimiendo-formato .mtre045-form,
+  body.imprimiendo-formato .mtre045-lista-pm,
+  body.imprimiendo-formato .formatos__mensaje,
+  body.imprimiendo-formato .layout__topbar,
+  body.imprimiendo-formato .sidebar,
+  body.imprimiendo-formato .permisos__preview-barra {
+    display: none !important;
+  }
+
+  body.imprimiendo-formato .mtre045-panel-preview,
+  body.imprimiendo-formato .mtre045-panel-preview__scroll {
+    display: block !important;
+  }
+
+  body.imprimiendo-formato .mtre045-panel-preview__barra {
+    display: none !important;
+  }
+
+  body.imprimiendo-formato .layout__contenido,
+  body.imprimiendo-formato .mtre045-page,
+  body.imprimiendo-formato .mtre045-panel-preview,
+  body.imprimiendo-formato .mtre045-panel-preview__scroll {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #fff !important;
+    border: none !important;
+  }
+
+  body.imprimiendo-formato .mtre045-preview {
+    border: none;
+    max-width: none;
+    width: 100%;
+    padding: 0;
+    font-size: 10pt;
+  }
+
+  body.imprimiendo-formato .mtre045-preview__tabla th,
+  body.imprimiendo-formato .mtre045-preview__tabla td {
+    border-color: #000;
+  }
 }

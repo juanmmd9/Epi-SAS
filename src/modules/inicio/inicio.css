@@ -104,6 +104,15 @@
   box-shadow: 0 0 0 1px var(--color-primario);
 }
 
+.mes-bloque--todo-cumplido {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.mes-bloque--todo-cumplido .mes-bloque__titulo {
+  color: #166534;
+}
+
 .mes-bloque__titulo {
   display: flex;
   justify-content: space-between;
@@ -138,10 +147,15 @@
 }
 
 .cita--completada {
-  background: #f0fdf4;
+  background: #dcfce7;
+  border: 1px solid #86efac;
 }
 
 .cita--completada .cita__nombre {
+  color: #14532d;
+}
+
+.cita--completada .cita__codigo {
   color: #166534;
 }
 
