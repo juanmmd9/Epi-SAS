@@ -1,16 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { listarAccionesMejora } from "./gcre001Service";
+import type { RegistroAm } from "./gcre001Types";
 import { listarNoConformidades } from "./formatosService";
 import type { RegistroNc } from "./types";
 import "./formatos.css";
 
 function FormatosPage() {
   const [registros, setRegistros] = useState<RegistroNc[]>([]);
+  const [mejoras, setMejoras] = useState<RegistroAm[]>([]);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    listarNoConformidades()
-      .then(setRegistros)
+    Promise.all([listarNoConformidades(), listarAccionesMejora()])
+      .then(([nc, am]) => {
+        setRegistros(nc);
+        setMejoras(am);
+      })
       .finally(() => setCargando(false));
   }, []);
 
@@ -20,6 +26,17 @@ function FormatosPage() {
       <p className="formatos__descripcion">
         Catálogo de formatos del sistema de gestión de calidad.
       </p>
+
+      <article className="formato-card">
+        <h2>GC-RE-001</h2>
+        <p>
+          Acciones de mejora del SGC. Registre oportunidades de mejora, evaluación y plan de acción.
+          Vinculable a la matriz de riesgos.
+        </p>
+        <Link to="/formatos/gc-re-001" className="btn btn--primario">
+          Abrir formato GC-RE-001
+        </Link>
+      </article>
 
       <article className="formato-card">
         <h2>GC-RE-009</h2>
@@ -48,15 +65,23 @@ function FormatosPage() {
         </Link>
       </article>
 
-      <h2>Registros recientes ({registros.length})</h2>
+      <h2>Registros recientes</h2>
       {cargando && <p>Cargando...</p>}
-      {!cargando && registros.length === 0 && (
+      {!cargando && registros.length === 0 && mejoras.length === 0 && (
         <p className="formatos__vacio">Aún no hay registros guardados.</p>
       )}
       <div className="formatos__lista-recientes">
-        {registros.slice(0, 10).map((registro) => (
+        {mejoras.slice(0, 5).map((registro) => (
           <article key={registro.id} className="item-nc item-nc--compacto">
-            <strong>No. {registro.numero} — {registro.datos.area}</strong>
+            <strong>GC-RE-001 No. {registro.numero} — {registro.datos.proceso}</strong>
+            <p>
+              {registro.datos.fechaRegistro} · {registro.datos.descripcion.slice(0, 60)}...
+            </p>
+          </article>
+        ))}
+        {registros.slice(0, 5).map((registro) => (
+          <article key={registro.id} className="item-nc item-nc--compacto">
+            <strong>GC-RE-009 No. {registro.numero} — {registro.datos.area}</strong>
             <p>{registro.datos.fechaDeteccion} · {registro.datos.descripcion.slice(0, 60)}...</p>
           </article>
         ))}

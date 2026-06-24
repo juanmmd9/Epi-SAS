@@ -11,6 +11,7 @@ import HojasPage from "./modules/hojas/HojasPage";
 import HojaDetallePage from "./modules/hojas/HojaDetallePage";
 import IndicadoresPage from "./modules/indicadores/IndicadoresPage";
 import FormatosPage from "./modules/formatos/FormatosPage";
+import Gcre001Page from "./modules/formatos/Gcre001Page";
 import Gcre009Page from "./modules/formatos/Gcre009Page";
 import Ghre030Page from "./modules/formatos/Ghre030Page";
 import Mtre045Page from "./modules/formatos/Mtre045Page";
@@ -35,6 +36,7 @@ function App() {
             <Route path="hojas-de-vida/:id" element={<HojaDetallePage />} />
             <Route path="indicadores" element={<IndicadoresPage />} />
             <Route path="formatos" element={<FormatosPage />} />
+            <Route path="formatos/gc-re-001" element={<Gcre001Page />} />
             <Route path="formatos/gc-re-009" element={<Gcre009Page />} />
             <Route path="formatos/gh-re-030" element={<Ghre030Page />} />
             <Route path="formatos/mt-re-045" element={<Mtre045Page />} />

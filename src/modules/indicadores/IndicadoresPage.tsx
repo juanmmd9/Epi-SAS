@@ -9,6 +9,9 @@ import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
 import { listarPreventivo } from "../preventivo/preventivoService";
 import type { RegistroPreventivo } from "../preventivo/types";
+import { horasLaborablesMes, resolverHorariosAnio } from "../permisos/horasLaborables";
+import { listarFestivosAnio, listarHorarioAnio } from "../permisos/horarioService";
+import type { Festivo, HorarioLaboral } from "../permisos/types";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   calcularResumenCorrectivo,
@@ -16,7 +19,10 @@ import {
   clasificarCitasPreventivas,
   filtrarCorrectivos,
   formatearNumero,
+  horasProgramadasEfectivas,
   metasIncumplidasMes,
+  minutosEfectivosHorasPerdidas,
+  solicitudConTopeHorasPerdidas,
   type CitaClasificada,
 } from "./indicadoresCalculo";
 import {
@@ -65,6 +71,8 @@ function IndicadoresPage() {
   const [excepciones, setExcepciones] = useState<ExcepcionCronograma[]>([]);
   const [preventivo, setPreventivo] = useState<RegistroPreventivo[]>([]);
   const [horas, setHoras] = useState<HorasProgramadas[]>([]);
+  const [horariosDb, setHorariosDb] = useState<HorarioLaboral[]>([]);
+  const [festivos, setFestivos] = useState<Festivo[]>([]);
   const [cargando, setCargando] = useState(true);
   const [estado, setEstado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +97,27 @@ function IndicadoresPage() {
       .finally(() => setCargando(false));
   }, [ubicacion.key]);
 
-  const horasProgramadasActual = useMemo(() => {
+  useEffect(() => {
+    Promise.all([
+      listarHorarioAnio(anio).catch(() => [] as HorarioLaboral[]),
+      listarFestivosAnio(anio).catch(() => [] as Festivo[]),
+    ]).then(([listaHorario, listaFestivos]) => {
+      setHorariosDb(listaHorario);
+      setFestivos(listaFestivos);
+    });
+  }, [anio, ubicacion.key]);
+
+  const horarios = useMemo(
+    () => resolverHorariosAnio(anio, horariosDb),
+    [anio, horariosDb],
+  );
+
+  const horasCalendarioMes = useMemo(
+    () => horasLaborablesMes(anio, mes, horarios, festivos),
+    [anio, mes, horarios, festivos],
+  );
+
+  const horasProgramadasManual = useMemo(() => {
     if (!area) return null;
     const registro = horas.find(
       (h) => h.periodo === periodoDe(anio, mes) && h.area === area,
@@ -97,9 +125,20 @@ function IndicadoresPage() {
     return registro && registro.horas > 0 ? registro.horas : null;
   }, [horas, area, anio, mes]);
 
+  const horasProgramadasActual = useMemo(() => {
+    if (!area) return null;
+    return horasProgramadasEfectivas(horas, anio, mes, area, horarios, festivos);
+  }, [horas, area, anio, mes, horarios, festivos]);
+
   useEffect(() => {
-    setHorasInput(horasProgramadasActual !== null ? String(horasProgramadasActual) : "");
-  }, [horasProgramadasActual]);
+    if (horasProgramadasManual !== null) {
+      setHorasInput(String(horasProgramadasManual));
+    } else if (horasCalendarioMes > 0) {
+      setHorasInput(String(horasCalendarioMes));
+    } else {
+      setHorasInput("");
+    }
+  }, [horasProgramadasManual, horasCalendarioMes]);
 
   const filas = useMemo(() => {
     if (!area) return [];
@@ -109,7 +148,10 @@ function IndicadoresPage() {
     }));
   }, [correctivos, area, anio, mes, tipo]);
 
-  const resumen = useMemo(() => calcularResumenCorrectivo(filas), [filas]);
+  const resumen = useMemo(
+    () => calcularResumenCorrectivo(filas, horarios, festivos),
+    [filas, horarios, festivos],
+  );
 
   const preventivoPorArea = useMemo(
     () =>
@@ -144,14 +186,15 @@ function IndicadoresPage() {
     }
   }
 
-  const ratio = horasProgramadasActual ? resumen.horas / horasProgramadasActual : null;
+  const ratio = horasProgramadasActual ? resumen.horasIndicador / horasProgramadasActual : null;
 
   const metasIncumplidas = useMemo(
     () =>
       metasIncumplidasMes(
         maquinas, excepciones, preventivo, correctivos, horas, anio, mes, tipo, area,
+        horarios, festivos,
       ),
-    [maquinas, excepciones, preventivo, correctivos, horas, anio, mes, tipo, area],
+    [maquinas, excepciones, preventivo, correctivos, horas, anio, mes, tipo, area, horarios, festivos],
   );
 
   function abrirNcDesdeMetaIncumplida(meta: (typeof metasIncumplidas)[number]) {
@@ -173,7 +216,9 @@ function IndicadoresPage() {
       <p className="indicadores__descripcion">
         Tiempos de respuesta correctivos y cumplimiento del cronograma preventivo.
         Solo se consideran máquinas activas (en circulación). Las que están fuera de
-        servicio no cuentan como pendientes ni afectan el porcentaje.
+        servicio no cuentan como pendientes ni afectan el porcentaje. En horas perdidas,
+        solicitudes de más de 3 días calendario solo cuentan hasta 2 jornadas laborales
+        (según horario y festivos de Personal → Horario).
       </p>
 
       <div className="indicadores__pestanas">
@@ -232,7 +277,7 @@ function IndicadoresPage() {
             <input
               type="number"
               min={1}
-              placeholder={area ? "Ej. 1376" : "Selecciona un área"}
+              placeholder={area ? `Calendario: ${horasCalendarioMes} h` : "Selecciona un área"}
               disabled={!area}
               value={horasInput}
               onChange={(e) => setHorasInput(e.target.value)}
@@ -240,7 +285,22 @@ function IndicadoresPage() {
             <button className="btn" disabled={!area} onClick={manejarGuardarHoras}>
               Guardar
             </button>
+            <button
+              type="button"
+              className="btn btn--secundario"
+              disabled={!area || horasCalendarioMes <= 0}
+              onClick={() => setHorasInput(String(horasCalendarioMes))}
+            >
+              Usar calendario ({horasCalendarioMes} h)
+            </button>
           </div>
+          {area && (
+            <small className="indicadores__nota-horas">
+              {horasProgramadasManual !== null
+                ? `Valor guardado para ${area}. Calendario laboral del mes: ${horasCalendarioMes} h (${festivos.length} festivos).`
+                : `Sin valor guardado: se usa el calendario laboral (${horasCalendarioMes} h, ${festivos.length} festivos).`}
+            </small>
+          )}
         </label>
       </div>
 
@@ -257,6 +317,8 @@ function IndicadoresPage() {
           preventivo={preventivo}
           correctivos={correctivos}
           horas={horas}
+          horarios={horarios}
+          festivos={festivos}
         />
       )}
 
@@ -304,6 +366,13 @@ function IndicadoresPage() {
           </small>
         </article>
         <article className="tarjeta-indicador">
+          <span>Horas para indicador</span>
+          <strong>{formatearNumero(resumen.horasIndicador)}</strong>
+          <small>
+            Con tope de 2 jornadas laborales si la solicitud supera 3 días calendario
+          </small>
+        </article>
+        <article className="tarjeta-indicador">
           <span>Horas programadas</span>
           <strong>{horasProgramadasActual ?? "—"}</strong>
           <small>
@@ -311,11 +380,11 @@ function IndicadoresPage() {
           </small>
         </article>
         <article className="tarjeta-indicador">
-          <span>Indicador (Turnos)</span>
+          <span>% Horas perdidas</span>
           <strong>{ratio !== null ? `${formatearNumero(ratio * 100)}%` : "—"}</strong>
           <small>
             {ratio !== null
-              ? `Ratio ${formatearNumero(ratio, 4)} = ${formatearNumero(resumen.horas)} / ${horasProgramadasActual}`
+              ? `${formatearNumero(resumen.horasIndicador)} h / ${horasProgramadasActual} h programadas`
               : "Guarda las horas programadas del mes para calcular el indicador."}
           </small>
         </article>
@@ -344,6 +413,7 @@ function IndicadoresPage() {
                 <th>T. respuesta (min) G</th>
                 <th>T. mantenimiento (min) H</th>
                 <th>T. real mant. I</th>
+                <th>I para indicador</th>
               </tr>
               <tr className="indicadores__subencabezado">
                 <th></th>
@@ -355,11 +425,25 @@ function IndicadoresPage() {
                 <th>G</th>
                 <th>H</th>
                 <th>I = G + H</th>
+                <th>Tope 2 jorn.</th>
               </tr>
             </thead>
             <tbody>
-              {filas.map(({ registro, tiempos }) => (
-                <tr key={registro.id} className={tiempos.advertencia ? "fila-advertencia" : ""}>
+              {filas.map(({ registro, tiempos }) => {
+                const minutosIndicador = minutosEfectivosHorasPerdidas(
+                  { registro, tiempos },
+                  horarios,
+                  festivos,
+                );
+                const conTope = solicitudConTopeHorasPerdidas(registro);
+                return (
+                <tr
+                  key={registro.id}
+                  className={
+                    (tiempos.advertencia ? "fila-advertencia " : "") +
+                    (conTope ? "fila-tope-horas" : "")
+                  }
+                >
                   <td>{registro.datos.maquinaEquipoLocacion || "—"}</td>
                   <td>{registro.fecha || "—"}</td>
                   <td>{registro.datos.horaSolicitud || "—"}</td>
@@ -371,23 +455,30 @@ function IndicadoresPage() {
                   <td className="indicadores__col-real">
                     {formatearNumero(tiempos.i, tiempos.valido ? 0 : 2)}
                   </td>
+                  <td className="indicadores__col-indicador" title={conTope ? "Solicitud de más de 3 días: solo cuentan 2 días para el %" : ""}>
+                    {formatearNumero(minutosIndicador, tiempos.valido ? 0 : 2)}
+                    {conTope && tiempos.valido ? " *" : ""}
+                  </td>
                 </tr>
-              ))}
+              );})}
               <tr className="indicadores__fila-resumen">
                 <td colSpan={6}><strong>Total</strong></td>
                 <td>{formatearNumero(resumen.totalG, 0)}</td>
                 <td>{formatearNumero(resumen.totalH, 0)}</td>
                 <td>{formatearNumero(resumen.totalI, 0)}</td>
+                <td>{formatearNumero(resumen.totalIIndicador, 0)}</td>
               </tr>
               <tr className="indicadores__fila-resumen">
                 <td colSpan={6}><strong>Promedio</strong></td>
                 <td>{formatearNumero(resumen.promedioG)}</td>
                 <td>{formatearNumero(resumen.promedioH)}</td>
                 <td>{formatearNumero(resumen.promedioI)}</td>
+                <td>—</td>
               </tr>
               <tr className="indicadores__fila-resumen">
                 <td colSpan={6}><strong>Horas</strong> (total I / 60)</td>
                 <td colSpan={3}>{formatearNumero(resumen.horas)}</td>
+                <td>{formatearNumero(resumen.horasIndicador)}</td>
               </tr>
             </tbody>
           </table>

@@ -149,6 +149,11 @@
   font-weight: 400;
 }
 
+.gcre-form__seccion {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+}
+
 .gcre-form__grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;

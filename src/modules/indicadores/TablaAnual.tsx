@@ -5,6 +5,7 @@ import type { RegistroCorrectivo } from "../correctivo/types";
 import type { ExcepcionCronograma } from "../cronograma/types";
 import type { HojaVida } from "../hojas/types";
 import type { RegistroPreventivo } from "../preventivo/types";
+import type { Festivo, HorarioLaboral } from "../permisos/types";
 import type { HorasProgramadas } from "./horasService";
 import {
   AREAS_CORRECTIVO_TABLA,
@@ -51,6 +52,8 @@ interface Props {
   preventivo: RegistroPreventivo[];
   correctivos: RegistroCorrectivo[];
   horas: HorasProgramadas[];
+  horarios: HorarioLaboral[];
+  festivos: Festivo[];
 }
 
 function claseDeEstado(estado: EstadoMeta): string {
@@ -75,6 +78,8 @@ function TablaAnual({
   preventivo,
   correctivos,
   horas,
+  horarios,
+  festivos,
 }: Props) {
   const navegar = useNavigate();
 
@@ -107,7 +112,9 @@ function TablaAnual({
           promedioRespuestaArea(correctivos, anio, mes, area, tipoMantenimiento),
         );
         valoresHoras.push(
-          porcentajeHorasPerdidasArea(correctivos, horas, anio, mes, area, tipoMantenimiento),
+          porcentajeHorasPerdidasArea(
+            correctivos, horas, anio, mes, area, tipoMantenimiento, horarios, festivos,
+          ),
         );
       }
       resultado.push({
@@ -133,7 +140,7 @@ function TablaAnual({
     }
 
     return resultado;
-  }, [anio, tipoMantenimiento, maquinas, excepciones, preventivo, correctivos, horas]);
+  }, [anio, tipoMantenimiento, maquinas, excepciones, preventivo, correctivos, horas, horarios, festivos]);
 
   function abrirNc(fila: FilaIndicador, mes: number, texto: string) {
     const payload: PayloadNc = {
