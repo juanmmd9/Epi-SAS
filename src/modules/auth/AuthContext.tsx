@@ -86,10 +86,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [cargarPerfil]);
 
   const salir = useCallback(async () => {
-    await cerrarSesion();
-    setSession(null);
-    setPerfil(null);
-    setErrorPerfil(null);
+    try {
+      await cerrarSesion();
+    } catch {
+      // Si falla el servidor, igual limpiamos la sesión local en pantalla.
+    } finally {
+      setSession(null);
+      setPerfil(null);
+      setErrorPerfil(null);
+      setCargando(false);
+    }
   }, []);
 
   const rol = perfil?.rol ?? null;

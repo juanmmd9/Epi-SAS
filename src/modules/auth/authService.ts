@@ -20,12 +20,14 @@ export async function obtenerPerfilUsuario(userId: string): Promise<UsuarioPorta
 }
 
 export async function iniciarSesion(email: string, password: string): Promise<void> {
+  // Cierra cualquier sesión previa en este navegador antes de entrar con otra cuenta.
+  await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw new Error(error.message);
 }
 
 export async function cerrarSesion(): Promise<void> {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({ scope: "local" });
   if (error) throw new Error(error.message);
 }
 

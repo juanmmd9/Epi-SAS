@@ -17,14 +17,18 @@ import {
   calcularResumenCorrectivo,
   calcularTiemposCorrectivo,
   clasificarCitasPreventivas,
+  cumplimientoPreventivoGlobal,
   filtrarCorrectivos,
   formatearNumero,
   horasProgramadasEfectivas,
   metasIncumplidasMes,
   minutosEfectivosHorasPerdidas,
+  porcentajeHorasPerdidasArea,
+  promedioRespuestaArea,
   solicitudConTopeHorasPerdidas,
   type CitaClasificada,
 } from "./indicadoresCalculo";
+import PanelFormulas from "./PanelFormulas";
 import {
   guardarHorasProgramadas,
   listarHorasProgramadas,
@@ -59,7 +63,7 @@ function IndicadoresPage() {
   const hoy = new Date();
   const navegar = useNavigate();
   const ubicacion = useLocation();
-  const [panel, setPanel] = useState<"detalle" | "tabla">("detalle");
+  const [panel, setPanel] = useState<"detalle" | "tabla" | "formulas">("detalle");
   const [area, setArea] = useState("");
   const [mes, setMes] = useState(hoy.getMonth() + 1);
   const [anio, setAnio] = useState(hoy.getFullYear());
@@ -188,6 +192,29 @@ function IndicadoresPage() {
 
   const ratio = horasProgramadasActual ? resumen.horasIndicador / horasProgramadasActual : null;
 
+  const cumplimientoPmMes = useMemo(
+    () => cumplimientoPreventivoGlobal(maquinas, excepciones, preventivo, anio, mes),
+    [maquinas, excepciones, preventivo, anio, mes],
+  );
+
+  const promedioRespuestaAreaMes = useMemo(
+    () =>
+      area
+        ? promedioRespuestaArea(correctivos, anio, mes, area, tipo)
+        : null,
+    [correctivos, anio, mes, area, tipo],
+  );
+
+  const porcentajeHorasAreaMes = useMemo(
+    () =>
+      area
+        ? porcentajeHorasPerdidasArea(
+            correctivos, horas, anio, mes, area, tipo, horarios, festivos,
+          )
+        : null,
+    [correctivos, horas, anio, mes, area, tipo, horarios, festivos],
+  );
+
   const metasIncumplidas = useMemo(
     () =>
       metasIncumplidasMes(
@@ -234,6 +261,12 @@ function IndicadoresPage() {
         >
           Tabla anual
         </button>
+        <button
+          className={"pestana" + (panel === "formulas" ? " pestana--activa" : "")}
+          onClick={() => setPanel("formulas")}
+        >
+          Fórmulas y metas
+        </button>
       </div>
 
       <div className="indicadores__filtros">
@@ -271,7 +304,7 @@ function IndicadoresPage() {
             ))}
           </select>
         </label>
-        <label>
+        <label className={panel === "formulas" ? "indicadores__filtro--oculto" : ""}>
           Horas programadas del mes
           <div className="indicadores__horas">
             <input
@@ -319,6 +352,23 @@ function IndicadoresPage() {
           horas={horas}
           horarios={horarios}
           festivos={festivos}
+        />
+      )}
+
+      {panel === "formulas" && !cargando && (
+        <PanelFormulas
+          mes={mes}
+          anio={anio}
+          area={area}
+          cumplimientoPm={cumplimientoPmMes}
+          promedioRespuesta={promedioRespuestaAreaMes}
+          porcentajeHoras={porcentajeHorasAreaMes}
+          horasIndicador={resumen.horasIndicador}
+          horasProgramadas={horasProgramadasActual}
+          horasCalendarioMes={horasCalendarioMes}
+          horasGuardadasManual={horasProgramadasManual !== null}
+          solicitudesValidas={resumen.cantidad}
+          festivosCargados={festivos.length}
         />
       )}
 

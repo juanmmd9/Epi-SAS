@@ -1,10 +1,16 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import "./auth.css";
 
 function RequireAuth() {
+  const navegar = useNavigate();
   const { session, perfil, cargando, errorPerfil, salir } = useAuth();
   const ubicacion = useLocation();
+
+  async function manejarCerrarSesion() {
+    await salir();
+    navegar("/login", { replace: true });
+  }
 
   if (cargando) {
     return (
@@ -29,7 +35,7 @@ function RequireAuth() {
           Luego el administrador debe agregar tu fila en <code>usuarios_portal</code> con rol{" "}
           <strong>admin</strong>, <strong>operador</strong> o <strong>consulta</strong>.
         </p>
-        <button type="button" className="btn" onClick={() => void salir()}>
+        <button type="button" className="btn" onClick={() => void manejarCerrarSesion()}>
           Cerrar sesión
         </button>
       </div>

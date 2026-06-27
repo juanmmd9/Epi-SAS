@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AvisoSetupAuth from "../../components/setup/AvisoSetupAuth";
 import { useAuth } from "./AuthContext";
 import { existeTablaUsuarios, iniciarSesion } from "./authService";
@@ -9,10 +9,11 @@ import "./auth.css";
 function LoginPage() {
   const navigate = useNavigate();
   const ubicacion = useLocation();
-  const { session, perfil, cargando } = useAuth();
+  const { session, perfil, cargando, salir } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [cerrandoSesion, setCerrandoSesion] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [faltaRls, setFaltaRls] = useState<boolean | null>(null);
 
@@ -23,13 +24,19 @@ function LoginPage() {
   }, []);
 
   const destino =
-    (ubicacion.state as { desde?: string } | null)?.desde && 
+    (ubicacion.state as { desde?: string } | null)?.desde &&
     (ubicacion.state as { desde?: string }).desde !== "/login"
       ? (ubicacion.state as { desde: string }).desde
       : "/";
 
-  if (!cargando && session && perfil) {
-    return <Navigate to={destino} replace />;
+  async function manejarCerrarSesion() {
+    setError(null);
+    setCerrandoSesion(true);
+    try {
+      await salir();
+    } finally {
+      setCerrandoSesion(false);
+    }
   }
 
   async function manejarEnvio(evento: FormEvent) {
@@ -46,6 +53,8 @@ function LoginPage() {
     }
   }
 
+  const sesionActiva = !cargando && session && perfil;
+
   return (
     <div className="auth-login">
       {faltaRls && <AvisoSetupAuth />}
@@ -60,32 +69,64 @@ function LoginPage() {
         <h1>Portal de Mantenimiento</h1>
         <p className="auth-login__subtitulo">Inicia sesión con tu cuenta corporativa</p>
 
-        <form className="auth-login__form" onSubmit={(e) => void manejarEnvio(e)}>
-          <label>
-            Correo electrónico
-            <input
-              type="email"
-              required
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </label>
-          <label>
-            Contraseña
-            <input
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
-          {error && <p className="auth-login__error">{error}</p>}
-          <button type="submit" className="btn btn--primario auth-login__btn" disabled={enviando}>
-            {enviando ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
+        {sesionActiva && (
+          <div className="auth-login__sesion-activa">
+            <p>
+              Ya hay una sesión abierta como <strong>{perfil.nombre || perfil.email}</strong> (
+              {ETIQUETAS_ROL[perfil.rol]}).
+            </p>
+            <div className="auth-login__sesion-acciones">
+              <button
+                type="button"
+                className="btn btn--primario auth-login__btn"
+                onClick={() => navigate(destino, { replace: true })}
+              >
+                Continuar con esta cuenta
+              </button>
+              <button
+                type="button"
+                className="btn auth-login__btn"
+                disabled={cerrandoSesion}
+                onClick={() => void manejarCerrarSesion()}
+              >
+                {cerrandoSesion ? "Cerrando..." : "Cerrar sesión y usar otra cuenta"}
+              </button>
+            </div>
+            <p className="auth-login__nota-compartido">
+              En el mismo navegador solo puede haber una cuenta a la vez. Para que otra persona
+              entre, cierra sesión o usa otro navegador o ventana privada.
+            </p>
+          </div>
+        )}
+
+        {!sesionActiva && (
+          <form className="auth-login__form" onSubmit={(e) => void manejarEnvio(e)}>
+            <label>
+              Correo electrónico
+              <input
+                type="email"
+                required
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </label>
+            <label>
+              Contraseña
+              <input
+                type="password"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </label>
+            {error && <p className="auth-login__error">{error}</p>}
+            <button type="submit" className="btn btn--primario auth-login__btn" disabled={enviando}>
+              {enviando ? "Entrando..." : "Entrar"}
+            </button>
+          </form>
+        )}
 
         <p className="auth-login__roles">
           Roles: {Object.values(ETIQUETAS_ROL).join(" · ")}

@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../modules/auth/AuthContext";
 import { ETIQUETAS_ROL, enlacesParaRol } from "../../modules/auth/roles";
 import "../../modules/auth/auth.css";
@@ -10,8 +10,15 @@ interface Props {
 }
 
 function Sidebar({ abierto, onCerrar }: Props) {
+  const navegar = useNavigate();
   const { perfil, salir } = useAuth();
   const enlaces = enlacesParaRol(perfil?.rol);
+
+  async function manejarCerrarSesion() {
+    onCerrar();
+    await salir();
+    navegar("/login", { replace: true });
+  }
 
   return (
     <aside className={"sidebar" + (abierto ? " sidebar--abierto" : "")}>
@@ -44,7 +51,11 @@ function Sidebar({ abierto, onCerrar }: Props) {
         <div className="sidebar__usuario">
           <span className="sidebar__usuario-nombre">{perfil.nombre || perfil.email}</span>
           <span className="sidebar__usuario-rol">{ETIQUETAS_ROL[perfil.rol]}</span>
-          <button type="button" className="btn sidebar__cerrar-sesion" onClick={() => void salir()}>
+          <button
+            type="button"
+            className="btn sidebar__cerrar-sesion"
+            onClick={() => void manejarCerrarSesion()}
+          >
             Cerrar sesión
           </button>
         </div>
