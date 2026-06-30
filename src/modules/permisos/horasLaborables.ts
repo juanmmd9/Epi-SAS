@@ -51,6 +51,17 @@ export function horasLaborablesMes(
   return Math.round((minutos / 60) * 100) / 100;
 }
 
+function fechaSolo(iso: string): string {
+  return iso.slice(0, 10);
+}
+
+function horariosParaFecha(fechaIso: string, horarios: HorarioLaboral[]): HorarioLaboral[] {
+  const partes = parseFechaIso(fechaSolo(fechaIso));
+  if (!partes) return horarios;
+  const delAnio = horarios.filter((h) => h.anio === partes.anio);
+  return resolverHorariosAnio(partes.anio, delAnio);
+}
+
 function iterarDiasEntre(inicioIso: string, finIso: string): string[] {
   const inicio = parseFechaIso(inicioIso);
   const fin = parseFechaIso(finIso);
@@ -111,7 +122,54 @@ export function minutosJornadaReferencia(horarios: HorarioLaboral[]): number {
   return Math.round(total / diasConTurno);
 }
 
-/** Tope de espera por repuestos: 2 jornadas laborales de referencia. */
+/** Tope de espera por repuestos: 1 jornada laboral de referencia. */
 export function minutosTopeEsperaRepuestos(horarios: HorarioLaboral[]): number {
-  return 2 * minutosJornadaReferencia(horarios);
+  return minutosJornadaReferencia(horarios);
+}
+
+/**
+ * Minutos dentro del horario laboral entre dos fecha/hora (solo turnos activos; sin noches ni festivos).
+ */
+export function minutosLaborablesEntreMomentos(
+  fechaInicio: string,
+  horaInicio: string,
+  fechaFin: string,
+  horaFin: string,
+  horarios: HorarioLaboral[],
+  festivos: Festivo[] = [],
+): number {
+  if (!fechaInicio || !fechaFin || !horaInicio || !horaFin) return 0;
+
+  const inicioIso = fechaSolo(fechaInicio);
+  const finIso = fechaSolo(fechaFin);
+  const inicioReloj = new Date(`${inicioIso}T${horaInicio.slice(0, 5)}:00`);
+  const finReloj = new Date(`${finIso}T${horaFin.slice(0, 5)}:00`);
+  if (Number.isNaN(inicioReloj.getTime()) || Number.isNaN(finReloj.getTime())) return 0;
+  if (finReloj.getTime() <= inicioReloj.getTime()) return 0;
+
+  const inicioMin = minutosDesdeHora(horaInicio.slice(0, 5));
+  const finMin = minutosDesdeHora(horaFin.slice(0, 5));
+  const setFestivos = construirSetFestivos(festivos);
+  let total = 0;
+
+  for (const fecha of iterarDiasEntre(inicioIso, finIso)) {
+    if (esFestivo(setFestivos, fecha)) continue;
+
+    const horariosDia = horariosParaFecha(fecha, horarios);
+    const dia = diaSemanaDesdeFecha(fecha);
+    const turnos = horariosDia.filter((h) => h.dia_semana === dia && h.activo);
+    if (turnos.length === 0) continue;
+
+    const rangoInicio = fecha === inicioIso ? inicioMin : 0;
+    const rangoFin = fecha === finIso ? finMin : 24 * 60;
+
+    for (const turno of turnos) {
+      const turnoInicio = minutosDesdeHora(turno.hora_inicio.slice(0, 5));
+      const turnoFin = minutosDesdeHora(turno.hora_fin.slice(0, 5));
+      const solape = Math.max(0, Math.min(rangoFin, turnoFin) - Math.max(rangoInicio, turnoInicio));
+      total += solape;
+    }
+  }
+
+  return total;
 }

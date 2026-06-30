@@ -1,5 +1,5 @@
 // Formulas de indicadores extraidas de la version vanilla (js/indicadores.js).
-// G = tiempo de respuesta (min), H = tiempo de mantenimiento (min), I = G + H.
+// G = tiempo de respuesta laboral (min), H = mantenimiento laboral (min), I = G + H.
 
 import { AREAS_CON_PM, coincideArea } from "../../lib/areas";
 import { aFechaIso, diasEnMes, parseFechaIso } from "../../lib/fechas";
@@ -15,18 +15,19 @@ import {
 import type { RegistroPreventivo } from "../preventivo/types";
 import type { RegistroCorrectivo } from "../correctivo/types";
 import {
-  horasLaborablesEntre,
   horasLaborablesMes,
+  minutosLaborablesEntreMomentos,
   minutosTopeEsperaRepuestos,
+  resolverHorariosAnio,
 } from "../permisos/horasLaborables";
 import type { Festivo, HorarioLaboral } from "../permisos/types";
 import { periodoDe, type HorasProgramadas } from "./horasService";
 
 /** Días calendario de la solicitud (inicio → cierre) a partir de los cuales aplica tope. */
 export const DIAS_ESPERA_TOPE_HORAS_PERDIDAS = 3;
-/** Máximo de días calendario que cuentan hacia el % de horas perdidas cuando hay espera larga (repuestos, etc.). */
-export const DIAS_MAX_HORAS_PERDIDAS_INDICADOR = 2;
-/** Respaldo si no hay horario cargado: 2 × 8 h. */
+/** Máximo de jornadas laborales que cuentan hacia el % de horas perdidas cuando hay espera larga (repuestos, etc.). */
+export const DIAS_MAX_HORAS_PERDIDAS_INDICADOR = 1;
+/** Respaldo si no hay horario cargado: 1 × 8 h. */
 export const MINUTOS_MAX_HORAS_PERDIDAS_INDICADOR = DIAS_MAX_HORAS_PERDIDAS_INDICADOR * 8 * 60;
 
 export interface TiemposCorrectivo {
@@ -62,7 +63,22 @@ function construirDateTime(fecha: string, hora: string): Date | null {
   return Number.isNaN(dt.getTime()) ? null : dt;
 }
 
-export function calcularTiemposCorrectivo(registro: RegistroCorrectivo): TiemposCorrectivo {
+function horariosParaCalculo(
+  fechaIso: string,
+  horarios: HorarioLaboral[],
+): HorarioLaboral[] {
+  const partes = parseFechaIso(fechaIso.slice(0, 10));
+  if (!partes) return horarios;
+  const delAnio = horarios.filter((h) => h.anio === partes.anio);
+  return resolverHorariosAnio(partes.anio, delAnio);
+}
+
+/** G, H e I en minutos laborables (solo dentro del horario de Personal → Horario). */
+export function calcularTiemposCorrectivo(
+  registro: RegistroCorrectivo,
+  horarios: HorarioLaboral[] = [],
+  festivos: Festivo[] = [],
+): TiemposCorrectivo {
   const d = registro.datos;
   const solicitudDT = construirDateTime(registro.fecha, d.horaSolicitud);
   const respuestaDT = construirDateTime(registro.fecha, d.horaRespuesta);
@@ -72,12 +88,30 @@ export function calcularTiemposCorrectivo(registro: RegistroCorrectivo): Tiempos
     return { g: null, h: null, i: null, valido: false };
   }
 
-  const g = (respuestaDT.getTime() - solicitudDT.getTime()) / 60000;
-  const h = (entregaDT.getTime() - respuestaDT.getTime()) / 60000;
-
-  if (g < 0 || h < 0) {
-    return { g, h, i: null, valido: false, advertencia: true };
+  if (entregaDT.getTime() < solicitudDT.getTime()) {
+    return { g: null, h: null, i: null, valido: false, advertencia: true };
   }
+
+  const horariosCalculo =
+    horarios.length > 0 ? horarios : horariosParaCalculo(registro.fecha, horarios);
+
+  const g = minutosLaborablesEntreMomentos(
+    registro.fecha,
+    d.horaSolicitud,
+    registro.fecha,
+    d.horaRespuesta,
+    horariosCalculo,
+    festivos,
+  );
+
+  const h = minutosLaborablesEntreMomentos(
+    registro.fecha,
+    d.horaRespuesta,
+    d.fechaCierre,
+    d.horaCierre,
+    horariosCalculo,
+    festivos,
+  );
 
   return { g, h, i: g + h, valido: true };
 }
@@ -97,32 +131,23 @@ export function diasCalendarioSolicitud(registro: RegistroCorrectivo): number | 
 }
 
 /**
- * Minutos que cuentan para el % de horas perdidas.
- * Si la solicitud abarca más de 3 días calendario (espera de repuestos, etc.),
- * solo se contabilizan como máximo 2 jornadas laborales (según horario y festivos).
+ * Minutos que cuentan para el % de horas perdidas (I ya es solo jornada laboral).
+ * Si la solicitud abarca más de 3 días calendario, tope de 1 jornada laboral.
  */
 export function minutosEfectivosHorasPerdidas(
   fila: FilaCorrectivo,
   horarios: HorarioLaboral[] = [],
-  festivos: Festivo[] = [],
+  _festivos: Festivo[] = [],
 ): number {
   const { registro, tiempos } = fila;
   if (!tiempos.valido || tiempos.i === null) return 0;
 
   const dias = diasCalendarioSolicitud(registro);
   if (dias !== null && dias > DIAS_ESPERA_TOPE_HORAS_PERDIDAS) {
-    const topeJornadas =
+    const tope =
       horarios.length > 0
         ? minutosTopeEsperaRepuestos(horarios)
         : MINUTOS_MAX_HORAS_PERDIDAS_INDICADOR;
-    const horasLaborables = horasLaborablesEntre(
-      registro.fecha,
-      registro.datos.fechaCierre,
-      horarios,
-      festivos,
-    );
-    const topePorCalendarioLaboral = Math.round(horasLaborables * 60);
-    const tope = Math.min(topeJornadas, topePorCalendarioLaboral || topeJornadas);
     return Math.min(tiempos.i, tope);
   }
 
@@ -443,11 +468,16 @@ export function promedioRespuestaArea(
   mes: number,
   area: string,
   tipoMantenimiento: string,
+  horarios: HorarioLaboral[] = [],
+  festivos: Festivo[] = [],
 ): number | null {
   const filas = filtrarCorrectivos(correctivos, area, anio, mes, tipoMantenimiento).map(
-    (registro) => ({ registro, tiempos: calcularTiemposCorrectivo(registro) }),
+    (registro) => ({
+      registro,
+      tiempos: calcularTiemposCorrectivo(registro, horarios, festivos),
+    }),
   );
-  const resumen = calcularResumenCorrectivo(filas);
+  const resumen = calcularResumenCorrectivo(filas, horarios, festivos);
   if (resumen.cantidad === 0) return null;
   return resumen.promedioG;
 }
@@ -464,7 +494,10 @@ export function porcentajeHorasPerdidasArea(
   festivos: Festivo[] = [],
 ): number | null {
   const filas = filtrarCorrectivos(correctivos, area, anio, mes, tipoMantenimiento).map(
-    (registro) => ({ registro, tiempos: calcularTiemposCorrectivo(registro) }),
+    (registro) => ({
+      registro,
+      tiempos: calcularTiemposCorrectivo(registro, horarios, festivos),
+    }),
   );
   const resumen = calcularResumenCorrectivo(filas, horarios, festivos);
   const horasProgramadas = horasProgramadasEfectivas(
@@ -531,7 +564,9 @@ export function metasIncumplidasMes(
     : AREAS_CORRECTIVO_TABLA;
 
   for (const area of areas) {
-    const respuesta = promedioRespuestaArea(correctivos, anio, mes, area, tipoMantenimiento);
+    const respuesta = promedioRespuestaArea(
+      correctivos, anio, mes, area, tipoMantenimiento, horarios, festivos,
+    );
     if (estadoMetaTiempoRespuesta(respuesta) !== "ok" && respuesta !== null) {
       incumplidas.push({
         area,

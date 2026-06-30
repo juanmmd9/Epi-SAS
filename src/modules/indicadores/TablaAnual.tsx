@@ -109,7 +109,9 @@ function TablaAnual({
       const valoresHoras: (number | null)[] = [];
       for (let mes = 1; mes <= 12; mes++) {
         valoresRespuesta.push(
-          promedioRespuestaArea(correctivos, anio, mes, area, tipoMantenimiento),
+          promedioRespuestaArea(
+            correctivos, anio, mes, area, tipoMantenimiento, horarios, festivos,
+          ),
         );
         valoresHoras.push(
           porcentajeHorasPerdidasArea(

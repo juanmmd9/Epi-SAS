@@ -18,6 +18,7 @@ import {
   calcularTiemposCorrectivo,
   clasificarCitasPreventivas,
   cumplimientoPreventivoGlobal,
+  DIAS_MAX_HORAS_PERDIDAS_INDICADOR,
   filtrarCorrectivos,
   formatearNumero,
   horasProgramadasEfectivas,
@@ -148,9 +149,9 @@ function IndicadoresPage() {
     if (!area) return [];
     return filtrarCorrectivos(correctivos, area, anio, mes, tipo).map((registro) => ({
       registro,
-      tiempos: calcularTiemposCorrectivo(registro),
+      tiempos: calcularTiemposCorrectivo(registro, horarios, festivos),
     }));
-  }, [correctivos, area, anio, mes, tipo]);
+  }, [correctivos, area, anio, mes, tipo, horarios, festivos]);
 
   const resumen = useMemo(
     () => calcularResumenCorrectivo(filas, horarios, festivos),
@@ -200,9 +201,9 @@ function IndicadoresPage() {
   const promedioRespuestaAreaMes = useMemo(
     () =>
       area
-        ? promedioRespuestaArea(correctivos, anio, mes, area, tipo)
+        ? promedioRespuestaArea(correctivos, anio, mes, area, tipo, horarios, festivos)
         : null,
-    [correctivos, anio, mes, area, tipo],
+    [correctivos, anio, mes, area, tipo, horarios, festivos],
   );
 
   const porcentajeHorasAreaMes = useMemo(
@@ -243,9 +244,10 @@ function IndicadoresPage() {
       <p className="indicadores__descripcion">
         Tiempos de respuesta correctivos y cumplimiento del cronograma preventivo.
         Solo se consideran máquinas activas (en circulación). Las que están fuera de
-        servicio no cuentan como pendientes ni afectan el porcentaje. En horas perdidas,
-        solicitudes de más de 3 días calendario solo cuentan hasta 2 jornadas laborales
-        (según horario y festivos de Personal → Horario).
+        servicio no cuentan como pendientes ni afectan el porcentaje. Los tiempos G, H e I
+        solo suman minutos dentro del horario laboral (Personal → Horario). En horas perdidas,
+        solicitudes de más de 3 días calendario solo cuentan hasta {DIAS_MAX_HORAS_PERDIDAS_INDICADOR} jornada
+        laboral (~8 h).
       </p>
 
       <div className="indicadores__pestanas">
@@ -409,7 +411,7 @@ function IndicadoresPage() {
 
       <div className="indicadores__tarjetas">
         <article className="tarjeta-indicador">
-          <span>Total tiempo real (h)</span>
+          <span>Total tiempo laboral (h)</span>
           <strong>{formatearNumero(resumen.horas)}</strong>
           <small>
             {formatearNumero(resumen.totalI, 0)} min en {resumen.cantidad} solicitudes
@@ -419,7 +421,7 @@ function IndicadoresPage() {
           <span>Horas para indicador</span>
           <strong>{formatearNumero(resumen.horasIndicador)}</strong>
           <small>
-            Con tope de 2 jornadas laborales si la solicitud supera 3 días calendario
+            Con tope de {DIAS_MAX_HORAS_PERDIDAS_INDICADOR} jornada laboral (~8 h) si la solicitud supera 3 días calendario
           </small>
         </article>
         <article className="tarjeta-indicador">
@@ -462,7 +464,7 @@ function IndicadoresPage() {
                 <th colSpan={2}>Entrega</th>
                 <th>T. respuesta (min) G</th>
                 <th>T. mantenimiento (min) H</th>
-                <th>T. real mant. I</th>
+                <th>T. laboral mant. I</th>
                 <th>I para indicador</th>
               </tr>
               <tr className="indicadores__subencabezado">
@@ -505,7 +507,7 @@ function IndicadoresPage() {
                   <td className="indicadores__col-real">
                     {formatearNumero(tiempos.i, tiempos.valido ? 0 : 2)}
                   </td>
-                  <td className="indicadores__col-indicador" title={conTope ? "Solicitud de más de 3 días: solo cuentan 2 días para el %" : ""}>
+                  <td className="indicadores__col-indicador" title={conTope ? `Solicitud de más de 3 días: solo cuenta ${DIAS_MAX_HORAS_PERDIDAS_INDICADOR} jornada laboral para el %` : ""}>
                     {formatearNumero(minutosIndicador, tiempos.valido ? 0 : 2)}
                     {conTope && tiempos.valido ? " *" : ""}
                   </td>

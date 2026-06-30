@@ -130,11 +130,12 @@ function PanelFormulas({
           titulo={`Tiempo de respuesta promedio del servicio de mantenimiento correctivo (${areaTabla.toUpperCase()})`}
           meta="≤ 10 min (alerta hasta 15 min)"
           frecuencia="Mensual"
-          formula="Promedio de G, donde G = (hora respuesta − hora solicitud) en minutos"
+          formula="Promedio de G, donde G = minutos laborables entre hora solicitud y hora respuesta"
           periodoLabel={periodo}
           notas={[
             "Solo solicitudes del área y mes con hora de solicitud, respuesta y cierre completas.",
-            "H = tiempo de mantenimiento; I = G + H (I no entra en este indicador).",
+            "G, H e I solo cuentan minutos dentro del horario laboral (Personal → Horario); noches y festivos no suman.",
+            "H = tiempo de mantenimiento laboral; I = G + H (I no entra en este indicador).",
             "Filtro opcional por tipo de mantenimiento en los selectores superiores.",
           ]}
           ejemplo={
@@ -156,10 +157,11 @@ function PanelFormulas({
           formula="(Horas para indicador ÷ Horas programadas del mes) × 100"
           periodoLabel={periodo}
           notas={[
-            `Horas para indicador = suma de I (min) ÷ 60, con tope si la solicitud dura más de ${DIAS_ESPERA_TOPE_HORAS_PERDIDAS} días calendario: máximo ${DIAS_MAX_HORAS_PERDIDAS_INDICADOR} jornadas laborales (según horario y festivos).`,
+            `I = G + H en minutos laborables (solo dentro del horario de Personal → Horario).`,
+            `Horas para indicador = suma de I (min) ÷ 60, con tope si la solicitud dura más de ${DIAS_ESPERA_TOPE_HORAS_PERDIDAS} días calendario: máximo ${DIAS_MAX_HORAS_PERDIDAS_INDICADOR} jornada laboral (~8 h).`,
             "Horas programadas: valor guardado por área y mes, o automático desde calendario laboral.",
             `Calendario actual del mes: ${formatearNumero(horasCalendarioMes)} h (${festivosCargados} festivos cargados en ${anio}).`,
-            "El tiempo real (sin tope) se muestra en Detalle del mes; aquí solo cuenta lo que entra al indicador.",
+            "En Detalle del mes se muestra I laboral; la columna Para indicador aplica el tope si supera 3 días calendario.",
           ]}
           ejemplo={
             area === areaTabla
@@ -176,15 +178,15 @@ function PanelFormulas({
         <dl className="formula-card__glosario">
           <div>
             <dt>G</dt>
-            <dd>Tiempo de respuesta (min): desde la hora de solicitud hasta la hora de respuesta.</dd>
+            <dd>Tiempo de respuesta laboral (min): minutos dentro del horario entre hora solicitud y hora respuesta.</dd>
           </div>
           <div>
             <dt>H</dt>
-            <dd>Tiempo de mantenimiento (min): desde la hora de respuesta hasta la hora de cierre.</dd>
+            <dd>Tiempo de mantenimiento laboral (min): minutos dentro del horario entre hora respuesta y hora cierre.</dd>
           </div>
           <div>
             <dt>I</dt>
-            <dd>Tiempo total (min): G + H. Base para horas perdidas (con topes si aplica).</dd>
+            <dd>Tiempo total laboral (min): G + H. Base para horas perdidas (con tope si aplica).</dd>
           </div>
         </dl>
         <p className="formula-card__pie">
