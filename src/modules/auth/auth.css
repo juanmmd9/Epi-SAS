@@ -13,19 +13,30 @@
 }
 
 .auth-login__tarjeta {
-  width: min(100%, 24rem);
+  width: min(100%, 26rem);
   background: var(--color-superficie);
   border: 1px solid var(--color-borde);
   border-radius: 16px;
-  padding: 2rem 1.75rem;
-  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.1);
   text-align: center;
 }
 
+.auth-login__marca {
+  padding: 1.5rem 1.75rem 1.25rem;
+  background: linear-gradient(145deg, #0f172a 0%, #1e3a5f 55%, #0f172a 100%);
+  border-bottom: 3px solid #2563eb;
+}
+
+.auth-login__cuerpo {
+  padding: 1.5rem 1.75rem 1.75rem;
+}
+
 .auth-login__logo {
-  max-width: 100%;
+  display: block;
+  max-width: min(100%, 220px);
   height: auto;
-  margin-bottom: 1rem;
+  margin: 0 auto;
 }
 
 .auth-login__tarjeta h1 {
@@ -56,12 +67,59 @@
   color: #000;
 }
 
-.auth-login__form input {
+.auth-login__form input[type="email"],
+.auth-login__form input[type="password"],
+.auth-login__form input[type="text"] {
   font: inherit;
   padding: 0.55rem 0.65rem;
   border: 1px solid var(--color-borde);
   border-radius: 8px;
   color: #000;
+  width: 100%;
+}
+
+.auth-login__clave-fila {
+  display: flex;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
+.auth-login__clave-fila input {
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-login__ver-clave {
+  flex-shrink: 0;
+  padding: 0 0.75rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.auth-login__ver-clave:hover {
+  background: #dbeafe;
+}
+
+.auth-login__recordar {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem !important;
+  font-weight: 500 !important;
+  font-size: 0.82rem !important;
+  color: #334155 !important;
+  cursor: pointer;
+}
+
+.auth-login__recordar input {
+  width: auto;
+  margin: 0;
+  accent-color: #2563eb;
 }
 
 .auth-login__btn {

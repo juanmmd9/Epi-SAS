@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { rutaPublica } from "../../lib/rutaPublica";
 import { useAuth } from "../../modules/auth/AuthContext";
 import { ETIQUETAS_ROL, enlacesParaRol } from "../../modules/auth/roles";
 import "../../modules/auth/auth.css";
@@ -25,7 +26,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
       <div className="sidebar__marca">
         <img
           className="sidebar__logo"
-          src="/Image/EPI-Logo.png"
+          src={rutaPublica("/Image/EPI-Logo.png")}
           alt="EPI — Empresa de Producción Industrial"
           width={286}
           height={90}
