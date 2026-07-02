@@ -21,6 +21,7 @@ import {
   crearPreventivo,
   eliminarPreventivo,
   listarPreventivo,
+  ordenarRegistrosPreventivo,
 } from "./preventivoService";
 import {
   construirMtre045AlGuardar,
@@ -83,7 +84,7 @@ function PreventivoPage() {
     Promise.all([listarPreventivo(), listarHojas()])
       .then(async ([regs, hojas]) => {
         const sincronizados = await sincronizarNumerosReportePendientes(regs);
-        setRegistros(sincronizados);
+        setRegistros(ordenarRegistrosPreventivo(sincronizados));
         setMaquinas(hojas);
       })
       .catch((e: Error) => setError("No se pudieron cargar los datos: " + e.message))
@@ -170,10 +171,17 @@ function PreventivoPage() {
     ).length;
   }, [maquinas, campos.area]);
 
-  const registrosFiltrados = useMemo(
-    () => (filtroArea ? registros.filter((r) => r.area === filtroArea) : registros),
-    [registros, filtroArea],
-  );
+  const registrosFiltrados = useMemo(() => {
+    const lista = filtroArea ? registros.filter((r) => r.area === filtroArea) : registros;
+    return [...lista].sort((a, b) => {
+      const porFecha = b.fecha.localeCompare(a.fecha);
+      if (porFecha !== 0) return porFecha;
+      const porNumero =
+        (mapaNumerosReporte.get(b.id) ?? 0) - (mapaNumerosReporte.get(a.id) ?? 0);
+      if (porNumero !== 0) return porNumero;
+      return (b.creado_en ?? "").localeCompare(a.creado_en ?? "");
+    });
+  }, [registros, filtroArea, mapaNumerosReporte]);
 
   function nombreMaquina(registro: RegistroPreventivo): string {
     const maquina = maquinas.find((m) => m.id === registro.hoja_id);
@@ -335,7 +343,7 @@ function PreventivoPage() {
           claves,
           calcularMapaNumerosReporte(listaFinal),
         );
-        setRegistros(listaFinal);
+        setRegistros(ordenarRegistrosPreventivo(listaFinal));
         setMensaje("Registro y reporte MT-RE-045 guardados. Puede imprimir desde el botón MT-RE-045.");
         cancelarEdicion();
       } else {
@@ -364,7 +372,7 @@ function PreventivoPage() {
           claves,
           calcularMapaNumerosReporte(listaFinal),
         );
-        setRegistros(listaFinal);
+        setRegistros(ordenarRegistrosPreventivo(listaFinal));
         setEditandoId(actualizado.id);
         setMensaje(
           "Registro y reporte MT-RE-045 guardados. Use «Ver / Imprimir MT-RE-045» o el botón en la tabla.",
@@ -388,7 +396,7 @@ function PreventivoPage() {
         claves,
         calcularMapaNumerosReporte(lista),
       );
-      setRegistros(lista);
+      setRegistros(ordenarRegistrosPreventivo(lista));
       if (editandoId === registro.id) cancelarEdicion();
     } catch (e) {
       setError("No fue posible eliminar: " + (e as Error).message);

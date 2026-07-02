@@ -3,13 +3,27 @@ import type { CorrectivoInput, RegistroCorrectivo } from "./types";
 
 const TABLA = "correctivo";
 
+/** Más recientes primero: número de solicitud ↓, fecha ↓, creado_en ↓. */
+export function ordenarRegistrosCorrectivo(
+  registros: RegistroCorrectivo[],
+): RegistroCorrectivo[] {
+  return [...registros].sort((a, b) => {
+    const porNumero = (b.datos.numeroSolicitud || 0) - (a.datos.numeroSolicitud || 0);
+    if (porNumero !== 0) return porNumero;
+    const porFecha = b.fecha.localeCompare(a.fecha);
+    if (porFecha !== 0) return porFecha;
+    return (b.creado_en ?? "").localeCompare(a.creado_en ?? "");
+  });
+}
+
 export async function listarCorrectivo(): Promise<RegistroCorrectivo[]> {
   const { data, error } = await supabase
     .from(TABLA)
     .select("*")
-    .order("fecha", { ascending: false });
+    .order("fecha", { ascending: false })
+    .order("creado_en", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []) as RegistroCorrectivo[];
+  return ordenarRegistrosCorrectivo((data ?? []) as RegistroCorrectivo[]);
 }
 
 export async function crearCorrectivo(input: CorrectivoInput): Promise<RegistroCorrectivo> {

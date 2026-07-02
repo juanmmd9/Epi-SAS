@@ -20,6 +20,7 @@ import {
   eliminarCorrectivo,
   exportarCsv,
   listarCorrectivo,
+  ordenarRegistrosCorrectivo,
   siguienteNumeroSolicitud,
 } from "./correctivoService";
 import {
@@ -79,10 +80,10 @@ function CorrectivoPage() {
     [maquinas, campos.area],
   );
 
-  const registrosFiltrados = useMemo(
-    () => (filtroArea ? registros.filter((r) => r.area === filtroArea) : registros),
-    [registros, filtroArea],
-  );
+  const registrosFiltrados = useMemo(() => {
+    const lista = filtroArea ? registros.filter((r) => r.area === filtroArea) : registros;
+    return ordenarRegistrosCorrectivo(lista);
+  }, [registros, filtroArea]);
 
   function actualizar(nombre: keyof typeof formularioVacio, valor: string) {
     setCampos((c) => ({ ...c, [nombre]: valor }));
@@ -217,12 +218,14 @@ function CorrectivoPage() {
       if (editandoId) {
         const actualizado = await actualizarCorrectivo(editandoId, input);
         setRegistros((previos) =>
-          previos.map((r) => (r.id === actualizado.id ? actualizado : r)),
+          ordenarRegistrosCorrectivo(
+            previos.map((r) => (r.id === actualizado.id ? actualizado : r)),
+          ),
         );
         setMensaje("Solicitud actualizada correctamente.");
       } else {
         const creado = await crearCorrectivo(input);
-        setRegistros((previos) => [creado, ...previos]);
+        setRegistros((previos) => ordenarRegistrosCorrectivo([creado, ...previos]));
         setMensaje(`Solicitud No. ${numeroSolicitud} guardada correctamente.`);
       }
       cancelarEdicion();
