@@ -8,16 +8,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  build:
+  publicar:
     runs-on: ubuntu-latest
     steps:
       - name: Obtener código
@@ -26,11 +24,11 @@ jobs:
       - name: Verificar secretos de Supabase
         run: |
           if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ]; then
-            echo "::error::Falta VITE_SUPABASE_URL. Ve a Settings → Secrets and variables → Actions y créalo."
+            echo "::error::Falta VITE_SUPABASE_URL en Settings → Secrets and variables → Actions"
             exit 1
           fi
           if [ -z "${{ secrets.VITE_SUPABASE_ANON_KEY }}" ]; then
-            echo "::error::Falta VITE_SUPABASE_ANON_KEY. Ve a Settings → Secrets and variables → Actions y créalo."
+            echo "::error::Falta VITE_SUPABASE_ANON_KEY en Settings → Secrets and variables → Actions"
             exit 1
           fi
 
@@ -43,9 +41,6 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Configurar GitHub Pages
-        uses: actions/configure-pages@v5
-
       - name: Compilar para GitHub Pages
         run: npm run build
         env:
@@ -56,18 +51,9 @@ jobs:
       - name: Soporte rutas SPA (React Router)
         run: cp dist/index.html dist/404.html
 
-      - name: Subir artefacto
-        uses: actions/upload-pages-artifact@v3
+      - name: Publicar en rama gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Publicar sitio
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
