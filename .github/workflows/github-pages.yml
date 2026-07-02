@@ -23,6 +23,17 @@ jobs:
       - name: Obtener código
         uses: actions/checkout@v4
 
+      - name: Verificar secretos de Supabase
+        run: |
+          if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ]; then
+            echo "::error::Falta VITE_SUPABASE_URL. Ve a Settings → Secrets and variables → Actions y créalo."
+            exit 1
+          fi
+          if [ -z "${{ secrets.VITE_SUPABASE_ANON_KEY }}" ]; then
+            echo "::error::Falta VITE_SUPABASE_ANON_KEY. Ve a Settings → Secrets and variables → Actions y créalo."
+            exit 1
+          fi
+
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
@@ -31,6 +42,9 @@ jobs:
 
       - name: Instalar dependencias
         run: npm ci
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
 
       - name: Compilar para GitHub Pages
         run: npm run build
