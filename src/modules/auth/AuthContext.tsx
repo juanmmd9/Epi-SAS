@@ -67,9 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nuevaSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nuevaSession) => {
       setSession(nuevaSession);
       if (nuevaSession?.user.id) {
+        // Supabase renueva el JWT en segundo plano (p. ej. al volver a la pestaña).
+        // No bloquear la pantalla ni recargar perfil: eso desmontaba formularios a medias.
+        if (event === "TOKEN_REFRESHED") return;
+
         setCargando(true);
         void cargarPerfil(nuevaSession.user.id).finally(() => setCargando(false));
       } else {
