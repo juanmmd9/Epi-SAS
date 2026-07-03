@@ -1,0 +1,274 @@
+.solicitudes__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.solicitudes__descripcion {
+  color: var(--color-texto-suave);
+  margin-top: 0;
+}
+
+.solicitudes__error {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.solicitudes__mensaje {
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.solicitudes__mensaje--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.solicitudes__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.sol-card {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sol-card:hover {
+  border-color: var(--color-primario, #2563eb);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.sol-card h3 {
+  margin: 0;
+}
+
+.sol-card__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.sol-card__stat {
+  background: var(--color-fondo);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.82rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 5.5rem;
+}
+
+.sol-card__stat strong {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.sol-card__stat--alerta {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.sol-card__stat--espera {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.sol-card__stat--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.sol-card__enlace {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-primario, #2563eb);
+  margin-top: auto;
+}
+
+.solicitudes-area__volver {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.solicitudes-area__tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.solicitudes-area__tab {
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo);
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.solicitudes-area__tab--activa {
+  background: var(--color-primario, #2563eb);
+  color: #fff;
+  border-color: transparent;
+}
+
+.solicitudes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.solicitud-item {
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  background: var(--color-superficie);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.solicitud-item--espera {
+  border-left: 4px solid #dc2626;
+}
+
+.solicitud-item__meta {
+  font-size: 0.82rem;
+  color: var(--color-texto-suave);
+  margin: 0.2rem 0 0;
+}
+
+.solicitud-item__desc {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+}
+
+.repuesto-form {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.repuesto-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.repuesto-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.repuesto-form label.repuesto-form__completa {
+  grid-column: 1 / -1;
+}
+
+.repuesto-form input,
+.repuesto-form select,
+.repuesto-form textarea {
+  font-weight: 400;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 6px;
+  font-size: 0.92rem;
+}
+
+.repuesto-form__acciones {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.repuestos__tabla-contenedor {
+  overflow-x: auto;
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+}
+
+.repuestos__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.repuestos__tabla th,
+.repuestos__tabla td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--color-borde);
+  text-align: left;
+}
+
+.repuestos__tabla th {
+  background: var(--color-fondo);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.estado-repuesto {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.estado-repuesto--solicitado { background: #e0e7ff; color: #3730a3; }
+.estado-repuesto--pedido { background: #fef3c7; color: #92400e; }
+.estado-repuesto--recibido { background: #dbeafe; color: #1e40af; }
+.estado-repuesto--instalado { background: #dcfce7; color: #166534; }
+.estado-repuesto--cancelado { background: #f3f4f6; color: #6b7280; }
+
+.solicitudes__vacio {
+  color: var(--color-texto-suave);
+  font-style: italic;
+  padding: 1rem 0;
+}
+
+.aviso-setup-solicitudes {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.aviso-setup-solicitudes pre {
+  max-height: 12rem;
+  overflow: auto;
+  font-size: 0.75rem;
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 0.75rem;
+  border-radius: 6px;
+}

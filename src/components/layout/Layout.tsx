@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "../../modules/auth/AuthContext";
+import { rutaInicioParaRol } from "../../modules/auth/roles";
+import { permisoParaRuta } from "../../lib/guardRutas";
+import { areaUsuario } from "../../lib/usuarioArea";
 import Sidebar from "./Sidebar";
 import "./Layout.css";
 
 function Layout() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const ubicacion = useLocation();
+  const { perfil, rol, puede } = useAuth();
 
   useEffect(() => {
     setMenuAbierto(false);
@@ -15,6 +20,17 @@ function Layout() {
     document.body.classList.toggle("layout-menu-abierto", menuAbierto);
     return () => document.body.classList.remove("layout-menu-abierto");
   }, [menuAbierto]);
+
+  const permisoRuta = permisoParaRuta(ubicacion.pathname);
+  if (permisoRuta && !puede(permisoRuta)) {
+    return (
+      <Navigate
+        to={rutaInicioParaRol(rol, areaUsuario(perfil))}
+        replace
+        state={{ sinPermiso: ubicacion.pathname }}
+      />
+    );
+  }
 
   function cerrarMenu() {
     setMenuAbierto(false);

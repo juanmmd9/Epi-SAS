@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { rutaPublica } from "../../lib/rutaPublica";
 import { useAuth } from "../../modules/auth/AuthContext";
 import { ETIQUETAS_ROL, enlacesParaRol } from "../../modules/auth/roles";
+import { areaUsuario } from "../../lib/usuarioArea";
 import "../../modules/auth/auth.css";
 import "./Layout.css";
 
@@ -51,7 +52,10 @@ function Sidebar({ abierto, onCerrar }: Props) {
       {perfil && (
         <div className="sidebar__usuario">
           <span className="sidebar__usuario-nombre">{perfil.nombre || perfil.email}</span>
-          <span className="sidebar__usuario-rol">{ETIQUETAS_ROL[perfil.rol]}</span>
+          <span className="sidebar__usuario-rol">
+            {ETIQUETAS_ROL[perfil.rol]}
+            {areaUsuario(perfil) ? ` · ${areaUsuario(perfil)}` : ""}
+          </span>
           <button
             type="button"
             className="btn sidebar__cerrar-sesion"

@@ -33,6 +33,8 @@ export interface CorrectivoDatos {
   solucionSolicitud: string;
   fechaCierre: string;
   horaCierre: string;
+  /** Solicitud abierta detenida por falta de repuesto */
+  esperaRepuesto?: boolean;
   quienRevisa: string;
   personalIds?: string[];
   personalNombres?: string[];

@@ -168,3 +168,8 @@
   background: #f3e5f5;
   color: #4a148c;
 }
+
+.usuarios__badge--solicitante {
+  background: #e8f5e9;
+  color: #1b5e20;
+}

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { AREAS_SISTEMA } from "../../lib/areas";
@@ -51,6 +51,11 @@ const formularioVacio = {
 
 function CorrectivoPage() {
   const { puede } = useAuth();
+  const ubicacion = useLocation();
+  const stateNavegacion = ubicacion.state as
+    | { editarCorrectivoId?: string; filtroArea?: string }
+    | null
+    | undefined;
   const [registros, setRegistros] = useState<RegistroCorrectivo[]>([]);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
   const [personal, setPersonal] = useState<Persona[]>([]);
@@ -61,8 +66,10 @@ function CorrectivoPage() {
   const [campos, setCampos] = useState(formularioVacio);
   const [personalIds, setPersonalIds] = useState<string[]>([]);
   const [tipos, setTipos] = useState<string[]>([]);
+  const [esperaRepuesto, setEsperaRepuesto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [filtroArea, setFiltroArea] = useState("");
+  const navegacionProcesada = useRef(false);
 
   useEffect(() => {
     Promise.all([listarCorrectivo(), listarHojas(), listarPersonalActivo()])
@@ -74,6 +81,20 @@ function CorrectivoPage() {
       .catch((e: Error) => setError("No se pudieron cargar los datos: " + e.message))
       .finally(() => setCargando(false));
   }, []);
+
+  useEffect(() => {
+    if (cargando || navegacionProcesada.current) return;
+    if (!stateNavegacion?.editarCorrectivoId && !stateNavegacion?.filtroArea) return;
+    if (stateNavegacion.editarCorrectivoId && registros.length === 0) return;
+    navegacionProcesada.current = true;
+    if (stateNavegacion.filtroArea) {
+      setFiltroArea(stateNavegacion.filtroArea);
+    }
+    if (stateNavegacion.editarCorrectivoId) {
+      const registro = registros.find((r) => r.id === stateNavegacion.editarCorrectivoId);
+      if (registro) iniciarEdicion(registro);
+    }
+  }, [cargando, registros, stateNavegacion]);
 
   const maquinasDelArea = useMemo(
     () => maquinas.filter((m) => m.area === campos.area),
@@ -129,6 +150,7 @@ function CorrectivoPage() {
     setCampos(formularioVacio);
     setPersonalIds([]);
     setTipos([]);
+    setEsperaRepuesto(false);
   }
 
   function iniciarEdicion(registro: RegistroCorrectivo) {
@@ -153,6 +175,7 @@ function CorrectivoPage() {
     });
     setPersonalIds(idsDesdeRegistroCorrectivo(registro));
     setTipos(registro.datos.tiposSolicitud);
+    setEsperaRepuesto(Boolean(registro.datos.esperaRepuesto));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -210,6 +233,7 @@ function CorrectivoPage() {
           solucionSolicitud: campos.solucionSolicitud.trim(),
           fechaCierre: campos.fechaCierre,
           horaCierre: campos.horaCierre,
+          esperaRepuesto: campos.fechaCierre ? false : esperaRepuesto,
           quienRevisa: campos.quienRevisa.trim() || nombresTecnicosTexto,
           ...datosPersonal,
         },
@@ -381,6 +405,15 @@ function CorrectivoPage() {
             Hora cierre
             <input type="time" value={campos.horaCierre}
               onChange={(e) => actualizar("horaCierre", e.target.value)} />
+          </label>
+          <label className="check-tipo">
+            <input
+              type="checkbox"
+              checked={esperaRepuesto}
+              disabled={Boolean(campos.fechaCierre)}
+              onChange={(e) => setEsperaRepuesto(e.target.checked)}
+            />{" "}
+            En espera de repuesto (solo solicitudes abiertas)
           </label>
           <label>
             Quién revisa

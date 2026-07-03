@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { AREAS_SISTEMA } from "../../lib/areas";
 import { listarPersonal } from "../personal/personalService";
 import type { Persona } from "../personal/types";
 import { useAuth } from "./AuthContext";
@@ -19,7 +20,12 @@ const formularioVacio = {
   nombre: "",
   rol: "operador" as RolPortal,
   personal_id: "",
+  area: "",
 };
+
+function requiereArea(rol: RolPortal): boolean {
+  return rol === "solicitante";
+}
 
 function badgeRol(rol: RolPortal) {
   return `usuarios__badge usuarios__badge--${rol}`;
@@ -67,6 +73,11 @@ function UsuariosPage() {
       return;
     }
 
+    if (requiereArea(campos.rol) && !campos.area) {
+      setError("El rol Solicitante de área requiere elegir el área de planta.");
+      return;
+    }
+
     setGuardando(true);
     try {
       await crearPerfilUsuario({
@@ -75,6 +86,7 @@ function UsuariosPage() {
         nombre: campos.nombre.trim(),
         rol: campos.rol,
         personal_id: campos.personal_id || null,
+        area: campos.area || null,
       });
       setCampos(formularioVacio);
       setMensaje("Usuario del portal creado. Ya puede iniciar sesión con su contraseña de Auth.");
@@ -89,12 +101,19 @@ function UsuariosPage() {
   async function guardarFila(usuario: UsuarioPortal) {
     setMensaje(null);
     setError(null);
+
+    if (requiereArea(usuario.rol) && !usuario.area) {
+      setError(`Asigna un área a ${usuario.nombre || usuario.email} (rol solicitante).`);
+      return;
+    }
+
     setGuardando(true);
     try {
       await actualizarPerfilUsuario(usuario.id, {
         nombre: usuario.nombre,
         rol: usuario.rol,
         personal_id: usuario.personal_id,
+        area: usuario.area,
         activo: usuario.activo,
       });
       setMensaje(`Perfil de ${usuario.nombre || usuario.email} actualizado.`);
@@ -133,7 +152,14 @@ function UsuariosPage() {
             Supabase → <strong>Authentication → Users → Add user</strong> (correo + contraseña).
           </li>
           <li>Copia el <strong>User UID</strong> de ese usuario.</li>
-          <li>Pégalo abajo y elige rol <strong>operador</strong> o <strong>consulta</strong>.</li>
+          <li>Pégalo abajo y elige rol (<strong>operador</strong>, <strong>consulta</strong> o{" "}
+            <strong>solicitante de área</strong>).
+          </li>
+          <li>
+            Para personal de producción que solo reporta fallas: rol{" "}
+            <strong>solicitante de área</strong> + área (Tejidos, Logistica, etc.). Verán solo el
+            módulo <strong>Solicitudes</strong>.
+          </li>
           <li>
             Si es operador de mantenimiento, vincula su fila de <strong>personal</strong> (para la
             matriz).
@@ -184,13 +210,37 @@ function UsuariosPage() {
               <option value="admin">Administrador</option>
               <option value="operador">Operador</option>
               <option value="consulta">Consulta</option>
+              <option value="solicitante">Solicitante de área</option>
+            </select>
+          </label>
+          <label>
+            Área de planta {requiereArea(campos.rol) ? "*" : "(opcional)"}
+            <select
+              required={requiereArea(campos.rol)}
+              value={campos.area}
+              onChange={(e) => setCampos({ ...campos, area: e.target.value })}
+            >
+              <option value="">— Sin área —</option>
+              {AREAS_SISTEMA.map((area) => (
+                <option key={area} value={area}>
+                  {area}
+                </option>
+              ))}
             </select>
           </label>
           <label>
             Técnico vinculado (opcional)
             <select
               value={campos.personal_id}
-              onChange={(e) => setCampos({ ...campos, personal_id: e.target.value })}
+              onChange={(e) => {
+                const personalId = e.target.value;
+                const persona = personal.find((p) => p.id === personalId);
+                setCampos({
+                  ...campos,
+                  personal_id: personalId,
+                  area: persona?.area && !campos.area ? persona.area : campos.area,
+                });
+              }}
             >
               <option value="">— Sin vincular —</option>
               {personal.map((p) => (
@@ -220,6 +270,7 @@ function UsuariosPage() {
                 <th>Nombre</th>
                 <th>Correo</th>
                 <th>Rol</th>
+                <th>Área</th>
                 <th>Técnico</th>
                 <th>Activo</th>
                 <th>UUID</th>
@@ -248,16 +299,35 @@ function UsuariosPage() {
                       <option value="admin">Administrador</option>
                       <option value="operador">Operador</option>
                       <option value="consulta">Consulta</option>
+                      <option value="solicitante">Solicitante de área</option>
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      value={u.area ?? ""}
+                      onChange={(e) =>
+                        actualizarCampoLista(u.id, { area: e.target.value || null })
+                      }
+                    >
+                      <option value="">—</option>
+                      {AREAS_SISTEMA.map((area) => (
+                        <option key={area} value={area}>
+                          {area}
+                        </option>
+                      ))}
                     </select>
                   </td>
                   <td>
                     <select
                       value={u.personal_id ?? ""}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const personalId = e.target.value || null;
+                        const persona = personal.find((p) => p.id === personalId);
                         actualizarCampoLista(u.id, {
-                          personal_id: e.target.value || null,
-                        })
-                      }
+                          personal_id: personalId,
+                          ...(!u.area && persona?.area ? { area: persona.area } : {}),
+                        });
+                      }}
                     >
                       <option value="">—</option>
                       {personal.map((p) => (

@@ -4,6 +4,7 @@ export const AREAS_SISTEMA = [
   "Tejidos",
   "Plasticos",
   "Locativos",
+  "Logistica",
   "Moldes",
 ] as const;
 
@@ -33,6 +34,7 @@ const ALIAS_AREAS: Record<string, Area> = {
   tejidos: "Tejidos",
   plasticos: "Plasticos",
   locativos: "Locativos",
+  logistica: "Logistica",
   moldes: "Moldes",
 };
 

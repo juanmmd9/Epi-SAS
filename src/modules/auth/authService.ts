@@ -6,7 +6,7 @@ const TABLA = "usuarios_portal";
 export async function obtenerPerfilUsuario(userId: string): Promise<UsuarioPortal | null> {
   const { data, error } = await supabase
     .from(TABLA)
-    .select("id, email, nombre, rol, personal_id, activo")
+    .select("id, email, nombre, rol, personal_id, area, activo")
     .eq("id", userId)
     .maybeSingle();
 
@@ -16,7 +16,7 @@ export async function obtenerPerfilUsuario(userId: string): Promise<UsuarioPorta
   }
 
   if (!data || !data.activo) return null;
-  return data as UsuarioPortal;
+  return { ...(data as UsuarioPortal), area: (data as UsuarioPortal).area ?? null };
 }
 
 export async function iniciarSesion(email: string, password: string): Promise<void> {

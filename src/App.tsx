@@ -7,6 +7,8 @@ import InicioPage from "./modules/inicio/InicioPage";
 import PreventivoPage from "./modules/preventivo/PreventivoPage";
 import CronogramaPage from "./modules/cronograma/CronogramaPage";
 import CorrectivoPage from "./modules/correctivo/CorrectivoPage";
+import SolicitudesPage from "./modules/solicitudes/SolicitudesPage";
+import SolicitudesAreaPage from "./modules/solicitudes/SolicitudesAreaPage";
 import HojasPage from "./modules/hojas/HojasPage";
 import HojaDetallePage from "./modules/hojas/HojaDetallePage";
 import IndicadoresPage from "./modules/indicadores/IndicadoresPage";
@@ -32,6 +34,8 @@ function App() {
             <Route path="preventivo" element={<PreventivoPage />} />
             <Route path="preventivo/cronograma" element={<CronogramaPage />} />
             <Route path="correctivo" element={<CorrectivoPage />} />
+            <Route path="solicitudes" element={<SolicitudesPage />} />
+            <Route path="solicitudes/area/:area" element={<SolicitudesAreaPage />} />
             <Route path="hojas-de-vida" element={<HojasPage />} />
             <Route path="hojas-de-vida/:id" element={<HojaDetallePage />} />
             <Route path="indicadores" element={<IndicadoresPage />} />

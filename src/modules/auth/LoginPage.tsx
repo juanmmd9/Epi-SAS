@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AvisoSetupAuth from "../../components/setup/AvisoSetupAuth";
 import { rutaPublica } from "../../lib/rutaPublica";
+import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "./AuthContext";
 import { existeTablaUsuarios, iniciarSesion } from "./authService";
 import {
@@ -9,7 +10,7 @@ import {
   guardarCredencialesRecordadas,
   leerCredencialesRecordadas,
 } from "./credencialesRecordadas";
-import { ETIQUETAS_ROL } from "./roles";
+import { ETIQUETAS_ROL, rutaInicioParaRol } from "./roles";
 import "./auth.css";
 
 function LoginPage() {
@@ -40,11 +41,14 @@ function LoginPage() {
     }
   }, []);
 
-  const destino =
+  const destinoExplicito =
     (ubicacion.state as { desde?: string } | null)?.desde &&
     (ubicacion.state as { desde?: string }).desde !== "/login"
       ? (ubicacion.state as { desde: string }).desde
-      : "/";
+      : null;
+
+  const destino =
+    destinoExplicito ?? rutaInicioParaRol(perfil?.rol, areaUsuario(perfil));
 
   async function manejarCerrarSesion() {
     setError(null);
