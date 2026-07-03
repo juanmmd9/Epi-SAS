@@ -1,14 +1,5 @@
 /* Encabezados de página: título + botones en columna en móvil */
-  @media (max-width: 768px) {
-  .cita__acciones {
-    padding-left: 0.35rem;
-  }
-
-  .cita__acciones .btn {
-    width: 100%;
-    flex: 1 1 100%;
-  }
-
+@media (max-width: 768px) {
   .personal__encabezado,
   .matriz__encabezado,
   .usuarios__encabezado,

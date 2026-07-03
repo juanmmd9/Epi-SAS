@@ -55,7 +55,6 @@ create table if not exists cronograma_excepciones (
   id uuid primary key default gen_random_uuid(),
   fecha date not null,
   motivo text,
-  datos jsonb not null default '{}',
   creado_en timestamptz not null default now()
 );
 
