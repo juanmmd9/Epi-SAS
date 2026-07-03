@@ -11,6 +11,51 @@
   margin-top: 0;
 }
 
+.inicio__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
+.inicio__leyenda-item {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.inicio__leyenda-item--completada {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.inicio__leyenda-item--pendiente {
+  background: var(--color-fondo);
+  color: var(--color-texto-suave);
+  border-color: var(--color-borde);
+}
+
+.inicio__leyenda-item--vencida {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.inicio__leyenda-item--no-realizado {
+  background: #ffedd5;
+  color: #9a3412;
+  border-color: #fdba74;
+}
+
+.inicio__leyenda-item--reprogramada {
+  background: #ede9fe;
+  color: #5b21b6;
+  border-color: #c4b5fd;
+}
+
 .inicio__anio {
   display: flex;
   align-items: center;
@@ -69,6 +114,16 @@
 .chip--ok {
   background: #dcfce7;
   color: #166534;
+}
+
+.chip--no-realizado {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.chip--vencida {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .area-card__proximo {
@@ -133,35 +188,113 @@
 
 .cita {
   display: flex;
-  align-items: center;
-  gap: 0.45rem;
+  align-items: stretch;
+  gap: 0.35rem;
   font-size: 0.85rem;
-  padding: 0.25rem 0.4rem;
   border-radius: 6px;
-  cursor: pointer;
 }
 
-.cita:hover {
-  background: var(--color-fondo);
+.cita__principal {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.4rem;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.cita__principal:hover {
   outline: 1px solid var(--color-primario);
 }
 
-.cita--completada {
+.cita__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.cita__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  justify-content: center;
+  padding-right: 0.2rem;
+}
+
+.btn--mini {
+  font-size: 0.68rem;
+  padding: 0.15rem 0.4rem;
+  white-space: nowrap;
+}
+
+.cita--completada,
+.cita--reprogramada-hecha {
   background: #dcfce7;
   border: 1px solid #86efac;
 }
 
-.cita--completada .cita__nombre {
+.cita--completada .cita__nombre,
+.cita--reprogramada-hecha .cita__nombre {
   color: #14532d;
 }
 
-.cita--completada .cita__codigo {
+.cita--completada .cita__codigo,
+.cita--reprogramada-hecha .cita__codigo {
   color: #166534;
+}
+
+.cita--vencida {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+}
+
+.cita--vencida .cita__nombre {
+  color: #991b1b;
+}
+
+.cita--no-realizado {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+}
+
+.cita--no-realizado .cita__nombre {
+  color: #9a3412;
+}
+
+.cita--reprogramada {
+  background: #f5f3ff;
+  border: 1px solid #c4b5fd;
+}
+
+.cita--reprogramada .cita__nombre {
+  color: #5b21b6;
+}
+
+.cita--pendiente {
+  border: 1px solid var(--color-borde);
+}
+
+.cita--pendiente .cita__principal:hover {
+  background: var(--color-fondo);
 }
 
 .cita__check {
   color: #16a34a;
   font-weight: 700;
+}
+
+.cita__icono {
+  color: #ea580c;
+  font-weight: 800;
+  min-width: 0.9rem;
+  text-align: center;
 }
 
 .cita__dia {
@@ -175,7 +308,8 @@
   padding: 0.1rem 0.25rem;
 }
 
-.cita--completada .cita__dia {
+.cita--completada .cita__dia,
+.cita--reprogramada-hecha .cita__dia {
   background: #16a34a;
 }
 
@@ -186,7 +320,6 @@
 .cita__codigo {
   color: var(--color-texto-suave);
   font-size: 0.75rem;
-  margin-left: auto;
 }
 
 .area-card__pie {

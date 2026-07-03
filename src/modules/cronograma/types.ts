@@ -1,5 +1,5 @@
 export interface ExcepcionDatos {
-  tipo: "excluir" | "agregar";
+  tipo: "excluir" | "agregar" | "no_realizado";
   area: string;
   maquinaId: string;
   anio: number;
