@@ -153,8 +153,8 @@ function InicioPage() {
   const mesActual = new Date().getMonth() + 1;
   const ubicacion = useLocation();
   const navegar = useNavigate();
-  const { puede } = useAuth();
-  const puedeGestionar = puede("crear.preventivo");
+  const { puede, esAdmin } = useAuth();
+  const puedeGestionar = esAdmin || puede("crear.preventivo");
   const [anio, setAnio] = useState(anioActual);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
   const [excepciones, setExcepciones] = useState<ExcepcionCronograma[]>([]);
@@ -413,7 +413,20 @@ function InicioPage() {
                           <ul>
                             {bloque.citas.map((cita) => {
                               const claveAccion = `${datos.area}|${cita.maquinaId}|${bloque.mes}|${cita.dia}`;
-                              const ocupado = procesando === claveAccion || procesando === cita.excepcionNoRealizadoId;
+                              const claveReprog = `reprog|${claveAccion}`;
+                              const ocupado =
+                                procesando === claveAccion ||
+                                procesando === claveReprog ||
+                                procesando === cita.excepcionNoRealizadoId;
+                              const puedeMarcar =
+                                cita.estado === "vencida" ||
+                                cita.estado === "pendiente" ||
+                                cita.estado === "no_realizado";
+                              const puedeReprogramar =
+                                (cita.estado === "no_realizado" ||
+                                  cita.estado === "vencida" ||
+                                  cita.estado === "reprogramada") &&
+                                !cita.reprogramadoA;
                               return (
                                 <li
                                   key={`${cita.maquinaId}-${cita.dia}`}
@@ -448,40 +461,42 @@ function InicioPage() {
                                   {puedeGestionar &&
                                     cita.estado !== "completada" &&
                                     cita.estado !== "reprogramada_hecha" && (
-                                      <div className="cita__acciones">
-                                        {(cita.estado === "vencida" ||
-                                          cita.estado === "pendiente") && (
+                                      <div
+                                        className="cita__acciones"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {puedeMarcar && !cita.excepcionNoRealizadoId && (
                                           <button
                                             type="button"
-                                            className="btn btn--mini"
+                                            className="btn btn--mini btn--advertencia"
                                             disabled={ocupado}
-                                            onClick={() =>
+                                            onClick={(e) => {
+                                              e.stopPropagation();
                                               void marcarNoRealizado(
                                                 datos.area,
                                                 cita.maquinaId,
                                                 bloque.mes,
                                                 cita.dia,
-                                              )
-                                            }
+                                              );
+                                            }}
                                           >
                                             No se pudo
                                           </button>
                                         )}
-                                        {(cita.estado === "no_realizado" ||
-                                          cita.estado === "vencida") &&
-                                          !cita.reprogramadoA && (
+                                        {puedeReprogramar && (
                                           <button
                                             type="button"
                                             className="btn btn--mini btn--primario"
                                             disabled={ocupado}
-                                            onClick={() =>
+                                            onClick={(e) => {
+                                              e.stopPropagation();
                                               void reprogramarMesSiguiente(
                                                 datos.area,
                                                 cita.maquinaId,
                                                 bloque.mes,
                                                 cita.dia,
-                                              )
-                                            }
+                                              );
+                                            }}
                                           >
                                             Mes siguiente
                                           </button>
@@ -491,11 +506,12 @@ function InicioPage() {
                                             type="button"
                                             className="btn btn--mini"
                                             disabled={ocupado}
-                                            onClick={() =>
+                                            onClick={(e) => {
+                                              e.stopPropagation();
                                               void desmarcarNoRealizado(
                                                 cita.excepcionNoRealizadoId,
-                                              )
-                                            }
+                                              );
+                                            }}
                                           >
                                             Deshacer
                                           </button>
