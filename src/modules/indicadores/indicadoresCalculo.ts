@@ -327,9 +327,8 @@ export function clasificarCitasPreventivas(
   const mapaSiguiente = mapaCitasDelAnio(maquinasMesSiguiente, excepciones, area, siguiente.anio);
   for (const excepcion of excepciones) {
     const d = excepcion.datos;
-    if (d.tipo !== "excluir" || !coincideArea(d.area, area) || d.anio !== anio || d.mes !== mes) {
-      continue;
-    }
+    if (d.tipo !== "excluir" && d.tipo !== "no_realizado") continue;
+    if (!coincideArea(d.area, area) || d.anio !== anio || d.mes !== mes) continue;
     const maquina = maquinasVigentes.find((m) => m.id === d.maquinaId);
     if (!maquina || !hojaEstaActiva(maquina)) continue;
     if (!maquinaActivaEnFecha(maquina, anio, mes, d.dia)) continue;

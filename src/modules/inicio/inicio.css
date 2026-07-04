@@ -11,6 +11,57 @@
   margin-top: 0;
 }
 
+.inicio__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
+.inicio__leyenda-item {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.inicio__leyenda-item--completada {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.inicio__leyenda-item--programada {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.inicio__leyenda-item--no-realizado {
+  background: #ffedd5;
+  color: #9a3412;
+  border-color: #fdba74;
+}
+
+.inicio__leyenda-item--reprogramada {
+  background: #ede9fe;
+  color: #5b21b6;
+  border-color: #c4b5fd;
+}
+
+.inicio__leyenda-item--vencida {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.inicio__leyenda-item--de-baja {
+  background: #e2e8f0;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
 .inicio__anio {
   display: flex;
   align-items: center;
@@ -149,6 +200,41 @@
 .cita--completada {
   background: #dcfce7;
   border: 1px solid #86efac;
+}
+
+.cita--programada {
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+}
+
+.cita--no-realizado {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+}
+
+.cita--reprogramada {
+  background: #f5f3ff;
+  border: 1px solid #c4b5fd;
+}
+
+.cita--vencida {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+}
+
+.cita--de-baja {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+}
+
+.cita--solo-lectura {
+  cursor: default;
+}
+
+.cita__icono {
+  color: #ea580c;
+  font-weight: 800;
 }
 
 .cita--completada .cita__nombre {

@@ -3,19 +3,21 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AREAS_CON_PM, coincideArea } from "../../lib/areas";
 import { aFechaIso, NOMBRES_MESES, valorFecha } from "../../lib/fechas";
 import { mapaCitasDelAnio } from "../cronograma/cronogramaCalculo";
+import { evaluarEstadoCitaPm, type EstadoCitaPm } from "../cronograma/cronogramaEstadoCita";
 import { listarExcepciones } from "../cronograma/cronogramaService";
 import type { CitaCronograma, ExcepcionCronograma } from "../cronograma/types";
 import { hojaEstaActiva } from "../hojas/hojasFiltro";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
 import { listarPreventivo } from "../preventivo/preventivoService";
-import { indicesPmCompletado, pmCompletado } from "../preventivo/pmCompletado";
+import { indicesPmCompletado } from "../preventivo/pmCompletado";
 import type { RegistroPreventivo } from "../preventivo/types";
 import "./inicio.css";
 
 interface CitaMes extends CitaCronograma {
   dia: number;
-  completada: boolean;
+  estado: EstadoCitaPm;
+  reprogramadoA: { anio: number; mes: number; dia: number } | null;
 }
 
 interface BloqueMes {
@@ -61,15 +63,29 @@ function construirDatosArea(
       if (mesClave !== mes) continue;
       for (const cita of citas) {
         const maquina = maquinasPorId.get(cita.maquinaId);
-        if (maquina && !hojaEstaActiva(maquina)) continue;
 
-        const fechaIso = aFechaIso(anio, mes, diaClave);
-        const completada = pmCompletado(cita.maquinaId, fechaIso, indicesCompletado);
-        citasMes.push({ ...cita, dia: diaClave, completada });
+        const resultado = evaluarEstadoCitaPm(
+          cita.maquinaId,
+          area,
+          anio,
+          mes,
+          diaClave,
+          cita.origen,
+          excepciones,
+          indicesCompletado,
+          valorHoy,
+          maquina,
+        );
+        citasMes.push({
+          ...cita,
+          dia: diaClave,
+          estado: resultado.estado,
+          reprogramadoA: resultado.reprogramadoA,
+        });
         totalCitas += 1;
-        if (completada) citasCompletadas += 1;
+        if (resultado.estado === "completada") citasCompletadas += 1;
         if (
-          !completada &&
+          (resultado.estado === "programada" || resultado.estado === "reprogramada") &&
           valorFecha(anio, mes, diaClave) >= valorHoy &&
           (!proximaCita || valorFecha(anio, mes, diaClave) < valorFecha(anio, proximaCita.mes, proximaCita.dia))
         ) {
@@ -82,7 +98,7 @@ function construirDatosArea(
       porMes.push({
         mes,
         citas: citasMes,
-        completadas: citasMes.filter((c) => c.completada).length,
+        completadas: citasMes.filter((c) => c.estado === "completada").length,
       });
     }
   }
@@ -154,8 +170,17 @@ function InicioPage() {
         <div>
           <h1>Panel de mantenimiento preventivo</h1>
           <p className="inicio__descripcion">
-            Programación anual por área. Verde = PM ya registrado ese mes.
+            Programación anual por área. Para reprogramar un PM, usa el{" "}
+            <Link to="/preventivo/cronograma">calendario</Link>.
           </p>
+          <div className="inicio__leyenda">
+            <span className="inicio__leyenda-item inicio__leyenda-item--completada">Hecho</span>
+            <span className="inicio__leyenda-item inicio__leyenda-item--programada">Programado</span>
+            <span className="inicio__leyenda-item inicio__leyenda-item--no-realizado">No realizado</span>
+            <span className="inicio__leyenda-item inicio__leyenda-item--reprogramada">Reprogramado</span>
+            <span className="inicio__leyenda-item inicio__leyenda-item--vencida">Vencido (activa)</span>
+            <span className="inicio__leyenda-item inicio__leyenda-item--de-baja">De baja</span>
+          </div>
         </div>
         <div className="inicio__anio">
           <button className="btn" onClick={() => setAnio(anio - 1)}>←</button>
@@ -233,45 +258,64 @@ function InicioPage() {
                             {bloque.citas.map((cita) => (
                               <li
                                 key={`${cita.maquinaId}-${cita.dia}`}
-                                className={cita.completada ? "cita cita--completada" : "cita"}
-                                role="button"
-                                tabIndex={0}
-                                title={
-                                  cita.completada
-                                    ? `PM registrado: ${cita.nombre}`
-                                    : `Registrar actividad de ${cita.nombre}`
+                                className={`cita cita--${cita.estado.replaceAll("_", "-")}${cita.estado === "de_baja" ? " cita--solo-lectura" : ""}`}
+                                role={cita.estado === "de_baja" ? undefined : "button"}
+                                tabIndex={cita.estado === "de_baja" ? undefined : 0}
+                                title={`${cita.nombre} — ${cita.estado === "de_baja" ? "De baja — fuera de circulación" : cita.estado}`}
+                                onClick={
+                                  cita.estado === "de_baja"
+                                    ? undefined
+                                    : () =>
+                                        navegar("/preventivo", {
+                                          state: {
+                                            registrarPm: {
+                                              maquinaId: cita.maquinaId,
+                                              area: datos.area,
+                                              fecha: aFechaIso(
+                                                anio,
+                                                cita.reprogramadoA?.mes ?? bloque.mes,
+                                                cita.reprogramadoA?.dia ?? cita.dia,
+                                              ),
+                                            },
+                                          },
+                                        })
                                 }
-                                onClick={() =>
-                                  navegar("/preventivo", {
-                                    state: {
-                                      registrarPm: {
-                                        maquinaId: cita.maquinaId,
-                                        area: datos.area,
-                                        fecha: aFechaIso(anio, bloque.mes, cita.dia),
-                                      },
-                                    },
-                                  })
+                                onKeyDown={
+                                  cita.estado === "de_baja"
+                                    ? undefined
+                                    : (e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                          e.preventDefault();
+                                          navegar("/preventivo", {
+                                            state: {
+                                              registrarPm: {
+                                                maquinaId: cita.maquinaId,
+                                                area: datos.area,
+                                                fecha: aFechaIso(
+                                                  anio,
+                                                  cita.reprogramadoA?.mes ?? bloque.mes,
+                                                  cita.reprogramadoA?.dia ?? cita.dia,
+                                                ),
+                                              },
+                                            },
+                                          });
+                                        }
+                                      }
                                 }
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    navegar("/preventivo", {
-                                      state: {
-                                        registrarPm: {
-                                          maquinaId: cita.maquinaId,
-                                          area: datos.area,
-                                          fecha: aFechaIso(anio, bloque.mes, cita.dia),
-                                        },
-                                      },
-                                    });
-                                  }
-                                }}
                               >
-                                {cita.completada && <span className="cita__check">✓</span>}
+                                {cita.estado === "completada" && (
+                                  <span className="cita__check">✓</span>
+                                )}
+                                {cita.estado === "no_realizado" && (
+                                  <span className="cita__icono">!</span>
+                                )}
                                 <span className="cita__dia">{cita.dia}</span>
                                 <span className="cita__nombre">{cita.nombre}</span>
                                 <span className="cita__codigo">
                                   {cita.codigo} · cada {cita.frecuencia}m
+                                  {cita.reprogramadoA && cita.estado === "no_realizado" && (
+                                    <> · → {cita.reprogramadoA.dia}/{cita.reprogramadoA.mes}</>
+                                  )}
                                 </span>
                               </li>
                             ))}

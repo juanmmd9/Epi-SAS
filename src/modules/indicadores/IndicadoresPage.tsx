@@ -37,6 +37,7 @@ import {
   type HorasProgramadas,
 } from "./horasService";
 import TablaAnual, { type PayloadNc } from "./TablaAnual";
+import PanelMejoras from "./PanelMejoras";
 import "./indicadores.css";
 
 function ListaCitas({ items, clase, vacio }: { items: CitaClasificada[]; clase: string; vacio: string }) {
@@ -64,7 +65,7 @@ function IndicadoresPage() {
   const hoy = new Date();
   const navegar = useNavigate();
   const ubicacion = useLocation();
-  const [panel, setPanel] = useState<"detalle" | "tabla" | "formulas">("detalle");
+  const [panel, setPanel] = useState<"detalle" | "tabla" | "formulas" | "mejoras">("detalle");
   const [area, setArea] = useState("");
   const [mes, setMes] = useState(hoy.getMonth() + 1);
   const [anio, setAnio] = useState(hoy.getFullYear());
@@ -269,6 +270,12 @@ function IndicadoresPage() {
         >
           Fórmulas y metas
         </button>
+        <button
+          className={"pestana" + (panel === "mejoras" ? " pestana--activa" : "")}
+          onClick={() => setPanel("mejoras")}
+        >
+          Acciones de mejora
+        </button>
       </div>
 
       <div className="indicadores__filtros">
@@ -372,6 +379,10 @@ function IndicadoresPage() {
           solicitudesValidas={resumen.cantidad}
           festivosCargados={festivos.length}
         />
+      )}
+
+      {panel === "mejoras" && (
+        <PanelMejoras anioFiltro={anio} />
       )}
 
       {panel === "detalle" && (
