@@ -460,6 +460,24 @@ export function cumplimientoPreventivoGlobal(
   return Math.round((totalCumplidas / totalCitas) * 100);
 }
 
+/** % de cumplimiento PM de un área en un mes. */
+export function cumplimientoPreventivoArea(
+  maquinas: HojaVida[],
+  excepciones: ExcepcionCronograma[],
+  preventivo: RegistroPreventivo[],
+  area: string,
+  anio: number,
+  mes: number,
+  referencia = new Date(),
+): number | null {
+  const anioRef = referencia.getFullYear();
+  const mesRef = referencia.getMonth() + 1;
+  if (anio > anioRef || (anio === anioRef && mes > mesRef)) return null;
+  const datos = clasificarCitasPreventivas(maquinas, excepciones, preventivo, area, anio, mes);
+  if (datos.total === 0) return null;
+  return datos.porcentaje;
+}
+
 /** Promedio mensual del tiempo de respuesta G (min) de un area. */
 export function promedioRespuestaArea(
   correctivos: RegistroCorrectivo[],

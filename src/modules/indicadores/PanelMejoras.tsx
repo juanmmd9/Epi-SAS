@@ -20,6 +20,7 @@ import {
   type MejoraPortfolio,
   type MejoraPortfolioDatos,
 } from "./mejorasPortfolioTypes";
+import { exportarMejorasExcel } from "./mejorasPortfolioExport";
 
 interface FormularioMejora {
   titulo: string;
@@ -269,11 +270,21 @@ function PanelMejoras({ anioFiltro }: Props) {
             beneficio obtenido. Ideal para presentaciones a dirección y auditorías del SGC.
           </p>
         </div>
-        {puedeEditar && (
-          <button type="button" className="btn btn--primario" onClick={abrirNueva}>
-            + Registrar mejora
+        <div className="panel-mejoras__acciones">
+          <button
+            type="button"
+            className="btn"
+            disabled={cargando || mejorasFiltradas.length === 0}
+            onClick={() => exportarMejorasExcel(mejorasFiltradas, personalPorId, anioFiltro)}
+          >
+            Exportar a Excel
           </button>
-        )}
+          {puedeEditar && (
+            <button type="button" className="btn btn--primario" onClick={abrirNueva}>
+              + Registrar mejora
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="panel-mejoras__stats">

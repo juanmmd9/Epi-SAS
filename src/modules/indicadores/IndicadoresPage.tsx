@@ -38,6 +38,7 @@ import {
 } from "./horasService";
 import TablaAnual, { type PayloadNc } from "./TablaAnual";
 import PanelMejoras from "./PanelMejoras";
+import PanelGraficosBarras from "./PanelGraficosBarras";
 import "./indicadores.css";
 
 function ListaCitas({ items, clase, vacio }: { items: CitaClasificada[]; clase: string; vacio: string }) {
@@ -65,7 +66,7 @@ function IndicadoresPage() {
   const hoy = new Date();
   const navegar = useNavigate();
   const ubicacion = useLocation();
-  const [panel, setPanel] = useState<"detalle" | "tabla" | "formulas" | "mejoras">("detalle");
+  const [panel, setPanel] = useState<"detalle" | "tabla" | "formulas" | "mejoras" | "graficos">("detalle");
   const [area, setArea] = useState("");
   const [mes, setMes] = useState(hoy.getMonth() + 1);
   const [anio, setAnio] = useState(hoy.getFullYear());
@@ -276,6 +277,12 @@ function IndicadoresPage() {
         >
           Acciones de mejora
         </button>
+        <button
+          className={"pestana" + (panel === "graficos" ? " pestana--activa" : "")}
+          onClick={() => setPanel("graficos")}
+        >
+          Gráficos barras
+        </button>
       </div>
 
       <div className="indicadores__filtros">
@@ -383,6 +390,23 @@ function IndicadoresPage() {
 
       {panel === "mejoras" && (
         <PanelMejoras anioFiltro={anio} />
+      )}
+
+      {panel === "graficos" && !cargando && (
+        <PanelGraficosBarras
+          anio={anio}
+          mes={mes}
+          area={area}
+          tipoMantenimiento={tipo}
+          correctivos={correctivos}
+          maquinas={maquinas}
+          excepciones={excepciones}
+          preventivo={preventivo}
+          onSeleccionarMes={(m) => {
+            setMes(m);
+            setPanel("detalle");
+          }}
+        />
       )}
 
       {panel === "detalle" && (

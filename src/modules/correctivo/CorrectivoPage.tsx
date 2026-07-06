@@ -24,6 +24,12 @@ import {
   siguienteNumeroSolicitud,
 } from "./correctivoService";
 import {
+  contarCorrectivosMes,
+  etiquetaMesAnio,
+  type CriterioFechaCorrectivo,
+} from "./correctivoConteo";
+import { NOMBRES_MESES } from "../../lib/fechas";
+import {
   ESTADOS_MAQUINA,
   TIPOS_SOLICITUD,
   type RegistroCorrectivo,
@@ -69,6 +75,10 @@ function CorrectivoPage() {
   const [esperaRepuesto, setEsperaRepuesto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [filtroArea, setFiltroArea] = useState("");
+  const [mostrarContador, setMostrarContador] = useState(false);
+  const [contadorAnio, setContadorAnio] = useState(() => new Date().getFullYear());
+  const [contadorMes, setContadorMes] = useState(() => new Date().getMonth() + 1);
+  const [criterioContador, setCriterioContador] = useState<CriterioFechaCorrectivo>("solicitud");
   const navegacionProcesada = useRef(false);
 
   useEffect(() => {
@@ -105,6 +115,18 @@ function CorrectivoPage() {
     const lista = filtroArea ? registros.filter((r) => r.area === filtroArea) : registros;
     return ordenarRegistrosCorrectivo(lista);
   }, [registros, filtroArea]);
+
+  const conteoMes = useMemo(
+    () =>
+      contarCorrectivosMes(
+        registros,
+        contadorAnio,
+        contadorMes,
+        criterioContador,
+        filtroArea,
+      ),
+    [registros, contadorAnio, contadorMes, criterioContador, filtroArea],
+  );
 
   function actualizar(nombre: keyof typeof formularioVacio, valor: string) {
     setCampos((c) => ({ ...c, [nombre]: valor }));
@@ -273,11 +295,116 @@ function CorrectivoPage() {
 
   return (
     <section className="correctivo">
-      <h1>Mantenimiento correctivo</h1>
-      <p className="correctivo__descripcion">
-        Solicitudes de servicio de mantenimiento por área.{" "}
-        <Link to="/personal">Gestionar personal</Link>
-      </p>
+      <div className="correctivo__cabecera">
+        <div>
+          <h1>Mantenimiento correctivo</h1>
+          <p className="correctivo__descripcion">
+            Solicitudes de servicio de mantenimiento por área.{" "}
+            <Link to="/personal">Gestionar personal</Link>
+          </p>
+        </div>
+        <button
+          type="button"
+          className={"btn" + (mostrarContador ? " btn--primario" : "")}
+          onClick={() => setMostrarContador((v) => !v)}
+        >
+          {mostrarContador ? "Ocultar contador" : "Ver contador"}
+        </button>
+      </div>
+
+      {mostrarContador && (
+        <aside className="correctivo-contador">
+          <div className="correctivo-contador__controles">
+            <label>
+              Mes
+              <select
+                value={contadorMes}
+                onChange={(e) => setContadorMes(Number(e.target.value))}
+              >
+                {NOMBRES_MESES.map((nombre, i) => (
+                  <option key={nombre} value={i + 1}>{nombre}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Año
+              <input
+                type="number"
+                value={contadorAnio}
+                onChange={(e) =>
+                  setContadorAnio(Number.parseInt(e.target.value, 10) || new Date().getFullYear())
+                }
+              />
+            </label>
+            <label>
+              Contar por
+              <select
+                value={criterioContador}
+                onChange={(e) => setCriterioContador(e.target.value as CriterioFechaCorrectivo)}
+              >
+                <option value="solicitud">Fecha de solicitud</option>
+                <option value="cierre">Fecha de cierre</option>
+              </select>
+            </label>
+            {filtroArea && (
+              <span className="correctivo-contador__chip">Área: {filtroArea}</span>
+            )}
+          </div>
+
+          <div className="correctivo-contador__principal">
+            <div className="correctivo-contador__total">
+              <span>{etiquetaMesAnio(contadorAnio, contadorMes)}</span>
+              <strong>{conteoMes.total}</strong>
+              <small>
+                correctivo(s){" "}
+                {criterioContador === "cierre" ? "cerrados" : "registrados"} en el mes
+              </small>
+            </div>
+            <div className="correctivo-contador__tarjetas">
+              <article>
+                <span>Cerradas</span>
+                <strong>{conteoMes.cerradas}</strong>
+              </article>
+              <article>
+                <span>Abiertas</span>
+                <strong>{conteoMes.abiertas}</strong>
+              </article>
+              <article>
+                <span>En espera repuesto</span>
+                <strong>{conteoMes.enEsperaRepuesto}</strong>
+              </article>
+            </div>
+          </div>
+
+          {!filtroArea && conteoMes.porArea.length > 0 && (
+            <div className="correctivo-contador__desglose">
+              <h3>Por área</h3>
+              <ul>
+                {conteoMes.porArea.map(({ area, cantidad }) => (
+                  <li key={area}>
+                    <span>{area}</span>
+                    <strong>{cantidad}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {conteoMes.porTipo.length > 0 && (
+            <div className="correctivo-contador__desglose">
+              <h3>Por tipo</h3>
+              <ul>
+                {conteoMes.porTipo.map(({ tipo, cantidad }) => (
+                  <li key={tipo}>
+                    <span>{tipo}</span>
+                    <strong>{cantidad}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </aside>
+      )}
 
       <SoloConPermiso permiso="crear.correctivo">
         <form className="correctivo-form" onSubmit={manejarEnvio}>
