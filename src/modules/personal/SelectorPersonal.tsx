@@ -41,10 +41,7 @@ function SelectorPersonal({
                 checked={seleccionados.includes(p.id)}
                 onChange={() => alternar(p.id)}
               />
-              <span>
-                {p.nombre}
-                {p.cargo ? ` — ${p.cargo}` : ""}
-              </span>
+              <span>{p.nombre}</span>
             </label>
           ))}
         </div>

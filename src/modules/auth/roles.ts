@@ -55,7 +55,7 @@ const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
   "ver.permisos": ["admin"],
   "ver.matriz": ["admin"],
   "ver.horario": ["admin"],
-  "editar.hojas": ["admin"],
+  "editar.hojas": ["admin", "operador"],
   "editar.personal": ["admin"],
   "editar.horario": ["admin"],
   "editar.indicadores": ["admin"],

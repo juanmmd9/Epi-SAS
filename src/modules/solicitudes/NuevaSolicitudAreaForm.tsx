@@ -81,10 +81,6 @@ function NuevaSolicitudAreaForm({
       setError("Indica la máquina, equipo o locación.");
       return;
     }
-    if (!estadoMaquina) {
-      setError("Selecciona el estado de la máquina.");
-      return;
-    }
     if (!descripcion.trim()) {
       setError("Describe el problema o la necesidad.");
       return;
@@ -185,13 +181,12 @@ function NuevaSolicitudAreaForm({
             />
           </label>
           <label>
-            Estado máquina *
+            Estado máquina
             <select
-              required
               value={estadoMaquina}
               onChange={(e) => setEstadoMaquina(e.target.value)}
             >
-              <option value="">Selecciona</option>
+              <option value="">Opcional</option>
               {ESTADOS_MAQUINA.map((estado) => (
                 <option key={estado} value={estado}>
                   {estado}

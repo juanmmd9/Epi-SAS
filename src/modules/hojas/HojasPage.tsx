@@ -26,6 +26,19 @@ function HojasPage() {
   const [maquinaSeleccionada, setMaquinaSeleccionada] = useState("");
   const [hojaEnEdicion, setHojaEnEdicion] = useState<HojaVida | null>(null);
 
+  function cerrarEdicion() {
+    setHojaEnEdicion(null);
+  }
+
+  useEffect(() => {
+    if (!hojaEnEdicion) return;
+    function alTecla(evento: KeyboardEvent) {
+      if (evento.key === "Escape") cerrarEdicion();
+    }
+    window.addEventListener("keydown", alTecla);
+    return () => window.removeEventListener("keydown", alTecla);
+  }, [hojaEnEdicion]);
+
   useEffect(() => {
     listarHojas()
       .then(setHojas)
@@ -161,12 +174,50 @@ function HojasPage() {
 
       <SoloConPermiso permiso="editar.hojas">
         <HojaForm
-          hojaEnEdicion={hojaEnEdicion}
-          guardando={guardando}
+          hojaEnEdicion={null}
+          guardando={guardando && !hojaEnEdicion}
           onGuardar={manejarGuardar}
-          onCancelarEdicion={() => setHojaEnEdicion(null)}
+          onCancelarEdicion={cerrarEdicion}
         />
       </SoloConPermiso>
+
+      {hojaEnEdicion && (
+        <div
+          className="hoja-modal__overlay"
+          onClick={cerrarEdicion}
+          role="presentation"
+        >
+          <div
+            className="hoja-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hoja-modal-titulo"
+          >
+            <div className="hoja-modal__cabecera">
+              <h2 id="hoja-modal-titulo">Editar hoja de vida</h2>
+              <button
+                type="button"
+                className="hoja-modal__cerrar"
+                aria-label="Cerrar"
+                onClick={cerrarEdicion}
+              >
+                ×
+              </button>
+            </div>
+            <p className="hoja-modal__subtitulo">
+              {hojaEnEdicion.codigo ? `${hojaEnEdicion.codigo} — ` : ""}
+              {hojaEnEdicion.nombre}
+            </p>
+            <HojaForm
+              hojaEnEdicion={hojaEnEdicion}
+              guardando={guardando}
+              onGuardar={manejarGuardar}
+              onCancelarEdicion={cerrarEdicion}
+            />
+          </div>
+        </div>
+      )}
 
       {mensaje && <p className="hojas__mensaje hojas__mensaje--ok">{mensaje}</p>}
       {error && <p className="hojas__mensaje hojas__mensaje--error">{error}</p>}

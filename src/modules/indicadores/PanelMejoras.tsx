@@ -682,10 +682,7 @@ function PanelMejoras({ anioFiltro }: Props) {
                         <span className="mejora-card__tecnico mejora-card__tecnico--grande">
                           {p.nombre.split(" ").slice(0, 2).map((x) => x[0]).join("").slice(0, 2)}
                         </span>
-                        <span>
-                          {p.nombre}
-                          {p.cargo ? ` — ${p.cargo}` : ""}
-                        </span>
+                        <span>{p.nombre}</span>
                       </li>
                     );
                   })}

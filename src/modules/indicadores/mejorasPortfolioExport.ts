@@ -31,7 +31,7 @@ export function exportarMejorasExcel(
     const equipo = m.datos.personalIds
       .map((id) => {
         const p = personalPorId.get(id);
-        return p ? (p.cargo ? `${p.nombre} (${p.cargo})` : p.nombre) : null;
+        return p ? p.nombre : null;
       })
       .filter((nombre): nombre is string => Boolean(nombre))
       .join(" / ");

@@ -478,10 +478,10 @@ function CorrectivoPage() {
               onChange={(e) => actualizar("codigoMaquina", e.target.value)} />
           </label>
           <label>
-            Estado máquina *
-            <select required value={campos.estadoMaquina}
+            Estado máquina
+            <select value={campos.estadoMaquina}
               onChange={(e) => actualizar("estadoMaquina", e.target.value)}>
-              <option value="">Selecciona estado</option>
+              <option value="">Opcional</option>
               {ESTADOS_MAQUINA.map((estado) => (
                 <option key={estado} value={estado}>{estado}</option>
               ))}
