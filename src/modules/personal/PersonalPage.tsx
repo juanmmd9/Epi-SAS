@@ -207,15 +207,21 @@ function PersonalPage() {
               Usuarios del portal
             </Link>
           )}
-          <Link className="btn" to="/personal/permisos">
-            Control de permisos
-          </Link>
-          <Link className="btn" to="/personal/horario">
-            Horario y festivos
-          </Link>
-          <Link className="btn btn--primario" to="/personal/matriz">
-            Matriz de conocimientos
-          </Link>
+          {puede("ver.permisos") && (
+            <Link className="btn" to="/personal/permisos">
+              Control de permisos
+            </Link>
+          )}
+          {puede("ver.horario") && (
+            <Link className="btn" to="/personal/horario">
+              Horario y festivos
+            </Link>
+          )}
+          {puede("ver.matriz") && (
+            <Link className="btn btn--primario" to="/personal/matriz">
+              Matriz de conocimientos
+            </Link>
+          )}
         </div>
       </header>
 

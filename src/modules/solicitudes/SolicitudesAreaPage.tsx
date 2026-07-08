@@ -13,6 +13,8 @@ import type { RegistroCorrectivo } from "../correctivo/types";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
 import NuevaSolicitudAreaForm from "./NuevaSolicitudAreaForm";
+import PanelAlertasSolicitudes from "./PanelAlertasSolicitudes";
+import { useSolicitudesRealtime } from "./useSolicitudesRealtime";
 import {
   actualizarRepuesto,
   crearRepuesto,
@@ -154,10 +156,38 @@ function SolicitudesAreaPage() {
     [correctivos, area],
   );
 
-  const alCrearSolicitud = useCallback((registro: RegistroCorrectivo) => {
-    setCorrectivos((prev) => ordenarRegistrosCorrectivo([registro, ...prev]));
+  const alNuevaSolicitudRealtime = useCallback((registro: RegistroCorrectivo) => {
+    setCorrectivos((prev) => {
+      if (prev.some((r) => r.id === registro.id)) return prev;
+      return ordenarRegistrosCorrectivo([registro, ...prev]);
+    });
     setTab("correctivas");
+    setMensaje(`Nueva solicitud #${registro.datos.numeroSolicitud} recibida.`);
   }, []);
+
+  const {
+    alertas,
+    descartarAlerta,
+    enLinea,
+    sonidoActivo,
+    setSonidoActivo,
+    idsDestacados,
+    marcarConocido,
+  } = useSolicitudesRealtime({
+    areaFiltro: areaValida ? area : undefined,
+    correctivos,
+    onNuevaSolicitud: alNuevaSolicitudRealtime,
+    habilitado: areaValida && !cargando,
+  });
+
+  const alCrearSolicitud = useCallback(
+    (registro: RegistroCorrectivo) => {
+      marcarConocido(registro.id);
+      setCorrectivos((prev) => ordenarRegistrosCorrectivo([registro, ...prev]));
+      setTab("correctivas");
+    },
+    [marcarConocido],
+  );
 
   const esSolicitanteArea = perfil?.rol === "solicitante";
   const puedeVerCorrectivo = puede("ver.correctivo");
@@ -300,17 +330,28 @@ function SolicitudesAreaPage() {
       )}
 
       <h1>Solicitudes — {area}</h1>
-      <p className="solicitudes__descripcion">
-        {esSolicitanteArea
-          ? "Reporta fallas y consulta el estado de las solicitudes de tu área."
-          : "Solicitudes correctivas y pedidos de repuestos del área."}
-        {puedeVerCorrectivo && (
-          <>
-            {" "}
-            <Link to="/correctivo">Ir a mantenimiento correctivo</Link>
-          </>
-        )}
-      </p>
+      <div className="solicitudes__cabecera">
+        <p className="solicitudes__descripcion">
+          {esSolicitanteArea
+            ? "Reporta fallas y consulta el estado de las solicitudes de tu área."
+            : "Solicitudes correctivas y pedidos de repuestos del área."}
+          {puedeVerCorrectivo && (
+            <>
+              {" "}
+              <Link to="/correctivo">Ir a mantenimiento correctivo</Link>
+            </>
+          )}
+          {" "}Deja esta pantalla abierta para avisos al instante.
+        </p>
+        <PanelAlertasSolicitudes
+          enLinea={enLinea}
+          sonidoActivo={sonidoActivo}
+          onToggleSonido={() => setSonidoActivo((v) => !v)}
+          alertas={alertas}
+          onDescartar={descartarAlerta}
+          areaActual={area}
+        />
+      </div>
 
       <NuevaSolicitudAreaForm
         area={normalizarArea(area)}
@@ -371,7 +412,9 @@ function SolicitudesAreaPage() {
                   <article
                     key={registro.id}
                     className={
-                      "solicitud-item" + (enEspera ? " solicitud-item--espera" : "")
+                      "solicitud-item" +
+                      (enEspera ? " solicitud-item--espera" : "") +
+                      (idsDestacados.has(registro.id) ? " solicitud-item--nueva" : "")
                     }
                   >
                     <div>

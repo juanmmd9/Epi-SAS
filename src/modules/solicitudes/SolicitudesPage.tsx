@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { AREAS_SISTEMA } from "../../lib/areas";
 import { areaUsuario, rutaSolicitudesArea } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import { NOMBRES_MESES } from "../../lib/fechas";
-import { listarCorrectivo } from "../correctivo/correctivoService";
+import { listarCorrectivo, ordenarRegistrosCorrectivo } from "../correctivo/correctivoService";
 import type { RegistroCorrectivo } from "../correctivo/types";
 import { existeTablaRepuestos, listarRepuestos } from "./repuestosService";
 import { resumenesTodasAreas } from "./solicitudesCalculo";
+import PanelAlertasSolicitudes from "./PanelAlertasSolicitudes";
+import { useSolicitudesRealtime } from "./useSolicitudesRealtime";
 import type { RepuestoSolicitud } from "./types";
 import "./solicitudes.css";
 
@@ -50,6 +52,27 @@ function SolicitudesPage() {
     () => resumenesTodasAreas(AREAS_SISTEMA, correctivos, repuestos),
     [correctivos, repuestos],
   );
+
+  const alNuevaSolicitud = useCallback((registro: RegistroCorrectivo) => {
+    setCorrectivos((prev) => {
+      if (prev.some((r) => r.id === registro.id)) return prev;
+      return ordenarRegistrosCorrectivo([registro, ...prev]);
+    });
+  }, []);
+
+  const {
+    alertas,
+    descartarAlerta,
+    enLinea,
+    sonidoActivo,
+    setSonidoActivo,
+    areasConNueva,
+    limpiarAreaNueva,
+  } = useSolicitudesRealtime({
+    correctivos,
+    onNuevaSolicitud: alNuevaSolicitud,
+    habilitado: !cargando,
+  });
 
   const totales = useMemo(
     () =>
@@ -98,15 +121,30 @@ function SolicitudesPage() {
             Vista por área de solicitudes correctivas abiertas, en espera de repuesto y
             pedidos de repuestos. Cerradas en {mesActual}:{" "}
             <strong>{totales.cerradasMes}</strong>.
+            {" "}Deja esta pantalla abierta para recibir avisos al instante.
           </p>
         </div>
+        <PanelAlertasSolicitudes
+          enLinea={enLinea}
+          sonidoActivo={sonidoActivo}
+          onToggleSonido={() => setSonidoActivo((v) => !v)}
+          alertas={alertas}
+          onDescartar={descartarAlerta}
+        />
       </div>
 
       {error && <p className="solicitudes__error">{error}</p>}
 
       <div className="solicitudes__grid">
         {resumenes.map((resumen) => (
-          <Link key={resumen.area} to={rutaArea(resumen.area)} className="sol-card">
+          <Link
+            key={resumen.area}
+            to={rutaArea(resumen.area)}
+            className={
+              "sol-card" + (areasConNueva.has(resumen.area) ? " sol-card--nueva" : "")
+            }
+            onClick={() => limpiarAreaNueva(resumen.area)}
+          >
             <h3>{resumen.area}</h3>
             <div className="sol-card__stats">
               <div className="sol-card__stat sol-card__stat--alerta">

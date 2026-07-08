@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AREAS_CON_PM, coincideArea } from "../../lib/areas";
 import { aFechaIso, NOMBRES_MESES, valorFecha } from "../../lib/fechas";
+import { useAuth } from "../auth/AuthContext";
 import { mapaCitasDelAnio } from "../cronograma/cronogramaCalculo";
 import { evaluarEstadoCitaPm, type EstadoCitaPm } from "../cronograma/cronogramaEstadoCita";
 import { listarExcepciones } from "../cronograma/cronogramaService";
@@ -115,6 +116,8 @@ function construirDatosArea(
 }
 
 function InicioPage() {
+  const { esAdmin } = useAuth();
+  const puedeModificarPm = esAdmin;
   const anioActual = new Date().getFullYear();
   const mesActual = new Date().getMonth() + 1;
   const ubicacion = useLocation();
@@ -170,8 +173,14 @@ function InicioPage() {
         <div>
           <h1>Panel de mantenimiento preventivo</h1>
           <p className="inicio__descripcion">
-            Programación anual por área. Para reprogramar un PM, usa el{" "}
-            <Link to="/preventivo/cronograma">calendario</Link>.
+            {puedeModificarPm ? (
+              <>
+                Programación anual por área. Para reprogramar un PM, usa el{" "}
+                <Link to="/preventivo/cronograma">calendario</Link>.
+              </>
+            ) : (
+              <>Programación anual por área (solo consulta).</>
+            )}
           </p>
           <div className="inicio__leyenda">
             <span className="inicio__leyenda-item inicio__leyenda-item--completada">Hecho</span>
@@ -255,15 +264,18 @@ function InicioPage() {
                             <span>{bloque.completadas}/{bloque.citas.length} hecho(s)</span>
                           </div>
                           <ul>
-                            {bloque.citas.map((cita) => (
+                            {bloque.citas.map((cita) => {
+                              const soloLectura =
+                                !puedeModificarPm || cita.estado === "de_baja";
+                              return (
                               <li
                                 key={`${cita.maquinaId}-${cita.dia}`}
-                                className={`cita cita--${cita.estado.replaceAll("_", "-")}${cita.estado === "de_baja" ? " cita--solo-lectura" : ""}`}
-                                role={cita.estado === "de_baja" ? undefined : "button"}
-                                tabIndex={cita.estado === "de_baja" ? undefined : 0}
+                                className={`cita cita--${cita.estado.replaceAll("_", "-")}${soloLectura ? " cita--solo-lectura" : ""}`}
+                                role={soloLectura ? undefined : "button"}
+                                tabIndex={soloLectura ? undefined : 0}
                                 title={`${cita.nombre} — ${cita.estado === "de_baja" ? "De baja — fuera de circulación" : cita.estado}`}
                                 onClick={
-                                  cita.estado === "de_baja"
+                                  soloLectura
                                     ? undefined
                                     : () =>
                                         navegar("/preventivo", {
@@ -281,7 +293,7 @@ function InicioPage() {
                                         })
                                 }
                                 onKeyDown={
-                                  cita.estado === "de_baja"
+                                  soloLectura
                                     ? undefined
                                     : (e) => {
                                         if (e.key === "Enter" || e.key === " ") {
@@ -318,7 +330,8 @@ function InicioPage() {
                                   )}
                                 </span>
                               </li>
-                            ))}
+                            );
+                            })}
                           </ul>
                         </div>
                       ))}
@@ -328,8 +341,16 @@ function InicioPage() {
               )}
 
               <div className="area-card__pie">
-                <Link className="btn" to="/preventivo/cronograma">Ver calendario</Link>
-                <Link className="btn btn--primario" to="/preventivo">Registrar PM</Link>
+                {puedeModificarPm && (
+                  <>
+                    <Link className="btn" to="/preventivo/cronograma">
+                      Ver calendario
+                    </Link>
+                    <Link className="btn btn--primario" to="/preventivo">
+                      Registrar PM
+                    </Link>
+                  </>
+                )}
               </div>
             </article>
           ))}

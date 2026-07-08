@@ -232,6 +232,11 @@
   cursor: default;
 }
 
+.cita--solo-lectura:hover {
+  background: inherit;
+  outline: none;
+}
+
 .cita__icono {
   color: #ea580c;
   font-weight: 800;

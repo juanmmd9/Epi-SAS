@@ -103,6 +103,156 @@
   margin-top: auto;
 }
 
+.sol-card--nueva {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+  animation: sol-card-pulso 1.4s ease-in-out 3;
+}
+
+@keyframes sol-card-pulso {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.45);
+  }
+}
+
+.solicitudes-alerta__barra {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.solicitudes-alerta__estado {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-borde);
+}
+
+.solicitudes-alerta__estado--en-linea {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.solicitudes-alerta__estado--off {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.solicitudes-alerta__sonido {
+  font-size: 0.82rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.solicitudes-alerta__badge {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+}
+
+.solicitudes-alerta__toasts {
+  position: fixed;
+  top: 4.5rem;
+  right: 1rem;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.solicitudes-alerta__toast {
+  position: relative;
+  background: #1e293b;
+  color: #f8fafc;
+  border-radius: 10px;
+  padding: 0.85rem 2rem 0.85rem 0.9rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.35);
+  pointer-events: auto;
+  animation: solicitud-toast-in 0.25s ease-out;
+}
+
+@keyframes solicitud-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.solicitudes-alerta__toast strong {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.solicitudes-alerta__toast p {
+  margin: 0.15rem 0 0;
+  font-size: 0.88rem;
+}
+
+.solicitudes-alerta__solicitante {
+  color: #cbd5e1;
+  font-size: 0.82rem !important;
+}
+
+.solicitudes-alerta__cerrar {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.45rem;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+}
+
+.solicitudes-alerta__enlace,
+.solicitudes-alerta__enlace-btn {
+  display: inline-block;
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #93c5fd;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.solicitud-item--nueva {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  animation: solicitud-item-pulso 1.2s ease-in-out 4;
+}
+
+@keyframes solicitud-item-pulso {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35);
+  }
+}
+
 .solicitudes-area__volver {
   display: inline-block;
   margin-bottom: 0.75rem;

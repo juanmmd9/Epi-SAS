@@ -6,11 +6,12 @@ export const AREAS_SISTEMA = [
   "Locativos",
   "Logistica",
   "Moldes",
+  "Administrativa",
 ] as const;
 
 export type Area = (typeof AREAS_SISTEMA)[number];
 
-export const AREAS_SOLO_CORRECTIVO: Area[] = ["Moldes"];
+export const AREAS_SOLO_CORRECTIVO: Area[] = ["Moldes", "Administrativa"];
 
 export const AREAS_CON_PM = AREAS_SISTEMA.filter(
   (area) => !AREAS_SOLO_CORRECTIVO.includes(area),
@@ -36,6 +37,8 @@ const ALIAS_AREAS: Record<string, Area> = {
   locativos: "Locativos",
   logistica: "Logistica",
   moldes: "Moldes",
+  administrativa: "Administrativa",
+  "area administrativa": "Administrativa",
 };
 
 /** Unifica tildes, mayúsculas y alias legacy al catálogo del sistema. */
