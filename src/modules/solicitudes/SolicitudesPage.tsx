@@ -64,6 +64,7 @@ function SolicitudesPage() {
     alertas,
     descartarAlerta,
     enLinea,
+    sondeoActivo,
     sonidoActivo,
     setSonidoActivo,
     areasConNueva,
@@ -126,6 +127,7 @@ function SolicitudesPage() {
         </div>
         <PanelAlertasSolicitudes
           enLinea={enLinea}
+          sondeoActivo={sondeoActivo}
           sonidoActivo={sonidoActivo}
           onToggleSonido={() => setSonidoActivo((v) => !v)}
           alertas={alertas}
