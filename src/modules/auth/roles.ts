@@ -6,7 +6,7 @@ export interface UsuarioPortal {
   nombre: string;
   rol: RolPortal;
   personal_id: string | null;
-  /** Área de planta (obligatoria para rol solicitante). */
+  /** Área de planta (opcional; informativa para el perfil). */
   area: string | null;
   activo: boolean;
 }

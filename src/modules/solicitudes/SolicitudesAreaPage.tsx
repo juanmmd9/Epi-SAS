@@ -4,7 +4,6 @@ import { useAuth } from "../auth/AuthContext";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { AREAS_SISTEMA, coincideArea, esAreaValida, normalizarArea } from "../../lib/areas";
 import {
-  areaUsuario,
   rutaSolicitudesArea,
   usuarioPuedeAccederArea,
   usuarioPuedeEscribirEnArea,
@@ -306,7 +305,6 @@ function SolicitudesAreaPage() {
   }
 
   const puedeEscribirArea = usuarioPuedeEscribirEnArea(perfil, area);
-  const areaAsignada = areaUsuario(perfil);
 
   if (cargando) {
     return (
@@ -330,9 +328,7 @@ function SolicitudesAreaPage() {
       <div className="solicitudes__cabecera">
         <p className="solicitudes__descripcion">
           {esSolicitanteArea
-            ? puedeEscribirArea
-              ? "Estás en el detalle de tu área. Usa el botón de arriba para ver todas las áreas."
-              : `Solo consulta. Tu área asignada es ${areaAsignada ?? "—"}; para crear solicitudes entra a esa área.`
+            ? "Reporta fallas o consulta el estado de las solicitudes de esta área. Usa el botón de arriba para volver al tablero."
             : "Solicitudes correctivas y pedidos de repuestos del área."}
           {puedeVerCorrectivo && (
             <>
@@ -362,13 +358,9 @@ function SolicitudesAreaPage() {
           onCreada={alCrearSolicitud}
         />
       ) : (
-        esSolicitanteArea &&
-        areaAsignada && (
-          <p className="solicitudes__mensaje">
-            No puedes crear solicitudes en {area}.{" "}
-            <Link to={rutaSolicitudesArea(areaAsignada)}>Ir a tu área ({areaAsignada})</Link>
-          </p>
-        )
+        <p className="solicitudes__mensaje">
+          Tu perfil es de solo consulta: no puedes crear solicitudes en esta área.
+        </p>
       )}
 
       {error && <p className="solicitudes__error">{error}</p>}

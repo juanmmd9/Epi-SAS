@@ -1,7 +1,7 @@
 import type { UsuarioPortal } from "../modules/auth/roles";
-import { coincideArea, esAreaValida, normalizarArea } from "./areas";
+import { esAreaValida, normalizarArea } from "./areas";
 
-/** Área asignada al usuario (catálogo del sistema). */
+/** Área asignada al usuario (catálogo del sistema). Opcional / informativa. */
 export function areaUsuario(perfil: UsuarioPortal | null | undefined): string | null {
   const area = perfil?.area?.trim();
   if (!area) return null;
@@ -9,12 +9,12 @@ export function areaUsuario(perfil: UsuarioPortal | null | undefined): string | 
   return esAreaValida(canonica) ? canonica : null;
 }
 
-/** Admin y mantenimiento ven todas las áreas; solicitante también ve el tablero, pero solo escribe en la suya. */
+/** Todos los roles autenticados ven el tablero de áreas. */
 export function usuarioVeTodasLasAreas(perfil: UsuarioPortal | null | undefined): boolean {
   return Boolean(perfil);
 }
 
-/** Puede entrar a ver el detalle de un área (solicitante: todas; escritura solo en la suya). */
+/** Puede entrar al detalle de un área. */
 export function usuarioPuedeAccederArea(
   perfil: UsuarioPortal | null | undefined,
   _area: string,
@@ -22,15 +22,16 @@ export function usuarioPuedeAccederArea(
   return Boolean(perfil);
 }
 
-/** Puede crear/editar solicitudes o repuestos en esa área. */
+/**
+ * Puede crear/editar solicitudes o repuestos en esa área.
+ * Solicitante, admin y operador: cualquier área (un perfil puede atender todas).
+ */
 export function usuarioPuedeEscribirEnArea(
   perfil: UsuarioPortal | null | undefined,
-  area: string,
+  _area: string,
 ): boolean {
   if (!perfil) return false;
-  if (perfil.rol !== "solicitante") return true;
-  const asignada = areaUsuario(perfil);
-  return asignada !== null && coincideArea(asignada, area);
+  return perfil.rol === "admin" || perfil.rol === "operador" || perfil.rol === "solicitante";
 }
 
 export function rutaSolicitudesArea(area: string): string {

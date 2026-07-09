@@ -23,8 +23,8 @@ const formularioVacio = {
   area: "",
 };
 
-function requiereArea(rol: RolPortal): boolean {
-  return rol === "solicitante";
+function requiereArea(_rol: RolPortal): boolean {
+  return false;
 }
 
 function badgeRol(rol: RolPortal) {
@@ -156,10 +156,10 @@ function UsuariosPage() {
             <strong>solicitante de área</strong>).
           </li>
           <li>
-            Para personal de producción: rol <strong>solicitante de área</strong> + área
-            (Tejidos, Logistica, etc.). Verán Inicio (PM solo consulta), el tablero de áreas,
-            crearán solicitudes solo en la suya, y podrán registrar o editar máquinas en Hojas
-            de vida.
+            Para personal de producción: rol <strong>solicitante de área</strong> (el área del
+            perfil es opcional). Verán Inicio (PM solo consulta), el tablero de todas las áreas
+            donde pueden crear solicitudes en cualquiera, y Hojas de vida para registrar o
+            editar máquinas.
           </li>
           <li>
             Si es operador de mantenimiento, vincula su fila de <strong>personal</strong> (para la
