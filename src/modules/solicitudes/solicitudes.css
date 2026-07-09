@@ -437,6 +437,12 @@
   margin: 0.2rem 0 0;
 }
 
+.solicitud-item__cierre {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  color: #166534;
+}
+
 .solicitud-item__desc {
   margin: 0.35rem 0 0;
   font-size: 0.92rem;

@@ -64,3 +64,19 @@ export function diasAbierta(registro: RegistroCorrectivo, referencia = new Date(
   const diff = referencia.getTime() - inicio.getTime();
   return Math.max(0, Math.floor(diff / 86_400_000));
 }
+
+/** Quién(es) cerró/atendió la solicitud (técnicos o quien revisa). */
+export function quienCerroSolicitud(registro: RegistroCorrectivo): string {
+  const nombres = (registro.datos.personalNombres ?? [])
+    .map((n) => n.trim())
+    .filter(Boolean);
+  if (nombres.length > 0) return nombres.join(", ");
+
+  const revisa = registro.datos.quienRevisa?.trim();
+  if (revisa) return revisa;
+
+  const legacy = registro.datos.personalNombre?.trim();
+  if (legacy) return legacy;
+
+  return "Sin registrar";
+}

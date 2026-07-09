@@ -8,6 +8,7 @@ import type { RegistroCorrectivo } from "../correctivo/types";
 import { existeTablaRepuestos, listarRepuestos } from "./repuestosService";
 import {
   diasAbierta,
+  quienCerroSolicitud,
   repuestoPendiente,
   resumenesTodasAreas,
   solicitudAbierta,
@@ -318,6 +319,8 @@ function SolicitudesPage() {
                 {correctivosFiltrados.map((registro) => {
                   const dias = diasAbierta(registro);
                   const enEspera = solicitudEsperaRepuesto(registro);
+                  const cerrada = Boolean(registro.datos.fechaCierre?.trim());
+                  const quienCerro = cerrada ? quienCerroSolicitud(registro) : null;
                   return (
                     <article
                       key={registro.id}
@@ -329,7 +332,7 @@ function SolicitudesPage() {
                         <strong>
                           Solicitud #{registro.datos.numeroSolicitud}
                           {enEspera && " · En espera de repuesto"}
-                          {registro.datos.fechaCierre &&
+                          {cerrada &&
                             ` · Cerrada ${registro.datos.fechaCierre.slice(0, 10)}`}
                         </strong>
                         <p className="solicitud-item__meta">
@@ -341,6 +344,11 @@ function SolicitudesPage() {
                           {registro.datos.nombreSolicitante &&
                             ` · ${registro.datos.nombreSolicitante}`}
                         </p>
+                        {quienCerro && (
+                          <p className="solicitud-item__cierre">
+                            Cerrada por: <strong>{quienCerro}</strong>
+                          </p>
+                        )}
                         <p className="solicitud-item__desc">
                           {registro.datos.descripcionSolicitud || "Sin descripción"}
                         </p>

@@ -25,6 +25,7 @@ import {
 import {
   diasAbierta,
   repuestoPendiente,
+  quienCerroSolicitud,
   solicitudAbierta,
   solicitudEsperaRepuesto,
 } from "./solicitudesCalculo";
@@ -410,6 +411,8 @@ function SolicitudesAreaPage() {
               {correctivosArea.map((registro) => {
                 const dias = diasAbierta(registro);
                 const enEspera = solicitudEsperaRepuesto(registro);
+                const cerrada = Boolean(registro.datos.fechaCierre?.trim());
+                const quienCerro = cerrada ? quienCerroSolicitud(registro) : null;
                 return (
                   <article
                     key={registro.id}
@@ -423,6 +426,8 @@ function SolicitudesAreaPage() {
                       <strong>
                         Solicitud #{registro.datos.numeroSolicitud}
                         {enEspera && " · En espera de repuesto"}
+                        {cerrada &&
+                          ` · Cerrada ${registro.datos.fechaCierre.slice(0, 10)}`}
                       </strong>
                       <p className="solicitud-item__meta">
                         {registro.fecha.slice(0, 10)}
@@ -431,6 +436,11 @@ function SolicitudesAreaPage() {
                           ` · ${registro.datos.maquinaEquipoLocacion}`}
                         {dias !== null && ` · ${dias} día(s) abierta`}
                       </p>
+                      {quienCerro && (
+                        <p className="solicitud-item__cierre">
+                          Cerrada por: <strong>{quienCerro}</strong>
+                        </p>
+                      )}
                       <p className="solicitud-item__desc">
                         {registro.datos.descripcionSolicitud || "Sin descripción"}
                       </p>
