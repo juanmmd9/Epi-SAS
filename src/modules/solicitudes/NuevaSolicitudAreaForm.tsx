@@ -202,8 +202,8 @@ function NuevaSolicitudAreaForm({
       <form className="repuesto-form solicitud-area-form" onSubmit={(e) => void manejarEnvio(e)}>
         <h2>Nueva solicitud de mantenimiento</h2>
         <p className="solicitudes__descripcion">
-          Reporta una falla o necesidad. El área queda fija según tu usuario; no debes seleccionarla.
-          El equipo de mantenimiento completará tiempos y cierre.
+          Reporta una falla o necesidad en esta área. El equipo de mantenimiento completará tiempos
+          y cierre.
         </p>
         <div className="repuesto-form__grid">
           <label>

@@ -103,8 +103,6 @@ export function rutaInicioParaRol(
   rol: RolPortal | null | undefined,
   _area?: string | null | undefined,
 ): string {
-  if (rol === "solicitante") {
-    return "/solicitudes";
-  }
+  if (rol === "solicitante") return "/solicitudes";
   return "/";
 }

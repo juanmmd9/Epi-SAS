@@ -39,7 +39,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
           <NavLink
             key={enlace.ruta}
             to={enlace.ruta}
-            end={enlace.ruta === "/"}
+            end={enlace.ruta === "/" || enlace.ruta === "/solicitudes"}
             className={({ isActive }) =>
               "sidebar__enlace" + (isActive ? " sidebar__enlace--activo" : "")
             }

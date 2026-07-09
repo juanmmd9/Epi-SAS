@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AvisoSetupAuth from "../../components/setup/AvisoSetupAuth";
 import { rutaPublica } from "../../lib/rutaPublica";
-import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "./AuthContext";
 import { existeTablaUsuarios, iniciarSesion } from "./authService";
 import {
@@ -10,8 +9,18 @@ import {
   guardarCredencialesRecordadas,
   leerCredencialesRecordadas,
 } from "./credencialesRecordadas";
-import { ETIQUETAS_ROL, rutaInicioParaRol } from "./roles";
+import { ETIQUETAS_ROL, rutaInicioParaRol, type RolPortal } from "./roles";
 import "./auth.css";
+
+/** Destino tras login: el solicitante siempre entra al tablero de áreas. */
+function destinoSeguro(
+  rol: RolPortal | null | undefined,
+  desde: string | null | undefined,
+): string {
+  if (rol === "solicitante") return "/solicitudes";
+  if (desde && desde !== "/login" && !desde.startsWith("/login")) return desde;
+  return rutaInicioParaRol(rol);
+}
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -25,6 +34,7 @@ function LoginPage() {
   const [cerrandoSesion, setCerrandoSesion] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [faltaRls, setFaltaRls] = useState<boolean | null>(null);
+  const [pendienteEntrada, setPendienteEntrada] = useState(false);
 
   useEffect(() => {
     void existeTablaUsuarios()
@@ -47,8 +57,13 @@ function LoginPage() {
       ? (ubicacion.state as { desde: string }).desde
       : null;
 
-  const destino =
-    destinoExplicito ?? rutaInicioParaRol(perfil?.rol, areaUsuario(perfil));
+  const destino = destinoSeguro(perfil?.rol, destinoExplicito);
+
+  useEffect(() => {
+    if (!pendienteEntrada || cargando || !session || !perfil) return;
+    setPendienteEntrada(false);
+    navigate(destinoSeguro(perfil.rol, destinoExplicito), { replace: true });
+  }, [pendienteEntrada, cargando, session, perfil, destinoExplicito, navigate]);
 
   async function manejarCerrarSesion() {
     setError(null);
@@ -72,7 +87,7 @@ function LoginPage() {
       } else {
         borrarCredencialesRecordadas();
       }
-      navigate(destino, { replace: true });
+      setPendienteEntrada(true);
     } catch (e) {
       setError("No se pudo iniciar sesión: " + (e as Error).message);
     } finally {

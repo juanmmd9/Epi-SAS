@@ -323,7 +323,7 @@ function SolicitudesAreaPage() {
   return (
     <section className="solicitudes">
       <Link to="/solicitudes" className="solicitudes-area__volver">
-        ← Tablero de solicitudes
+        ← Volver al tablero de áreas
       </Link>
 
       <h1>Solicitudes — {area}</h1>
@@ -331,7 +331,7 @@ function SolicitudesAreaPage() {
         <p className="solicitudes__descripcion">
           {esSolicitanteArea
             ? puedeEscribirArea
-              ? "Reporta fallas y consulta el estado de las solicitudes de tu área."
+              ? "Estás en el detalle de tu área. Usa el botón de arriba para ver todas las áreas."
               : `Solo consulta. Tu área asignada es ${areaAsignada ?? "—"}; para crear solicitudes entra a esa área.`
             : "Solicitudes correctivas y pedidos de repuestos del área."}
           {puedeVerCorrectivo && (
