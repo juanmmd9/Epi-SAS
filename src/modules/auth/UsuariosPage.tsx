@@ -156,9 +156,9 @@ function UsuariosPage() {
             <strong>solicitante de área</strong>).
           </li>
           <li>
-            Para personal de producción que solo reporta fallas: rol{" "}
-            <strong>solicitante de área</strong> + área (Tejidos, Logistica, etc.). Verán el
-            tablero de todas las áreas y solo podrán crear solicitudes en la suya.
+            Para personal de producción: rol <strong>solicitante de área</strong> + área
+            (Tejidos, Logistica, etc.). Verán el tablero de áreas, crearán solicitudes solo en
+            la suya, y podrán registrar o editar máquinas en Hojas de vida.
           </li>
           <li>
             Si es operador de mantenimiento, vincula su fila de <strong>personal</strong> (para la
