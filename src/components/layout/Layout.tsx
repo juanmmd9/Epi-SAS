@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../modules/auth/AuthContext";
 import { rutaInicioParaRol } from "../../modules/auth/roles";
@@ -11,6 +11,7 @@ function Layout() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const ubicacion = useLocation();
   const { perfil, rol, puede } = useAuth();
+  const rutasPermitidas = useRef(new Set<string>());
 
   useEffect(() => {
     setMenuAbierto(false);
@@ -22,7 +23,15 @@ function Layout() {
   }, [menuAbierto]);
 
   const permisoRuta = permisoParaRuta(ubicacion.pathname);
-  if (permisoRuta && !puede(permisoRuta)) {
+  const tienePermiso = !permisoRuta || puede(permisoRuta);
+  if (tienePermiso) rutasPermitidas.current.add(ubicacion.pathname);
+
+  // No expulsar de una ruta ya autorizada por un fallo momentáneo de rol/sesión.
+  if (
+    permisoRuta &&
+    !puede(permisoRuta) &&
+    !rutasPermitidas.current.has(ubicacion.pathname)
+  ) {
     return (
       <Navigate
         to={rutaInicioParaRol(rol, areaUsuario(perfil))}

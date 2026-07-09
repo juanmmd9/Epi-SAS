@@ -27,12 +27,6 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function mismaSesion(a: Session | null, b: Session | null): boolean {
-  if (!a && !b) return true;
-  if (!a || !b) return false;
-  return a.user.id === b.user.id && a.access_token === b.access_token;
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [perfil, setPerfil] = useState<UsuarioPortal | null>(null);
@@ -42,36 +36,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const perfilRef = useRef<UsuarioPortal | null>(null);
   const inicioListo = useRef(false);
 
-  sessionRef.current = session;
-  perfilRef.current = perfil;
+  const aplicarSesion = useCallback((nueva: Session | null) => {
+    const actual = sessionRef.current;
+    // Solo actualizar React si cambia el usuario (no el access_token).
+    // Renovar JWT no debe re-renderizar toda la app ni desmontar formularios.
+    if (actual?.user.id === nueva?.user.id) {
+      sessionRef.current = nueva ?? actual;
+      return;
+    }
+    sessionRef.current = nueva;
+    setSession(nueva);
+  }, []);
 
   const cargarPerfil = useCallback(async (userId: string) => {
     try {
       const datos = await obtenerPerfilUsuario(userId);
-      setPerfil(datos);
+      if (datos) {
+        perfilRef.current = datos;
+        setPerfil(datos);
+        setErrorPerfil(null);
+        return;
+      }
+      // Sin perfil en BD: no borrar el que ya teníamos (evita desmontar formularios).
+      if (perfilRef.current?.id === userId) {
+        setErrorPerfil(
+          "No se pudo confirmar tu perfil. Sigue trabajando; si persiste, recarga más tarde.",
+        );
+        return;
+      }
+      perfilRef.current = null;
+      setPerfil(null);
       setErrorPerfil(
-        datos
-          ? null
-          : "Tu usuario no tiene perfil en el portal. Pide al administrador que te asigne un rol.",
+        "Tu usuario no tiene perfil en el portal. Pide al administrador que te asigne un rol.",
       );
     } catch (e) {
+      // Error de red al volver a la pestaña: conservar perfil actual.
+      if (perfilRef.current?.id === userId) {
+        setErrorPerfil(
+          "Conexión inestable al verificar perfil. Tu sesión sigue activa.",
+        );
+        return;
+      }
+      perfilRef.current = null;
       setPerfil(null);
       setErrorPerfil("No se pudo cargar tu perfil: " + (e as Error).message);
     }
   }, []);
 
   const recargarPerfil = useCallback(async () => {
-    if (!session?.user.id) return;
-    await cargarPerfil(session.user.id);
-  }, [session?.user.id, cargarPerfil]);
+    const id = sessionRef.current?.user.id;
+    if (!id) return;
+    await cargarPerfil(id);
+  }, [cargarPerfil]);
 
   useEffect(() => {
     let activo = true;
 
     void supabase.auth.getSession().then(({ data }) => {
       if (!activo) return;
-      setSession(data.session);
       sessionRef.current = data.session;
+      setSession(data.session);
       if (data.session?.user.id) {
         void cargarPerfil(data.session.user.id).finally(() => {
           if (activo) {
@@ -86,34 +110,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, nuevaSession) => {
-      // Cierre real de sesión: solo entonces limpiamos y desmontamos.
       if (event === "SIGNED_OUT") {
-        setSession(null);
         sessionRef.current = null;
-        setPerfil(null);
         perfilRef.current = null;
+        setSession(null);
+        setPerfil(null);
         setErrorPerfil(null);
         setCargando(false);
         return;
       }
 
-      // Renovación de JWT / rehidratación: no tocar cargando ni perfil.
-      // Si nuevaSession viene null de forma momentánea, NO limpiar (evita remount).
+      // Refresh / rehidratación: actualizar ref interno, cero setState de sesión.
       if (
         event === "TOKEN_REFRESHED" ||
         event === "INITIAL_SESSION" ||
         event === "USER_UPDATED"
       ) {
-        if (nuevaSession && !mismaSesion(sessionRef.current, nuevaSession)) {
-          setSession(nuevaSession);
-          sessionRef.current = nuevaSession;
-        }
+        if (nuevaSession) sessionRef.current = nuevaSession;
         return;
       }
 
       if (!nuevaSession?.user.id) {
-        // Ignorar nulls transitorios mientras ya hay sesión activa.
         if (sessionRef.current) return;
+        sessionRef.current = null;
         setSession(null);
         setPerfil(null);
         setErrorPerfil(null);
@@ -122,20 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const mismoUsuario = nuevaSession.user.id === sessionRef.current?.user.id;
+      aplicarSesion(nuevaSession);
 
-      if (!mismaSesion(sessionRef.current, nuevaSession)) {
-        setSession(nuevaSession);
-        sessionRef.current = nuevaSession;
-      }
-
-      // Mismo usuario ya con perfil: no recargar ni mostrar "Verificando sesión".
       if (mismoUsuario && perfilRef.current) return;
-
-      // Login nuevo o cambio de usuario: cargar perfil sin bloquear la UI si ya estábamos dentro.
-      if (inicioListo.current && mismoUsuario) {
-        void cargarPerfil(nuevaSession.user.id);
-        return;
-      }
 
       if (!inicioListo.current) {
         setCargando(true);
@@ -155,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activo = false;
       listener.subscription.unsubscribe();
     };
-  }, [cargarPerfil]);
+  }, [aplicarSesion, cargarPerfil]);
 
   const salir = useCallback(async () => {
     try {
@@ -163,10 +171,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Si falla el servidor, igual limpiamos la sesión local en pantalla.
     } finally {
-      setSession(null);
       sessionRef.current = null;
-      setPerfil(null);
       perfilRef.current = null;
+      setSession(null);
+      setPerfil(null);
       setErrorPerfil(null);
       setCargando(false);
     }

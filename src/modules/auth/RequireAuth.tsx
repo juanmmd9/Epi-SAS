@@ -7,7 +7,6 @@ function RequireAuth() {
   const navegar = useNavigate();
   const { session, perfil, cargando, errorPerfil, salir } = useAuth();
   const ubicacion = useLocation();
-  // Conserva el último acceso válido para no desmontar la app en renovaciones de token.
   const accesoEstable = useRef(false);
   if (session && perfil) accesoEstable.current = true;
   if (!session && !perfil && !cargando) accesoEstable.current = false;
@@ -18,8 +17,12 @@ function RequireAuth() {
     navegar("/login", { replace: true });
   }
 
-  // Solo bloquear en la carga inicial, no en renovaciones posteriores.
-  if (cargando && !accesoEstable.current) {
+  // Nunca desmontar la app si ya hubo acceso válido en esta pestaña.
+  if (accesoEstable.current) {
+    return <Outlet />;
+  }
+
+  if (cargando) {
     return (
       <div className="auth-carga">
         <p>Verificando sesión...</p>
@@ -27,11 +30,11 @@ function RequireAuth() {
     );
   }
 
-  if (!session && !accesoEstable.current) {
+  if (!session) {
     return <Navigate to="/login" replace state={{ desde: ubicacion.pathname }} />;
   }
 
-  if (!perfil && !accesoEstable.current) {
+  if (!perfil) {
     return (
       <div className="auth-sin-perfil">
         <h1>Sin acceso al portal</h1>
