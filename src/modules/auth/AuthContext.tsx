@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -31,6 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [perfil, setPerfil] = useState<UsuarioPortal | null>(null);
   const [cargando, setCargando] = useState(true);
   const [errorPerfil, setErrorPerfil] = useState<string | null>(null);
+  const sessionRef = useRef<Session | null>(null);
+  const perfilRef = useRef<UsuarioPortal | null>(null);
+
+  sessionRef.current = session;
+  perfilRef.current = perfil;
 
   const cargarPerfil = useCallback(async (userId: string) => {
     try {
@@ -69,17 +75,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, nuevaSession) => {
       setSession(nuevaSession);
-      if (nuevaSession?.user.id) {
-        // Supabase renueva el JWT en segundo plano (p. ej. al volver a la pestaña).
-        // No bloquear la pantalla ni recargar perfil: eso desmontaba formularios a medias.
-        if (event === "TOKEN_REFRESHED") return;
-
-        setCargando(true);
-        void cargarPerfil(nuevaSession.user.id).finally(() => setCargando(false));
-      } else {
+      if (!nuevaSession?.user.id) {
         setPerfil(null);
         setErrorPerfil(null);
         setCargando(false);
+        return;
+      }
+
+      // Al volver a la pestaña Supabase renueva el JWT (TOKEN_REFRESHED / a veces SIGNED_IN).
+      // No poner cargando=true: eso desmonta toda la app y borra lo escrito en formularios.
+      if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") return;
+
+      const mismoUsuario = nuevaSession.user.id === sessionRef.current?.user.id;
+      if (event === "SIGNED_IN" && mismoUsuario && perfilRef.current) return;
+
+      if (!perfilRef.current || !mismoUsuario) {
+        void cargarPerfil(nuevaSession.user.id);
       }
     });
 

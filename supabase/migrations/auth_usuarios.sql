@@ -129,16 +129,23 @@ begin
 end;
 $aplicar_rls$;
 
--- Tablas maestras (solo admin escribe)
+-- Tablas maestras (hojas: operador escribe; personal solo admin)
 alter table hojas_vida enable row level security;
 drop policy if exists "acceso temporal" on hojas_vida;
 drop policy if exists "auth leer hojas_vida" on hojas_vida;
 drop policy if exists "auth admin hojas_vida" on hojas_vida;
+drop policy if exists "auth insert hojas_vida" on hojas_vida;
+drop policy if exists "auth update hojas_vida" on hojas_vida;
+drop policy if exists "auth delete hojas_vida" on hojas_vida;
 create policy "auth leer hojas_vida" on hojas_vida
   for select using (public.usuario_autenticado());
-create policy "auth admin hojas_vida" on hojas_vida
-  for all using (public.usuario_es_admin())
-  with check (public.usuario_es_admin());
+create policy "auth insert hojas_vida" on hojas_vida
+  for insert with check (public.usuario_puede_escribir());
+create policy "auth update hojas_vida" on hojas_vida
+  for update using (public.usuario_puede_escribir())
+  with check (public.usuario_puede_escribir());
+create policy "auth delete hojas_vida" on hojas_vida
+  for delete using (public.usuario_es_admin());
 
 alter table personal enable row level security;
 drop policy if exists "acceso temporal" on personal;

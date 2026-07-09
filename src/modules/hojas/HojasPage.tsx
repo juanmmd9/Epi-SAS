@@ -11,8 +11,38 @@ import {
   listarHojas,
   subirFotoMaquina,
 } from "./hojasService";
+import { esErrorFotosHojas, SQL_MIGRACION_FOTOS_HOJAS } from "./hojasSetup";
 import type { HojaVida, HojaVidaInput } from "./types";
 import "./hojas.css";
+
+function AvisoSetupFotosHojas() {
+  const projectRef =
+    import.meta.env.VITE_SUPABASE_URL?.match(/https:\/\/([^.]+)\./)?.[1] ?? "_";
+  const urlSql = `https://supabase.com/dashboard/project/${projectRef}/sql/new`;
+
+  function copiarSql() {
+    void navigator.clipboard.writeText(SQL_MIGRACION_FOTOS_HOJAS);
+  }
+
+  return (
+    <aside className="aviso-setup-personal hojas__aviso-sql">
+      <h3>Configura Storage para fotos de máquinas</h3>
+      <p>
+        Ejecuta este script en Supabase SQL Editor (crea el bucket y permisos para
+        subir imágenes).
+      </p>
+      <div className="aviso-setup-personal__acciones">
+        <button type="button" className="btn" onClick={copiarSql}>
+          Copiar script SQL
+        </button>
+        <a className="btn btn--primario" href={urlSql} target="_blank" rel="noreferrer">
+          Abrir SQL Editor
+        </a>
+      </div>
+      <pre className="aviso-setup-personal__sql">{SQL_MIGRACION_FOTOS_HOJAS}</pre>
+    </aside>
+  );
+}
 
 function HojasPage() {
   const ubicacion = useLocation();
@@ -25,6 +55,7 @@ function HojasPage() {
   const [filtroArea, setFiltroArea] = useState("");
   const [maquinaSeleccionada, setMaquinaSeleccionada] = useState("");
   const [hojaEnEdicion, setHojaEnEdicion] = useState<HojaVida | null>(null);
+  const [faltaStorageFotos, setFaltaStorageFotos] = useState(false);
 
   function cerrarEdicion() {
     setHojaEnEdicion(null);
@@ -45,22 +76,6 @@ function HojasPage() {
       .catch((e: Error) => setError("No se pudieron cargar las máquinas: " + e.message))
       .finally(() => setCargando(false));
   }, [ubicacion.key]);
-
-  useEffect(() => {
-    function alVolver() {
-      if (document.visibilityState === "visible") {
-        listarHojas()
-          .then(setHojas)
-          .catch(() => undefined);
-      }
-    }
-    window.addEventListener("focus", alVolver);
-    document.addEventListener("visibilitychange", alVolver);
-    return () => {
-      window.removeEventListener("focus", alVolver);
-      document.removeEventListener("visibilitychange", alVolver);
-    };
-  }, []);
 
   const hojasFiltradas = useMemo(
     () => (filtroArea ? hojas.filter((h) => coincideArea(h.area, filtroArea)) : hojas),
@@ -118,7 +133,9 @@ function HojasPage() {
         );
       }
     } catch (e) {
-      setError("No fue posible guardar: " + (e as Error).message);
+      const msg = (e as Error).message;
+      if (esErrorFotosHojas(msg)) setFaltaStorageFotos(true);
+      setError("No fue posible guardar: " + msg);
     } finally {
       setGuardando(false);
     }
@@ -172,6 +189,8 @@ function HojasPage() {
         todos los usuarios del portal.
       </p>
 
+      {faltaStorageFotos && <AvisoSetupFotosHojas />}
+
       <SoloConPermiso permiso="editar.hojas">
         <HojaForm
           hojaEnEdicion={null}
@@ -209,6 +228,7 @@ function HojasPage() {
               {hojaEnEdicion.codigo ? `${hojaEnEdicion.codigo} — ` : ""}
               {hojaEnEdicion.nombre}
             </p>
+            {error && <p className="hojas__mensaje hojas__mensaje--error">{error}</p>}
             <HojaForm
               hojaEnEdicion={hojaEnEdicion}
               guardando={guardando}

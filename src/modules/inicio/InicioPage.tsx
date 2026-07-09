@@ -133,20 +133,6 @@ function InicioPage() {
     recargarDatos();
   }, [ubicacion.key]);
 
-  useEffect(() => {
-    function alVolverAlPanel() {
-      if (document.visibilityState === "visible") {
-        recargarDatos();
-      }
-    }
-    window.addEventListener("focus", alVolverAlPanel);
-    document.addEventListener("visibilitychange", alVolverAlPanel);
-    return () => {
-      window.removeEventListener("focus", alVolverAlPanel);
-      document.removeEventListener("visibilitychange", alVolverAlPanel);
-    };
-  }, []);
-
   function recargarDatos() {
     setCargando(true);
     Promise.all([listarHojas(), listarExcepciones(), listarPreventivo()])

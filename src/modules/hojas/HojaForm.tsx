@@ -163,6 +163,12 @@ function HojaForm({ hojaEnEdicion, guardando, onGuardar, onCancelarEdicion }: Pr
 
         <label>
           Foto de la máquina
+          {hojaEnEdicion?.foto_url && !foto && (
+            <span className="hoja-form__foto-actual">
+              <img src={hojaEnEdicion.foto_url} alt={hojaEnEdicion.nombre} />
+              <small>Foto actual. Elige un archivo para reemplazarla.</small>
+            </span>
+          )}
           <input
             type="file"
             accept="image/*"

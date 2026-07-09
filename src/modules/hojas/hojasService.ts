@@ -71,10 +71,26 @@ export async function obtenerHistorialMaquina(hoja: HojaVida): Promise<Historial
 }
 
 export async function subirFotoMaquina(archivo: File): Promise<string> {
-  const extension = archivo.name.split(".").pop() || "jpg";
+  const extension = archivo.name.split(".").pop()?.toLowerCase() || "jpg";
   const ruta = `${CARPETA_FOTOS}/${crypto.randomUUID()}.${extension}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(ruta, archivo);
-  if (error) throw new Error(error.message);
+  const { error } = await supabase.storage.from(BUCKET).upload(ruta, archivo, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: archivo.type || `image/${extension === "jpg" ? "jpeg" : extension}`,
+  });
+  if (error) {
+    if (/bucket not found/i.test(error.message)) {
+      throw new Error(
+        "No existe el bucket de archivos en Supabase. Ejecuta la migración hojas_vida_fotos_storage.sql en SQL Editor.",
+      );
+    }
+    if (/row-level security|policy|permission/i.test(error.message)) {
+      throw new Error(
+        "Sin permiso para subir archivos. Ejecuta hojas_vida_fotos_storage.sql en Supabase (Storage + RLS).",
+      );
+    }
+    throw new Error(error.message);
+  }
   return supabase.storage.from(BUCKET).getPublicUrl(ruta).data.publicUrl;
 }
 
