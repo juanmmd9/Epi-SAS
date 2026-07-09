@@ -44,7 +44,7 @@ export type Permiso =
   | "gestionar.usuarios";
 
 const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
-  "ver.inicio": ["admin", "operador", "consulta"],
+  "ver.inicio": ["admin", "operador", "consulta", "solicitante"],
   "ver.preventivo": ["admin", "operador", "consulta"],
   "ver.correctivo": ["admin", "operador", "consulta"],
   "ver.solicitudes": ["admin", "operador", "consulta", "solicitante"],
