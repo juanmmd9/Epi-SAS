@@ -124,7 +124,7 @@ export function prefillDesdeProyectoPortal(): RegistroAmDatos {
     origen: "indicadores",
     descripcion:
       "SITUACIÓN IDENTIFICADA: El área de Mantenimiento gestiona la información en múltiples archivos dispersos (Excel, Word, carpetas locales): cronogramas preventivos, hojas de vida, indicadores y formatos del SGC. Esto dificulta el seguimiento en tiempo real y el cumplimiento de metas.\n\n" +
-      "OPORTUNIDAD DE MEJORA — PROYECTO DESARROLLADO: Se desarrolló el «Portal de Mantenimiento EPI», aplicación web que integra panel de PM por área, mantenimiento preventivo y correctivo, hojas de vida, indicadores, formatos SGC (GC-RE-009, GC-RE-001, MT-RE-045, GH-RE-030), personal, matriz de conocimientos y control de acceso por roles con respaldo en nube (Supabase). Fase piloto funcional lista para demostración a la dirección.",
+      "OPORTUNIDAD DE MEJORA — PROYECTO DESARROLLADO: Se desarrolló el «Portal de Mantenimiento EPI», aplicación web que integra panel de PM por área, mantenimiento preventivo y correctivo, hojas de vida, indicadores, formatos SGC (GC-RE-009, GC-RE-001, GC-RE-027, MT-RE-045, GH-RE-030), personal, matriz de conocimientos y control de acceso por roles con respaldo en nube (Supabase). Fase piloto funcional lista para demostración a la dirección.",
     beneficioEsperado:
       "Centralizar la información; mejorar cumplimiento de PM; reducir tiempos de respuesta al correctivo; generar formatos SGC desde el navegador; visibilidad en tiempo real para jefes; fortalecer gestión de competencias y contribuir a mejora continua y seguridad.",
     recursosHumanos: true,

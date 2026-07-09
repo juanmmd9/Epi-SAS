@@ -80,6 +80,129 @@
   margin-top: 0;
 }
 
+.gcre027-resumen {
+  max-width: 900px;
+}
+
+.gcre027-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+  margin: 0;
+}
+
+.gcre027-meta dt {
+  font-size: 0.8rem;
+  color: var(--color-texto-suave);
+  margin-bottom: 0.15rem;
+}
+
+.gcre027-meta dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.gcre027-seccion {
+  max-width: 900px;
+}
+
+.gcre027-seccion--ancha {
+  max-width: 1100px;
+}
+
+.gcre027-texto {
+  white-space: pre-wrap;
+  line-height: 1.45;
+  margin: 0;
+  color: var(--color-texto);
+}
+
+.gcre027-tabla-wrap {
+  overflow-x: auto;
+}
+
+.gcre027-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.gcre027-tabla th,
+.gcre027-tabla td {
+  border: 1px solid var(--color-borde);
+  padding: 0.55rem 0.65rem;
+  vertical-align: top;
+  text-align: left;
+}
+
+.gcre027-tabla th {
+  background: var(--color-fondo);
+  font-weight: 700;
+}
+
+.formatos__cabecera-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.gcre027-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.gcre027-plan__fila {
+  margin: 0;
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem 0.9rem;
+}
+
+.gcre027-plan__fila legend {
+  padding: 0 0.35rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.gcre027-plan__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.gcre027-plan__cabecera legend {
+  float: none;
+  width: auto;
+  margin: 0;
+}
+
+.gcre027-plan__quitar {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.8rem;
+}
+
+.gcre027-plan__agregar {
+  align-self: flex-start;
+}
+
+.form-nc__bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.form-nc__bloque textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
 .formatos__lista-recientes {
   display: flex;
   flex-direction: column;

@@ -15,6 +15,7 @@ import IndicadoresPage from "./modules/indicadores/IndicadoresPage";
 import FormatosPage from "./modules/formatos/FormatosPage";
 import Gcre001Page from "./modules/formatos/Gcre001Page";
 import Gcre009Page from "./modules/formatos/Gcre009Page";
+import Gcre027Page from "./modules/formatos/Gcre027Page";
 import Ghre030Page from "./modules/formatos/Ghre030Page";
 import Mtre045Page from "./modules/formatos/Mtre045Page";
 import PersonalPage from "./modules/personal/PersonalPage";
@@ -42,6 +43,7 @@ function App() {
             <Route path="formatos" element={<FormatosPage />} />
             <Route path="formatos/gc-re-001" element={<Gcre001Page />} />
             <Route path="formatos/gc-re-009" element={<Gcre009Page />} />
+            <Route path="formatos/gc-re-027" element={<Gcre027Page />} />
             <Route path="formatos/gh-re-030" element={<Ghre030Page />} />
             <Route path="formatos/mt-re-045" element={<Mtre045Page />} />
             <Route path="personal" element={<PersonalPage />} />
