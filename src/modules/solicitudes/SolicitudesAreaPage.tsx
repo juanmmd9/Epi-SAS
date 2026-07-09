@@ -7,6 +7,7 @@ import {
   areaUsuario,
   rutaSolicitudesArea,
   usuarioPuedeAccederArea,
+  usuarioPuedeEscribirEnArea,
 } from "../../lib/usuarioArea";
 import { listarCorrectivo, ordenarRegistrosCorrectivo } from "../correctivo/correctivoService";
 import type { RegistroCorrectivo } from "../correctivo/types";
@@ -286,11 +287,9 @@ function SolicitudesAreaPage() {
         <p className="solicitudes__descripcion">
           El área «{area || "(vacía)"}» no está en el catálogo del sistema.
         </p>
-        {perfil?.rol !== "solicitante" && (
-          <Link to="/solicitudes" className="btn">
-            Volver al tablero
-          </Link>
-        )}
+        <Link to="/solicitudes" className="btn">
+          Volver al tablero
+        </Link>
         <ul>
           {AREAS_SISTEMA.map((a) => (
             <li key={a}>
@@ -303,12 +302,11 @@ function SolicitudesAreaPage() {
   }
 
   if (!usuarioPuedeAccederArea(perfil, area)) {
-    const asignada = areaUsuario(perfil);
-    if (asignada) {
-      return <Navigate to={rutaSolicitudesArea(asignada)} replace />;
-    }
     return <Navigate to="/solicitudes" replace />;
   }
+
+  const puedeEscribirArea = usuarioPuedeEscribirEnArea(perfil, area);
+  const areaAsignada = areaUsuario(perfil);
 
   if (cargando) {
     return (
@@ -324,17 +322,17 @@ function SolicitudesAreaPage() {
 
   return (
     <section className="solicitudes">
-      {!esSolicitanteArea && (
-        <Link to="/solicitudes" className="solicitudes-area__volver">
-          ← Tablero de solicitudes
-        </Link>
-      )}
+      <Link to="/solicitudes" className="solicitudes-area__volver">
+        ← Tablero de solicitudes
+      </Link>
 
       <h1>Solicitudes — {area}</h1>
       <div className="solicitudes__cabecera">
         <p className="solicitudes__descripcion">
           {esSolicitanteArea
-            ? "Reporta fallas y consulta el estado de las solicitudes de tu área."
+            ? puedeEscribirArea
+              ? "Reporta fallas y consulta el estado de las solicitudes de tu área."
+              : `Solo consulta. Tu área asignada es ${areaAsignada ?? "—"}; para crear solicitudes entra a esa área.`
             : "Solicitudes correctivas y pedidos de repuestos del área."}
           {puedeVerCorrectivo && (
             <>
@@ -355,13 +353,23 @@ function SolicitudesAreaPage() {
         />
       </div>
 
-      <NuevaSolicitudAreaForm
-        area={normalizarArea(area)}
-        nombreSolicitante={perfil?.nombre || perfil?.email || ""}
-        maquinas={maquinas}
-        correctivos={correctivos}
-        onCreada={alCrearSolicitud}
-      />
+      {puedeEscribirArea ? (
+        <NuevaSolicitudAreaForm
+          area={normalizarArea(area)}
+          nombreSolicitante={perfil?.nombre || perfil?.email || ""}
+          maquinas={maquinas}
+          correctivos={correctivos}
+          onCreada={alCrearSolicitud}
+        />
+      ) : (
+        esSolicitanteArea &&
+        areaAsignada && (
+          <p className="solicitudes__mensaje">
+            No puedes crear solicitudes en {area}.{" "}
+            <Link to={rutaSolicitudesArea(areaAsignada)}>Ir a tu área ({areaAsignada})</Link>
+          </p>
+        )
+      )}
 
       {error && <p className="solicitudes__error">{error}</p>}
       {mensaje && <p className="solicitudes__mensaje solicitudes__mensaje--ok">{mensaje}</p>}
@@ -457,7 +465,7 @@ function SolicitudesAreaPage() {
           {faltaTablaRepuestos && <AvisoSetupRepuestos />}
 
           <SoloConPermiso permiso="crear.repuestos">
-            {!faltaTablaRepuestos && (
+            {puedeEscribirArea && !faltaTablaRepuestos && (
               <form className="repuesto-form" onSubmit={manejarRepuesto}>
                 <h2>{editandoRepuestoId ? "Editar repuesto" : "Nuevo repuesto"}</h2>
                 <div className="repuesto-form__grid">
@@ -573,7 +581,12 @@ function SolicitudesAreaPage() {
             )}
           </SoloConPermiso>
 
-          {!puede("crear.repuestos") && !faltaTablaRepuestos && (
+          {!puedeEscribirArea && !faltaTablaRepuestos && (
+            <p className="solicitudes__descripcion">
+              Solo consulta en esta área. Los repuestos se gestionan en tu área asignada.
+            </p>
+          )}
+          {puedeEscribirArea && !puede("crear.repuestos") && !faltaTablaRepuestos && (
             <p className="solicitudes__descripcion">Modo consulta: solo puedes ver repuestos.</p>
           )}
 
@@ -614,15 +627,17 @@ function SolicitudesAreaPage() {
                         </td>
                         <td>{repuesto.fecha_necesaria?.slice(0, 10) ?? "—"}</td>
                         <td>
-                          <SoloConPermiso permiso="crear.repuestos">
-                            <button
-                              type="button"
-                              className="btn"
-                              onClick={() => iniciarEdicionRepuesto(repuesto)}
-                            >
-                              Editar
-                            </button>
-                          </SoloConPermiso>
+                          {puedeEscribirArea && (
+                            <SoloConPermiso permiso="crear.repuestos">
+                              <button
+                                type="button"
+                                className="btn"
+                                onClick={() => iniciarEdicionRepuesto(repuesto)}
+                              >
+                                Editar
+                              </button>
+                            </SoloConPermiso>
+                          )}
                           <SoloConPermiso permiso="eliminar.registros">
                             <button
                               type="button"

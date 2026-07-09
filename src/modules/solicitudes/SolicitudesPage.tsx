@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
-import { AREAS_SISTEMA } from "../../lib/areas";
-import { areaUsuario, rutaSolicitudesArea } from "../../lib/usuarioArea";
+import { Link } from "react-router-dom";
+import { AREAS_SISTEMA, coincideArea } from "../../lib/areas";
+import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import { NOMBRES_MESES } from "../../lib/fechas";
 import { listarCorrectivo, ordenarRegistrosCorrectivo } from "../correctivo/correctivoService";
@@ -21,6 +21,7 @@ function SolicitudesPage() {
   const { perfil } = useAuth();
   const mesActual = NOMBRES_MESES[new Date().getMonth()];
   const areaAsignada = areaUsuario(perfil);
+  const esSolicitante = perfil?.rol === "solicitante";
   const [correctivos, setCorrectivos] = useState<RegistroCorrectivo[]>([]);
   const [repuestos, setRepuestos] = useState<RepuestoSolicitud[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -89,10 +90,7 @@ function SolicitudesPage() {
     [resumenes],
   );
 
-  if (perfil?.rol === "solicitante") {
-    if (areaAsignada) {
-      return <Navigate to={rutaSolicitudesArea(areaAsignada)} replace />;
-    }
+  if (esSolicitante && !areaAsignada) {
     return (
       <section className="solicitudes">
         <h1>Solicitudes</h1>
@@ -119,10 +117,19 @@ function SolicitudesPage() {
         <div>
           <h1>Solicitudes</h1>
           <p className="solicitudes__descripcion">
-            Vista por área de solicitudes correctivas abiertas, en espera de repuesto y
-            pedidos de repuestos. Cerradas en {mesActual}:{" "}
-            <strong>{totales.cerradasMes}</strong>.
-            {" "}Deja esta pantalla abierta para recibir avisos al instante.
+            {esSolicitante ? (
+              <>
+                Vista de todas las áreas. Tu área asignada es{" "}
+                <strong>{areaAsignada}</strong>: solo ahí puedes crear y gestionar solicitudes.
+              </>
+            ) : (
+              <>
+                Vista por área de solicitudes correctivas abiertas, en espera de repuesto y
+                pedidos de repuestos. Cerradas en {mesActual}:{" "}
+                <strong>{totales.cerradasMes}</strong>.
+              </>
+            )}{" "}
+            Deja esta pantalla abierta para recibir avisos al instante.
           </p>
         </div>
         <PanelAlertasSolicitudes
@@ -138,37 +145,50 @@ function SolicitudesPage() {
       {error && <p className="solicitudes__error">{error}</p>}
 
       <div className="solicitudes__grid">
-        {resumenes.map((resumen) => (
-          <Link
-            key={resumen.area}
-            to={rutaArea(resumen.area)}
-            className={
-              "sol-card" + (areasConNueva.has(resumen.area) ? " sol-card--nueva" : "")
-            }
-            onClick={() => limpiarAreaNueva(resumen.area)}
-          >
-            <h3>{resumen.area}</h3>
-            <div className="sol-card__stats">
-              <div className="sol-card__stat sol-card__stat--alerta">
-                <span>Abiertas</span>
-                <strong>{resumen.abiertas}</strong>
+        {resumenes.map((resumen) => {
+          const esMiArea =
+            Boolean(areaAsignada) && coincideArea(resumen.area, areaAsignada ?? "");
+          const soloConsulta = esSolicitante && !esMiArea;
+          return (
+            <Link
+              key={resumen.area}
+              to={rutaArea(resumen.area)}
+              className={
+                "sol-card" +
+                (areasConNueva.has(resumen.area) ? " sol-card--nueva" : "") +
+                (esMiArea ? " sol-card--propia" : "") +
+                (soloConsulta ? " sol-card--consulta" : "")
+              }
+              onClick={() => limpiarAreaNueva(resumen.area)}
+            >
+              <h3>
+                {resumen.area}
+                {esMiArea && <span className="sol-card__badge">Tu área</span>}
+              </h3>
+              <div className="sol-card__stats">
+                <div className="sol-card__stat sol-card__stat--alerta">
+                  <span>Abiertas</span>
+                  <strong>{resumen.abiertas}</strong>
+                </div>
+                <div className="sol-card__stat sol-card__stat--espera">
+                  <span>Espera repuesto</span>
+                  <strong>{resumen.esperaRepuesto}</strong>
+                </div>
+                <div className="sol-card__stat sol-card__stat--ok">
+                  <span>Cerradas mes</span>
+                  <strong>{resumen.cerradasMes}</strong>
+                </div>
+                <div className="sol-card__stat">
+                  <span>Rep. pendientes</span>
+                  <strong>{resumen.repuestosPendientes}</strong>
+                </div>
               </div>
-              <div className="sol-card__stat sol-card__stat--espera">
-                <span>Espera repuesto</span>
-                <strong>{resumen.esperaRepuesto}</strong>
-              </div>
-              <div className="sol-card__stat sol-card__stat--ok">
-                <span>Cerradas mes</span>
-                <strong>{resumen.cerradasMes}</strong>
-              </div>
-              <div className="sol-card__stat">
-                <span>Rep. pendientes</span>
-                <strong>{resumen.repuestosPendientes}</strong>
-              </div>
-            </div>
-            <span className="sol-card__enlace">Ver detalle →</span>
-          </Link>
-        ))}
+              <span className="sol-card__enlace">
+                {soloConsulta ? "Ver (solo consulta) →" : "Ver detalle →"}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

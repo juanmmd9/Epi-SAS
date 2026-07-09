@@ -96,6 +96,27 @@
   color: #166534;
 }
 
+.sol-card--propia {
+  border-color: var(--color-primario, #2563eb);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+}
+
+.sol-card__badge {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.sol-card--consulta {
+  opacity: 0.92;
+}
+
 .sol-card__enlace {
   font-size: 0.88rem;
   font-weight: 600;
@@ -251,6 +272,13 @@
   50% {
     box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35);
   }
+}
+
+.solicitud-area-form__area-fija {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  font-weight: 700;
+  cursor: default;
 }
 
 .solicitudes-area__volver {

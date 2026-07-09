@@ -55,7 +55,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select public.usuario_rol() in ('admin', 'operador');
+  select public.usuario_rol() in ('admin', 'operador', 'solicitante');
 $$;
 
 create or replace function public.usuario_autenticado()

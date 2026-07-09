@@ -98,13 +98,13 @@ export function enlacesParaRol(rol: RolPortal | null | undefined): EnlaceNav[] {
   return ENLACES_NAV.filter((enlace) => puede(rol, enlace.permiso));
 }
 
-/** Ruta de inicio según rol (solicitante entra directo a su área). */
+/** Ruta de inicio según rol (solicitante entra al tablero de áreas). */
 export function rutaInicioParaRol(
   rol: RolPortal | null | undefined,
-  area: string | null | undefined,
+  _area?: string | null | undefined,
 ): string {
-  if (rol === "solicitante" && area) {
-    return `/solicitudes/area/${encodeURIComponent(area)}`;
+  if (rol === "solicitante") {
+    return "/solicitudes";
   }
   return "/";
 }

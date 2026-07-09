@@ -70,15 +70,7 @@ function PanelAlertasSolicitudes({
               {alerta.area} · {alerta.maquina}
             </p>
             <p className="solicitudes-alerta__solicitante">{alerta.solicitante}</p>
-            {!areaActual || areaActual !== alerta.area ? (
-              <Link
-                to={rutaSolicitudesArea(alerta.area)}
-                className="solicitudes-alerta__enlace"
-                onClick={() => onDescartar(alerta.clave)}
-              >
-                Ver en {alerta.area} →
-              </Link>
-            ) : (
+            {areaActual ? (
               <button
                 type="button"
                 className="solicitudes-alerta__enlace-btn"
@@ -86,6 +78,14 @@ function PanelAlertasSolicitudes({
               >
                 Ver en la lista ↓
               </button>
+            ) : (
+              <Link
+                to={rutaSolicitudesArea(alerta.area)}
+                className="solicitudes-alerta__enlace"
+                onClick={() => onDescartar(alerta.clave)}
+              >
+                Ver en {alerta.area} →
+              </Link>
             )}
           </article>
         ))}

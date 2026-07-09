@@ -9,18 +9,26 @@ export function areaUsuario(perfil: UsuarioPortal | null | undefined): string | 
   return esAreaValida(canonica) ? canonica : null;
 }
 
-/** Admin y mantenimiento ven todas las áreas; solicitante solo la suya. */
+/** Admin y mantenimiento ven todas las áreas; solicitante también ve el tablero, pero solo escribe en la suya. */
 export function usuarioVeTodasLasAreas(perfil: UsuarioPortal | null | undefined): boolean {
-  if (!perfil) return false;
-  return perfil.rol !== "solicitante";
+  return Boolean(perfil);
 }
 
+/** Puede entrar a ver el detalle de un área (solicitante: todas; escritura solo en la suya). */
 export function usuarioPuedeAccederArea(
+  perfil: UsuarioPortal | null | undefined,
+  _area: string,
+): boolean {
+  return Boolean(perfil);
+}
+
+/** Puede crear/editar solicitudes o repuestos en esa área. */
+export function usuarioPuedeEscribirEnArea(
   perfil: UsuarioPortal | null | undefined,
   area: string,
 ): boolean {
   if (!perfil) return false;
-  if (usuarioVeTodasLasAreas(perfil)) return true;
+  if (perfil.rol !== "solicitante") return true;
   const asignada = areaUsuario(perfil);
   return asignada !== null && coincideArea(asignada, area);
 }

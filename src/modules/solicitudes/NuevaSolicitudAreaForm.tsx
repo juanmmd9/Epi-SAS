@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { coincideArea } from "../../lib/areas";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { borrarBorrador, guardarBorrador, leerBorrador } from "../../lib/borradorFormulario";
 import {
@@ -118,7 +119,7 @@ function NuevaSolicitudAreaForm({
   ]);
 
   const maquinasArea = useMemo(
-    () => maquinas.filter((m) => m.area === area),
+    () => maquinas.filter((m) => coincideArea(m.area, area)),
     [maquinas, area],
   );
 
@@ -201,10 +202,14 @@ function NuevaSolicitudAreaForm({
       <form className="repuesto-form solicitud-area-form" onSubmit={(e) => void manejarEnvio(e)}>
         <h2>Nueva solicitud de mantenimiento</h2>
         <p className="solicitudes__descripcion">
-          Reporta una falla o necesidad del área <strong>{area}</strong>. El equipo de mantenimiento
-          completará tiempos y cierre.
+          Reporta una falla o necesidad. El área queda fija según tu usuario; no debes seleccionarla.
+          El equipo de mantenimiento completará tiempos y cierre.
         </p>
         <div className="repuesto-form__grid">
+          <label>
+            Área
+            <input type="text" value={area} readOnly disabled className="solicitud-area-form__area-fija" />
+          </label>
           <label>
             Fecha
             <input type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />
