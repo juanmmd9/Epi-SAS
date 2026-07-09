@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
+import { borrarBorrador, guardarBorrador, leerBorrador } from "../../lib/borradorFormulario";
 import {
   crearCorrectivo,
   siguienteNumeroSolicitud,
@@ -26,6 +27,22 @@ interface Props {
   onCreada: (registro: RegistroCorrectivo) => void;
 }
 
+type BorradorSolicitud = {
+  fecha: string;
+  horaSolicitud: string;
+  solicitante: string;
+  maquinaId: string;
+  maquinaTexto: string;
+  codigoMaquina: string;
+  estadoMaquina: string;
+  tipos: string[];
+  descripcion: string;
+};
+
+function claveBorradorSolicitud(area: string): string {
+  return `epi-borrador-solicitud-${area}`;
+}
+
 function NuevaSolicitudAreaForm({
   area,
   nombreSolicitante,
@@ -33,22 +50,72 @@ function NuevaSolicitudAreaForm({
   correctivos,
   onCreada,
 }: Props) {
-  const [fecha, setFecha] = useState(fechaHoy);
-  const [horaSolicitud, setHoraSolicitud] = useState(horaActual);
-  const [solicitante, setSolicitante] = useState(nombreSolicitante);
-  const [maquinaId, setMaquinaId] = useState("");
-  const [maquinaTexto, setMaquinaTexto] = useState("");
-  const [codigoMaquina, setCodigoMaquina] = useState("");
-  const [estadoMaquina, setEstadoMaquina] = useState("");
-  const [tipos, setTipos] = useState<string[]>([]);
-  const [descripcion, setDescripcion] = useState("");
+  const borradorInicial = useRef(leerBorrador<BorradorSolicitud>(claveBorradorSolicitud(area)));
+  const [fecha, setFecha] = useState(() => borradorInicial.current?.fecha ?? fechaHoy());
+  const [horaSolicitud, setHoraSolicitud] = useState(
+    () => borradorInicial.current?.horaSolicitud ?? horaActual(),
+  );
+  const [solicitante, setSolicitante] = useState(
+    () => borradorInicial.current?.solicitante || nombreSolicitante,
+  );
+  const [maquinaId, setMaquinaId] = useState(() => borradorInicial.current?.maquinaId ?? "");
+  const [maquinaTexto, setMaquinaTexto] = useState(
+    () => borradorInicial.current?.maquinaTexto ?? "",
+  );
+  const [codigoMaquina, setCodigoMaquina] = useState(
+    () => borradorInicial.current?.codigoMaquina ?? "",
+  );
+  const [estadoMaquina, setEstadoMaquina] = useState(
+    () => borradorInicial.current?.estadoMaquina ?? "",
+  );
+  const [tipos, setTipos] = useState(() => borradorInicial.current?.tipos ?? []);
+  const [descripcion, setDescripcion] = useState(
+    () => borradorInicial.current?.descripcion ?? "",
+  );
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
 
   useEffect(() => {
-    setSolicitante(nombreSolicitante);
+    if (!borradorInicial.current?.solicitante) {
+      setSolicitante(nombreSolicitante);
+    }
   }, [nombreSolicitante]);
+
+  useEffect(() => {
+    const hayContenido =
+      Boolean(maquinaTexto.trim()) ||
+      Boolean(descripcion.trim()) ||
+      tipos.length > 0 ||
+      Boolean(estadoMaquina) ||
+      Boolean(maquinaId);
+    if (!hayContenido) {
+      borrarBorrador(claveBorradorSolicitud(area));
+      return;
+    }
+    guardarBorrador(claveBorradorSolicitud(area), {
+      fecha,
+      horaSolicitud,
+      solicitante,
+      maquinaId,
+      maquinaTexto,
+      codigoMaquina,
+      estadoMaquina,
+      tipos,
+      descripcion,
+    } satisfies BorradorSolicitud);
+  }, [
+    area,
+    fecha,
+    horaSolicitud,
+    solicitante,
+    maquinaId,
+    maquinaTexto,
+    codigoMaquina,
+    estadoMaquina,
+    tipos,
+    descripcion,
+  ]);
 
   const maquinasArea = useMemo(
     () => maquinas.filter((m) => m.area === area),
@@ -120,6 +187,7 @@ function NuevaSolicitudAreaForm({
       setEstadoMaquina("");
       setFecha(fechaHoy());
       setHoraSolicitud(horaActual());
+      borrarBorrador(claveBorradorSolicitud(area));
       setMensaje(`Solicitud No. ${creado.datos.numeroSolicitud} registrada. Mantenimiento la atenderá pronto.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo registrar la solicitud");

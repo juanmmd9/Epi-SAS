@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AREAS_CON_PM, areaTienePreventivo, coincideArea } from "../../lib/areas";
+import { borrarBorrador, guardarBorrador, leerBorrador } from "../../lib/borradorFormulario";
 import { listarHojas } from "../hojas/hojasService";
 import { filtrarHojasParaPreventivo, filtrarHojasPorArea, hojaEstaActiva } from "../hojas/hojasFiltro";
 import type { HojaVida } from "../hojas/types";
@@ -54,6 +55,15 @@ const formularioVacio = {
   descripcion: "",
 };
 
+const CLAVE_BORRADOR_PREVENTIVO = "epi-borrador-preventivo";
+
+type BorradorPreventivo = {
+  campos: typeof formularioVacio;
+  formatoMtre045: CamposFormatoMtre045;
+  personalIds: string[];
+  editandoId: string | null;
+};
+
 interface EstadoNavegacion {
   registrarPm?: { maquinaId: string; area: string; fecha: string };
 }
@@ -62,6 +72,7 @@ function PreventivoPage() {
   const { puede } = useAuth();
   const ubicacion = useLocation();
   const navigate = useNavigate();
+  const borradorInicial = useRef(leerBorrador<BorradorPreventivo>(CLAVE_BORRADOR_PREVENTIVO));
   const [registros, setRegistros] = useState<RegistroPreventivo[]>([]);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
   const [personal, setPersonal] = useState<Persona[]>([]);
@@ -69,14 +80,38 @@ function PreventivoPage() {
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [campos, setCampos] = useState(formularioVacio);
-  const [formatoMtre045, setFormatoMtre045] = useState<CamposFormatoMtre045>(
-    camposFormatoMtre045Vacios(),
+  const [campos, setCampos] = useState(
+    () => borradorInicial.current?.campos ?? formularioVacio,
   );
-  const [personalIds, setPersonalIds] = useState<string[]>([]);
-  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [formatoMtre045, setFormatoMtre045] = useState<CamposFormatoMtre045>(
+    () => borradorInicial.current?.formatoMtre045 ?? camposFormatoMtre045Vacios(),
+  );
+  const [personalIds, setPersonalIds] = useState(
+    () => borradorInicial.current?.personalIds ?? [],
+  );
+  const [editandoId, setEditandoId] = useState<string | null>(
+    () => borradorInicial.current?.editandoId ?? null,
+  );
   const [filtroArea, setFiltroArea] = useState("");
   const [faltaTablaPersonal, setFaltaTablaPersonal] = useState(false);
+
+  useEffect(() => {
+    const hayContenido =
+      Object.values(campos).some((v) => String(v).trim() !== "") ||
+      personalIds.length > 0 ||
+      Boolean(editandoId) ||
+      Object.values(formatoMtre045).some((v) => String(v).trim() !== "");
+    if (!hayContenido) {
+      borrarBorrador(CLAVE_BORRADOR_PREVENTIVO);
+      return;
+    }
+    guardarBorrador(CLAVE_BORRADOR_PREVENTIVO, {
+      campos,
+      formatoMtre045,
+      personalIds,
+      editandoId,
+    } satisfies BorradorPreventivo);
+  }, [campos, formatoMtre045, personalIds, editandoId]);
 
   useEffect(() => {
     setCargando(true);
@@ -217,6 +252,7 @@ function PreventivoPage() {
     setCampos(formularioVacio);
     setFormatoMtre045(camposFormatoMtre045Vacios());
     setPersonalIds([]);
+    borrarBorrador(CLAVE_BORRADOR_PREVENTIVO);
   }
 
   function construirMtre045DesdeFormulario(preventivoId: string): Mtre045Datos | null {

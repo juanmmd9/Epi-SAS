@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { AREAS_SISTEMA } from "../../lib/areas";
+import { borrarBorrador, guardarBorrador, leerBorrador } from "../../lib/borradorFormulario";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
 import { listarPersonalActivo } from "../personal/personalService";
@@ -55,6 +56,16 @@ const formularioVacio = {
   quienRevisa: "",
 };
 
+const CLAVE_BORRADOR_CORRECTIVO = "epi-borrador-correctivo";
+
+type BorradorCorrectivo = {
+  campos: typeof formularioVacio;
+  personalIds: string[];
+  tipos: string[];
+  esperaRepuesto: boolean;
+  editandoId: string | null;
+};
+
 function CorrectivoPage() {
   const { puede } = useAuth();
   const ubicacion = useLocation();
@@ -62,6 +73,7 @@ function CorrectivoPage() {
     | { editarCorrectivoId?: string; filtroArea?: string }
     | null
     | undefined;
+  const borradorInicial = useRef(leerBorrador<BorradorCorrectivo>(CLAVE_BORRADOR_CORRECTIVO));
   const [registros, setRegistros] = useState<RegistroCorrectivo[]>([]);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
   const [personal, setPersonal] = useState<Persona[]>([]);
@@ -69,17 +81,45 @@ function CorrectivoPage() {
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [campos, setCampos] = useState(formularioVacio);
-  const [personalIds, setPersonalIds] = useState<string[]>([]);
-  const [tipos, setTipos] = useState<string[]>([]);
-  const [esperaRepuesto, setEsperaRepuesto] = useState(false);
-  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [campos, setCampos] = useState(
+    () => borradorInicial.current?.campos ?? formularioVacio,
+  );
+  const [personalIds, setPersonalIds] = useState(
+    () => borradorInicial.current?.personalIds ?? [],
+  );
+  const [tipos, setTipos] = useState(() => borradorInicial.current?.tipos ?? []);
+  const [esperaRepuesto, setEsperaRepuesto] = useState(
+    () => borradorInicial.current?.esperaRepuesto ?? false,
+  );
+  const [editandoId, setEditandoId] = useState<string | null>(
+    () => borradorInicial.current?.editandoId ?? null,
+  );
   const [filtroArea, setFiltroArea] = useState("");
   const [mostrarContador, setMostrarContador] = useState(false);
   const [contadorAnio, setContadorAnio] = useState(() => new Date().getFullYear());
   const [contadorMes, setContadorMes] = useState(() => new Date().getMonth() + 1);
   const [criterioContador, setCriterioContador] = useState<CriterioFechaCorrectivo>("solicitud");
   const navegacionProcesada = useRef(false);
+
+  useEffect(() => {
+    const hayContenido =
+      Object.values(campos).some((v) => String(v).trim() !== "") ||
+      personalIds.length > 0 ||
+      tipos.length > 0 ||
+      esperaRepuesto ||
+      Boolean(editandoId);
+    if (!hayContenido) {
+      borrarBorrador(CLAVE_BORRADOR_CORRECTIVO);
+      return;
+    }
+    guardarBorrador(CLAVE_BORRADOR_CORRECTIVO, {
+      campos,
+      personalIds,
+      tipos,
+      esperaRepuesto,
+      editandoId,
+    } satisfies BorradorCorrectivo);
+  }, [campos, personalIds, tipos, esperaRepuesto, editandoId]);
 
   useEffect(() => {
     Promise.all([listarCorrectivo(), listarHojas(), listarPersonalActivo()])
@@ -173,6 +213,7 @@ function CorrectivoPage() {
     setPersonalIds([]);
     setTipos([]);
     setEsperaRepuesto(false);
+    borrarBorrador(CLAVE_BORRADOR_CORRECTIVO);
   }
 
   function iniciarEdicion(registro: RegistroCorrectivo) {

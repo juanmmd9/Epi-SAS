@@ -1,4 +1,5 @@
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useRef } from "react";
 import { useAuth } from "./AuthContext";
 import "./auth.css";
 
@@ -6,13 +7,19 @@ function RequireAuth() {
   const navegar = useNavigate();
   const { session, perfil, cargando, errorPerfil, salir } = useAuth();
   const ubicacion = useLocation();
+  // Conserva el último acceso válido para no desmontar la app en renovaciones de token.
+  const accesoEstable = useRef(false);
+  if (session && perfil) accesoEstable.current = true;
+  if (!session && !perfil && !cargando) accesoEstable.current = false;
 
   async function manejarCerrarSesion() {
+    accesoEstable.current = false;
     await salir();
     navegar("/login", { replace: true });
   }
 
-  if (cargando) {
+  // Solo bloquear en la carga inicial, no en renovaciones posteriores.
+  if (cargando && !accesoEstable.current) {
     return (
       <div className="auth-carga">
         <p>Verificando sesión...</p>
@@ -20,11 +27,11 @@ function RequireAuth() {
     );
   }
 
-  if (!session) {
+  if (!session && !accesoEstable.current) {
     return <Navigate to="/login" replace state={{ desde: ubicacion.pathname }} />;
   }
 
-  if (!perfil) {
+  if (!perfil && !accesoEstable.current) {
     return (
       <div className="auth-sin-perfil">
         <h1>Sin acceso al portal</h1>
