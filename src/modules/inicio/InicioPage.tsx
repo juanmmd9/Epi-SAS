@@ -116,8 +116,8 @@ function construirDatosArea(
 }
 
 function InicioPage() {
-  const { esAdmin } = useAuth();
-  const puedeModificarPm = esAdmin;
+  const { puede } = useAuth();
+  const puedeModificarPm = puede("crear.preventivo");
   const anioActual = new Date().getFullYear();
   const mesActual = new Date().getMonth() + 1;
   const ubicacion = useLocation();
