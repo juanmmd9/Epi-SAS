@@ -620,7 +620,11 @@ function SolicitudesAreaPage() {
                             <span className="solicitud-item__meta"> · {repuesto.codigo}</span>
                           )}
                         </td>
-                        <td>{maquina ? maquina.nombre : "—"}</td>
+                        <td>
+                          {maquina
+                            ? `${maquina.codigo ? `${maquina.codigo} — ` : ""}${maquina.nombre}`
+                            : "—"}
+                        </td>
                         <td>{repuesto.cantidad}</td>
                         <td>
                           <span className={`estado-repuesto estado-repuesto--${repuesto.estado}`}>

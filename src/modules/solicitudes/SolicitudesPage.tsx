@@ -5,6 +5,8 @@ import { useAuth } from "../auth/AuthContext";
 import { NOMBRES_MESES } from "../../lib/fechas";
 import { listarCorrectivo, ordenarRegistrosCorrectivo } from "../correctivo/correctivoService";
 import type { RegistroCorrectivo } from "../correctivo/types";
+import { listarHojas } from "../hojas/hojasService";
+import type { HojaVida } from "../hojas/types";
 import { existeTablaRepuestos, listarRepuestos } from "./repuestosService";
 import {
   diasAbierta,
@@ -45,6 +47,7 @@ function SolicitudesPage() {
   const puedeVerCorrectivo = puede("ver.correctivo");
   const [correctivos, setCorrectivos] = useState<RegistroCorrectivo[]>([]);
   const [repuestos, setRepuestos] = useState<RepuestoSolicitud[]>([]);
+  const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [vistaMetrica, setVistaMetrica] = useState<VistaMetrica | null>(null);
@@ -54,8 +57,9 @@ function SolicitudesPage() {
       setCargando(true);
       setError(null);
       try {
-        const regs = await listarCorrectivo();
+        const [regs, hojas] = await Promise.all([listarCorrectivo(), listarHojas()]);
         setCorrectivos(regs);
+        setMaquinas(hojas);
         const hayTabla = await existeTablaRepuestos();
         if (hayTabla) {
           setRepuestos(await listarRepuestos());
@@ -70,6 +74,12 @@ function SolicitudesPage() {
     }
     void cargar();
   }, []);
+
+  const mapaMaquinas = useMemo(() => {
+    const mapa = new Map<string, HojaVida>();
+    for (const hoja of maquinas) mapa.set(hoja.id, hoja);
+    return mapa;
+  }, [maquinas]);
 
   useEffect(() => {
     if (!vistaMetrica) return;
@@ -290,26 +300,38 @@ function SolicitudesPage() {
                 <p className="solicitudes__vacio">No hay repuestos pendientes en esta área.</p>
               ) : (
                 <div className="solicitudes-lista">
-                  {repuestosFiltrados.map((repuesto) => (
-                    <article key={repuesto.id} className="solicitud-item">
-                      <div>
-                        <strong>
-                          {repuesto.codigo ? `${repuesto.codigo} — ` : ""}
-                          {repuesto.descripcion}
-                        </strong>
-                        <p className="solicitud-item__meta">
-                          Cant. {repuesto.cantidad} ·{" "}
-                          {ETIQUETAS_ESTADO_REPUESTO[repuesto.estado]}
-                          {repuesto.fecha_necesaria
-                            ? ` · Necesario: ${repuesto.fecha_necesaria}`
-                            : ""}
-                        </p>
-                        {repuesto.notas && (
-                          <p className="solicitud-item__desc">{repuesto.notas}</p>
-                        )}
-                      </div>
-                    </article>
-                  ))}
+                  {repuestosFiltrados.map((repuesto) => {
+                    const maquina = repuesto.hoja_id
+                      ? mapaMaquinas.get(repuesto.hoja_id)
+                      : undefined;
+                    const codigoMaquina = maquina?.codigo?.trim() || "";
+                    const nombreMaquina = maquina?.nombre?.trim() || "";
+                    return (
+                      <article key={repuesto.id} className="solicitud-item">
+                        <div>
+                          <strong>
+                            {repuesto.codigo ? `${repuesto.codigo} — ` : ""}
+                            {repuesto.descripcion}
+                          </strong>
+                          <p className="solicitud-item__meta">
+                            Máquina:{" "}
+                            {maquina
+                              ? `${codigoMaquina ? `${codigoMaquina} — ` : ""}${nombreMaquina || "Sin nombre"}`
+                              : "Sin máquina vinculada"}
+                            {" · "}
+                            Cant. {repuesto.cantidad} ·{" "}
+                            {ETIQUETAS_ESTADO_REPUESTO[repuesto.estado]}
+                            {repuesto.fecha_necesaria
+                              ? ` · Necesario: ${repuesto.fecha_necesaria}`
+                              : ""}
+                          </p>
+                          {repuesto.notas && (
+                            <p className="solicitud-item__desc">{repuesto.notas}</p>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               )
             ) : correctivosFiltrados.length === 0 ? (
