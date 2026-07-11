@@ -35,6 +35,10 @@ import Mtre045CamposFormulario, {
   type CamposFormatoMtre045,
 } from "../formatos/Mtre045CamposFormulario";
 import type { Mtre045Datos } from "../formatos/mtre045Types";
+import { listarExcepciones } from "../cronograma/cronogramaService";
+import type { ExcepcionCronograma } from "../cronograma/types";
+import { ContadorListaMensual } from "../../components/ContadorListaMensual";
+import { contarPreventivoMes } from "./preventivoConteo";
 import type { RegistroPreventivo } from "./types";
 import {
   calcularMapaNumerosReporte,
@@ -93,6 +97,9 @@ function PreventivoPage() {
     () => borradorInicial.current?.editandoId ?? null,
   );
   const [filtroArea, setFiltroArea] = useState("");
+  const [excepciones, setExcepciones] = useState<ExcepcionCronograma[]>([]);
+  const [contadorAnio, setContadorAnio] = useState(() => new Date().getFullYear());
+  const [contadorMes, setContadorMes] = useState(() => new Date().getMonth() + 1);
   const [faltaTablaPersonal, setFaltaTablaPersonal] = useState(false);
 
   useEffect(() => {
@@ -116,11 +123,12 @@ function PreventivoPage() {
   useEffect(() => {
     setCargando(true);
     setError(null);
-    Promise.all([listarPreventivo(), listarHojas()])
-      .then(async ([regs, hojas]) => {
+    Promise.all([listarPreventivo(), listarHojas(), listarExcepciones()])
+      .then(async ([regs, hojas, excs]) => {
         const sincronizados = await sincronizarNumerosReportePendientes(regs);
         setRegistros(ordenarRegistrosPreventivo(sincronizados));
         setMaquinas(hojas);
+        setExcepciones(excs);
       })
       .catch((e: Error) => setError("No se pudieron cargar los datos: " + e.message))
       .finally(() => setCargando(false));
@@ -217,6 +225,19 @@ function PreventivoPage() {
       return (b.creado_en ?? "").localeCompare(a.creado_en ?? "");
     });
   }, [registros, filtroArea, mapaNumerosReporte]);
+
+  const conteoMes = useMemo(
+    () =>
+      contarPreventivoMes(
+        maquinas,
+        excepciones,
+        registros,
+        contadorAnio,
+        contadorMes,
+        filtroArea,
+      ),
+    [maquinas, excepciones, registros, contadorAnio, contadorMes, filtroArea],
+  );
 
   function nombreMaquina(registro: RegistroPreventivo): string {
     const maquina = maquinas.find((m) => m.id === registro.hoja_id);
@@ -614,6 +635,50 @@ function PreventivoPage() {
           ))}
         </select>
       </div>
+
+      <ContadorListaMensual
+        titulo="Contador del mes"
+        mes={contadorMes}
+        anio={contadorAnio}
+        onMes={setContadorMes}
+        onAnio={setContadorAnio}
+        total={conteoMes.total}
+        totalEtiqueta="PM programados en el mes (cronograma)"
+        chipArea={filtroArea || undefined}
+        tarjetas={[
+          {
+            key: "abiertas",
+            etiqueta: "Pendientes (abiertas)",
+            valor: conteoMes.abiertas,
+            tono: "alerta",
+          },
+          {
+            key: "cerradas",
+            etiqueta: "Realizados (cerradas)",
+            valor: conteoMes.cerradas,
+            tono: "ok",
+          },
+          {
+            key: "reprogramadas",
+            etiqueta: "Reprogramados",
+            valor: conteoMes.reprogramadas,
+            tono: "espera",
+          },
+        ]}
+        desgloses={
+          !filtroArea
+            ? [
+                {
+                  titulo: "Por área",
+                  items: conteoMes.porArea.map((x) => ({
+                    clave: `${x.area} (${x.cerradas} ok / ${x.abiertas} pend.)`,
+                    cantidad: x.cantidad,
+                  })),
+                },
+              ]
+            : []
+        }
+      />
 
       {cargando && <p>Cargando registros...</p>}
       {!cargando && registrosFiltrados.length === 0 && (

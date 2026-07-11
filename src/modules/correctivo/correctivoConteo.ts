@@ -31,10 +31,7 @@ export function contarCorrectivosMes(
   criterio: CriterioFechaCorrectivo,
   areaFiltro = "",
 ): ConteoCorrectivoMes {
-  const base = registros.filter((r) => {
-    if (areaFiltro && r.area !== areaFiltro) return false;
-    return enMes(fechaConteo(r, criterio), anio, mes);
-  });
+  const base = filtrarCorrectivosMes(registros, anio, mes, criterio, "todas", areaFiltro);
 
   const mapaArea = new Map<string, number>();
   const mapaTipo = new Map<string, number>();
@@ -70,6 +67,28 @@ export function contarCorrectivosMes(
     porArea,
     porTipo,
   };
+}
+
+export type FiltroEstadoCorrectivoMes = "todas" | "abiertas" | "cerradas" | "espera";
+
+/** Filtra registros del mes (y opcionalmente por estado) con el mismo criterio del contador. */
+export function filtrarCorrectivosMes(
+  registros: RegistroCorrectivo[],
+  anio: number,
+  mes: number,
+  criterio: CriterioFechaCorrectivo,
+  estado: FiltroEstadoCorrectivoMes = "todas",
+  areaFiltro = "",
+): RegistroCorrectivo[] {
+  return registros.filter((r) => {
+    if (areaFiltro && r.area !== areaFiltro) return false;
+    if (!enMes(fechaConteo(r, criterio), anio, mes)) return false;
+    const abierta = !r.datos.fechaCierre?.trim();
+    if (estado === "abiertas") return abierta;
+    if (estado === "cerradas") return !abierta;
+    if (estado === "espera") return abierta && Boolean(r.datos.esperaRepuesto);
+    return true;
+  });
 }
 
 export function etiquetaMesAnio(anio: number, mes: number): string {

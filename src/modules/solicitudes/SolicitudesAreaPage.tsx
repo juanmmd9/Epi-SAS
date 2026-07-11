@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { ContadorListaMensual } from "../../components/ContadorListaMensual";
 import { useAuth } from "../auth/AuthContext";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { AREAS_SISTEMA, coincideArea, esAreaValida, normalizarArea } from "../../lib/areas";
@@ -8,10 +9,17 @@ import {
   usuarioPuedeAccederArea,
   usuarioPuedeEscribirEnArea,
 } from "../../lib/usuarioArea";
+import {
+  contarCorrectivosMes,
+  filtrarCorrectivosMes,
+  type CriterioFechaCorrectivo,
+  type FiltroEstadoCorrectivoMes,
+} from "../correctivo/correctivoConteo";
 import { listarCorrectivo, ordenarRegistrosCorrectivo } from "../correctivo/correctivoService";
 import type { RegistroCorrectivo } from "../correctivo/types";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
+import { NOMBRES_MESES } from "../../lib/fechas";
 import NuevaSolicitudAreaForm from "./NuevaSolicitudAreaForm";
 import PanelAlertasSolicitudes from "./PanelAlertasSolicitudes";
 import { useSolicitudesRealtime } from "./useSolicitudesRealtime";
@@ -97,6 +105,11 @@ function SolicitudesAreaPage() {
   const [editandoRepuestoId, setEditandoRepuestoId] = useState<string | null>(null);
   const [camposRepuesto, setCamposRepuesto] = useState(formularioRepuestoVacio);
   const [soloAbiertas, setSoloAbiertas] = useState(true);
+  const [contadorMes, setContadorMes] = useState(() => new Date().getMonth() + 1);
+  const [contadorAnio, setContadorAnio] = useState(() => new Date().getFullYear());
+  const [criterioContador, setCriterioContador] =
+    useState<CriterioFechaCorrectivo>("solicitud");
+  const [filtroContador, setFiltroContador] = useState<FiltroEstadoCorrectivoMes | null>(null);
 
   const recargar = useCallback(async () => {
     setCargando(true);
@@ -136,13 +149,36 @@ function SolicitudesAreaPage() {
     [maquinas],
   );
 
+  const correctivosDelAreaSinFiltro = useMemo(
+    () => correctivos.filter((r) => coincideArea(r.area, area)),
+    [correctivos, area],
+  );
+
   const correctivosArea = useMemo(() => {
-    let lista = correctivos.filter((r) => coincideArea(r.area, area));
+    if (filtroContador) {
+      return ordenarRegistrosCorrectivo(
+        filtrarCorrectivosMes(
+          correctivosDelAreaSinFiltro,
+          contadorAnio,
+          contadorMes,
+          criterioContador,
+          filtroContador,
+        ),
+      );
+    }
+    let lista = correctivosDelAreaSinFiltro;
     if (soloAbiertas) {
       lista = lista.filter(solicitudAbierta);
     }
     return ordenarRegistrosCorrectivo(lista);
-  }, [correctivos, area, soloAbiertas]);
+  }, [
+    correctivosDelAreaSinFiltro,
+    soloAbiertas,
+    filtroContador,
+    contadorAnio,
+    contadorMes,
+    criterioContador,
+  ]);
 
   const repuestosArea = useMemo(
     () => repuestos.filter((r) => coincideArea(r.area, area)),
@@ -152,9 +188,20 @@ function SolicitudesAreaPage() {
   const correctivosAbiertosArea = useMemo(
     () =>
       ordenarRegistrosCorrectivo(
-        correctivos.filter((r) => coincideArea(r.area, area) && solicitudAbierta(r)),
+        correctivosDelAreaSinFiltro.filter(solicitudAbierta),
       ),
-    [correctivos, area],
+    [correctivosDelAreaSinFiltro],
+  );
+
+  const conteoMes = useMemo(
+    () =>
+      contarCorrectivosMes(
+        correctivosDelAreaSinFiltro,
+        contadorAnio,
+        contadorMes,
+        criterioContador,
+      ),
+    [correctivosDelAreaSinFiltro, contadorAnio, contadorMes, criterioContador],
   );
 
   const alNuevaSolicitudRealtime = useCallback((registro: RegistroCorrectivo) => {
@@ -193,6 +240,22 @@ function SolicitudesAreaPage() {
 
   const esSolicitanteArea = perfil?.rol === "solicitante";
   const puedeVerCorrectivo = puede("ver.correctivo");
+
+  const etiquetaFiltroContador =
+    filtroContador === "abiertas"
+      ? "abiertas"
+      : filtroContador === "cerradas"
+        ? "cerradas"
+        : filtroContador === "espera"
+          ? "en espera de repuesto"
+          : filtroContador === "todas"
+            ? "del mes"
+            : null;
+
+  function seleccionarFiltroContador(key: string) {
+    const siguiente = key as FiltroEstadoCorrectivoMes;
+    setFiltroContador((prev) => (prev === siguiente ? null : siguiente));
+  }
 
   function irACorrectivo(registro: RegistroCorrectivo) {
     navegar("/correctivo", { state: { editarCorrectivoId: registro.id, filtroArea: area } });
@@ -375,8 +438,9 @@ function SolicitudesAreaPage() {
           }
           onClick={() => setTab("correctivas")}
         >
-          Correctivas ({correctivosArea.length}
-          {soloAbiertas ? " abiertas" : ""})
+          Correctivas (
+          {filtroContador ? correctivosArea.length : correctivosAbiertosArea.length}
+          {!filtroContador && soloAbiertas ? " abiertas" : ""})
         </button>
         <button
           type="button"
@@ -391,20 +455,86 @@ function SolicitudesAreaPage() {
 
       {tab === "correctivas" && (
         <>
-          <label className="check-tipo">
-            <input
-              type="checkbox"
-              checked={soloAbiertas}
-              onChange={(e) => setSoloAbiertas(e.target.checked)}
-            />{" "}
-            Solo solicitudes abiertas
-          </label>
+          <ContadorListaMensual
+            titulo="Contador del mes"
+            mes={contadorMes}
+            anio={contadorAnio}
+            onMes={(mes) => {
+              setContadorMes(mes);
+            }}
+            onAnio={(anio) => {
+              setContadorAnio(anio);
+            }}
+            total={conteoMes.total}
+            totalEtiqueta={
+              criterioContador === "cierre"
+                ? "cerradas por fecha de cierre"
+                : "registradas por fecha de solicitud"
+            }
+            chipArea={normalizarArea(area)}
+            criterio={{
+              valor: criterioContador,
+              onChange: (v) => setCriterioContador(v as CriterioFechaCorrectivo),
+              opciones: [
+                { valor: "solicitud", etiqueta: "Fecha de solicitud" },
+                { valor: "cierre", etiqueta: "Fecha de cierre" },
+              ],
+            }}
+            seleccion={filtroContador}
+            onSeleccionar={seleccionarFiltroContador}
+            tarjetas={[
+              {
+                key: "abiertas",
+                etiqueta: "Abiertas",
+                valor: conteoMes.abiertas,
+                tono: "alerta",
+              },
+              {
+                key: "cerradas",
+                etiqueta: "Cerradas",
+                valor: conteoMes.cerradas,
+                tono: "ok",
+              },
+              {
+                key: "espera",
+                etiqueta: "Espera repuesto",
+                valor: conteoMes.enEsperaRepuesto,
+                tono: "espera",
+              },
+            ]}
+          />
+
+          {filtroContador ? (
+            <div className="solicitudes-filtro-mes">
+              <p>
+                Mostrando solicitudes <strong>{etiquetaFiltroContador}</strong> de{" "}
+                <strong>
+                  {NOMBRES_MESES[contadorMes - 1]} {contadorAnio}
+                </strong>{" "}
+                ({correctivosArea.length})
+              </p>
+              <button type="button" className="btn" onClick={() => setFiltroContador(null)}>
+                Quitar filtro
+              </button>
+            </div>
+          ) : (
+            <label className="check-tipo">
+              <input
+                type="checkbox"
+                checked={soloAbiertas}
+                onChange={(e) => setSoloAbiertas(e.target.checked)}
+              />{" "}
+              Solo solicitudes abiertas
+            </label>
+          )}
 
           {correctivosArea.length === 0 ? (
             <p className="solicitudes__vacio">
-              {soloAbiertas
-                ? "No hay solicitudes correctivas abiertas en esta área."
-                : "No hay solicitudes correctivas en esta área."}
+              {filtroContador
+                ? `No hay solicitudes ${etiquetaFiltroContador} en ${NOMBRES_MESES[contadorMes - 1]} ${contadorAnio}.`
+                : soloAbiertas
+                  ? "No hay solicitudes correctivas abiertas en esta área."
+                  : "No hay solicitudes correctivas en esta área."}
             </p>
           ) : (
             <div className="solicitudes-lista">

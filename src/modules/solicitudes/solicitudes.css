@@ -415,6 +415,24 @@
   gap: 0.65rem;
 }
 
+.solicitudes-filtro-mes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.35rem 0 0.85rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.solicitudes-filtro-mes p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
 .solicitud-item {
   border: 1px solid var(--color-borde);
   border-radius: 10px;
