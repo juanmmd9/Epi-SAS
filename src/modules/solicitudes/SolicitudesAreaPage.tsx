@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { ContadorListaMensual } from "../../components/ContadorListaMensual";
+import { ContadorListaMensual, etiquetaPeriodoContador } from "../../components/ContadorListaMensual";
 import { useAuth } from "../auth/AuthContext";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { AREAS_SISTEMA, coincideArea, esAreaValida, normalizarArea } from "../../lib/areas";
@@ -19,7 +19,6 @@ import { listarCorrectivo, ordenarRegistrosCorrectivo } from "../correctivo/corr
 import type { RegistroCorrectivo } from "../correctivo/types";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
-import { NOMBRES_MESES } from "../../lib/fechas";
 import NuevaSolicitudAreaForm from "./NuevaSolicitudAreaForm";
 import PanelAlertasSolicitudes from "./PanelAlertasSolicitudes";
 import { useSolicitudesRealtime } from "./useSolicitudesRealtime";
@@ -249,7 +248,9 @@ function SolicitudesAreaPage() {
         : filtroContador === "espera"
           ? "en espera de repuesto"
           : filtroContador === "todas"
-            ? "del mes"
+            ? contadorMes === 0
+              ? "todas"
+              : "del mes"
             : null;
 
   function seleccionarFiltroContador(key: string) {
@@ -459,17 +460,17 @@ function SolicitudesAreaPage() {
             titulo="Contador del mes"
             mes={contadorMes}
             anio={contadorAnio}
-            onMes={(mes) => {
-              setContadorMes(mes);
-            }}
-            onAnio={(anio) => {
-              setContadorAnio(anio);
-            }}
+            onMes={setContadorMes}
+            onAnio={setContadorAnio}
             total={conteoMes.total}
             totalEtiqueta={
-              criterioContador === "cierre"
-                ? "cerradas por fecha de cierre"
-                : "registradas por fecha de solicitud"
+              contadorMes === 0
+                ? criterioContador === "cierre"
+                  ? "todas las cerradas"
+                  : "todas las solicitudes"
+                : criterioContador === "cierre"
+                  ? "cerradas por fecha de cierre"
+                  : "registradas por fecha de solicitud"
             }
             chipArea={normalizarArea(area)}
             criterio={{
@@ -508,9 +509,7 @@ function SolicitudesAreaPage() {
             <div className="solicitudes-filtro-mes">
               <p>
                 Mostrando solicitudes <strong>{etiquetaFiltroContador}</strong> de{" "}
-                <strong>
-                  {NOMBRES_MESES[contadorMes - 1]} {contadorAnio}
-                </strong>{" "}
+                <strong>{etiquetaPeriodoContador(contadorMes, contadorAnio)}</strong>{" "}
                 ({correctivosArea.length})
               </p>
               <button type="button" className="btn" onClick={() => setFiltroContador(null)}>
@@ -531,7 +530,7 @@ function SolicitudesAreaPage() {
           {correctivosArea.length === 0 ? (
             <p className="solicitudes__vacio">
               {filtroContador
-                ? `No hay solicitudes ${etiquetaFiltroContador} en ${NOMBRES_MESES[contadorMes - 1]} ${contadorAnio}.`
+                ? `No hay solicitudes ${etiquetaFiltroContador} en ${etiquetaPeriodoContador(contadorMes, contadorAnio)}.`
                 : soloAbiertas
                   ? "No hay solicitudes correctivas abiertas en esta área."
                   : "No hay solicitudes correctivas en esta área."}

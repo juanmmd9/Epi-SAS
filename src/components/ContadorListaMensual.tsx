@@ -13,6 +13,7 @@ export interface ContadorListaDesglose {
   items: { clave: string; cantidad: number }[];
 }
 
+/** mes = 0 significa "Todos los meses" (sin filtro de fecha). */
 interface Props {
   titulo?: string;
   mes: number;
@@ -32,6 +33,11 @@ interface Props {
   /** Clave activa (`todas` = total del mes, o key de tarjeta). */
   seleccion?: string | null;
   onSeleccionar?: (key: string) => void;
+}
+
+export function etiquetaPeriodoContador(mes: number, anio: number): string {
+  if (mes === 0) return "Todos los meses";
+  return `${NOMBRES_MESES[mes - 1]} ${anio}`;
 }
 
 export function ContadorListaMensual({
@@ -64,7 +70,7 @@ export function ContadorListaMensual({
           <h2>{titulo}</h2>
           <p className="contador-lista__hint">
             {clickable
-              ? "Elige el mes y pulsa una tarjeta para ver la lista"
+              ? "Elige el mes (o todos) y pulsa una tarjeta para ver la lista"
               : "Selecciona el mes para ver abiertas y cerradas"}
           </p>
         </div>
@@ -75,6 +81,7 @@ export function ContadorListaMensual({
         <label>
           Mes
           <select value={mes} onChange={(e) => onMes(Number(e.target.value))}>
+            <option value={0}>Todos los meses</option>
             {NOMBRES_MESES.map((nombre: string, i: number) => (
               <option key={nombre} value={i + 1}>
                 {nombre}
@@ -121,17 +128,13 @@ export function ContadorListaMensual({
             onClick={() => manejarClic("todas")}
             aria-pressed={seleccion === "todas"}
           >
-            <span>
-              {NOMBRES_MESES[mes - 1]} {anio}
-            </span>
+            <span>{etiquetaPeriodoContador(mes, anio)}</span>
             <strong>{total}</strong>
             <small>{totalEtiqueta}</small>
           </button>
         ) : (
           <div className="contador-lista__total">
-            <span>
-              {NOMBRES_MESES[mes - 1]} {anio}
-            </span>
+            <span>{etiquetaPeriodoContador(mes, anio)}</span>
             <strong>{total}</strong>
             <small>{totalEtiqueta}</small>
           </div>

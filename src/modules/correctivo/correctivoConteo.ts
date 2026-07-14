@@ -13,6 +13,8 @@ export interface ConteoCorrectivoMes {
 }
 
 function enMes(fechaTexto: string | null | undefined, anio: number, mes: number): boolean {
+  /** mes = 0 → todos los meses (sin filtro de fecha). */
+  if (mes === 0) return true;
   if (!fechaTexto) return false;
   const partes = fechaTexto.slice(0, 10).split("-");
   if (partes.length < 2) return false;
@@ -71,7 +73,7 @@ export function contarCorrectivosMes(
 
 export type FiltroEstadoCorrectivoMes = "todas" | "abiertas" | "cerradas" | "espera";
 
-/** Filtra registros del mes (y opcionalmente por estado) con el mismo criterio del contador. */
+/** Filtra registros del mes (mes = 0 = todos) y opcionalmente por estado. */
 export function filtrarCorrectivosMes(
   registros: RegistroCorrectivo[],
   anio: number,
@@ -82,7 +84,11 @@ export function filtrarCorrectivosMes(
 ): RegistroCorrectivo[] {
   return registros.filter((r) => {
     if (areaFiltro && r.area !== areaFiltro) return false;
-    if (!enMes(fechaConteo(r, criterio), anio, mes)) return false;
+    if (mes === 0) {
+      if (criterio === "cierre" && !r.datos.fechaCierre?.trim()) return false;
+    } else if (!enMes(fechaConteo(r, criterio), anio, mes)) {
+      return false;
+    }
     const abierta = !r.datos.fechaCierre?.trim();
     if (estado === "abiertas") return abierta;
     if (estado === "cerradas") return !abierta;

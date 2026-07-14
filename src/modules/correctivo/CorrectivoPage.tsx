@@ -30,8 +30,7 @@ import {
   type CriterioFechaCorrectivo,
   type FiltroEstadoCorrectivoMes,
 } from "./correctivoConteo";
-import { ContadorListaMensual } from "../../components/ContadorListaMensual";
-import { NOMBRES_MESES } from "../../lib/fechas";
+import { ContadorListaMensual, etiquetaPeriodoContador } from "../../components/ContadorListaMensual";
 import {
   ESTADOS_MAQUINA,
   TIPOS_SOLICITUD,
@@ -629,7 +628,7 @@ function CorrectivoPage() {
             : filtroContador === "espera"
               ? "espera repuesto"
               : filtroContador}{" "}
-          de {NOMBRES_MESES[contadorMes - 1]} {contadorAnio} ({registrosFiltrados.length}).{" "}
+          de {etiquetaPeriodoContador(contadorMes, contadorAnio)} ({registrosFiltrados.length}).{" "}
           <button type="button" className="btn" onClick={() => setFiltroContador(null)}>
             Quitar filtro
           </button>
@@ -640,7 +639,7 @@ function CorrectivoPage() {
       {!cargando && registrosFiltrados.length === 0 && (
         <p className="correctivo__vacio">
           {filtroContador
-            ? `No hay solicitudes en ${NOMBRES_MESES[contadorMes - 1]} ${contadorAnio} para este filtro.`
+            ? `No hay solicitudes en ${etiquetaPeriodoContador(contadorMes, contadorAnio)} para este filtro.`
             : "No hay solicitudes registradas todavía."}
         </p>
       )}

@@ -26,36 +26,47 @@ export function contarPreventivoMes(
     ? AREAS_CON_PM.filter((a) => a === areaFiltro)
     : [...AREAS_CON_PM];
 
+  const meses = mes === 0 ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [mes];
+
   let total = 0;
   let cerradas = 0;
   let abiertas = 0;
   let reprogramadas = 0;
-  const porArea: ConteoPreventivoMes["porArea"] = [];
+  const mapaArea = new Map<string, { cantidad: number; abiertas: number; cerradas: number }>();
 
   for (const area of areas) {
-    const datos = clasificarCitasPreventivas(
-      maquinas,
-      excepciones,
-      preventivo,
-      area,
-      anio,
-      mes,
-    );
-    total += datos.total;
-    cerradas += datos.cumplidas.length;
-    abiertas += datos.pendientes.length;
-    reprogramadas += datos.reprogramadas.length;
-    if (datos.total > 0) {
-      porArea.push({
+    let areaCantidad = 0;
+    let areaAbiertas = 0;
+    let areaCerradas = 0;
+    for (const m of meses) {
+      const datos = clasificarCitasPreventivas(
+        maquinas,
+        excepciones,
+        preventivo,
         area,
-        cantidad: datos.total,
-        abiertas: datos.pendientes.length,
-        cerradas: datos.cumplidas.length,
+        anio,
+        m,
+      );
+      total += datos.total;
+      cerradas += datos.cumplidas.length;
+      abiertas += datos.pendientes.length;
+      reprogramadas += datos.reprogramadas.length;
+      areaCantidad += datos.total;
+      areaAbiertas += datos.pendientes.length;
+      areaCerradas += datos.cumplidas.length;
+    }
+    if (areaCantidad > 0) {
+      mapaArea.set(area, {
+        cantidad: areaCantidad,
+        abiertas: areaAbiertas,
+        cerradas: areaCerradas,
       });
     }
   }
 
-  porArea.sort((a, b) => b.cantidad - a.cantidad || a.area.localeCompare(b.area));
+  const porArea = [...mapaArea.entries()]
+    .map(([area, datos]) => ({ area, ...datos }))
+    .sort((a, b) => b.cantidad - a.cantidad || a.area.localeCompare(b.area));
 
   return { total, cerradas, abiertas, reprogramadas, porArea };
 }

@@ -643,7 +643,11 @@ function PreventivoPage() {
         onMes={setContadorMes}
         onAnio={setContadorAnio}
         total={conteoMes.total}
-        totalEtiqueta="PM programados en el mes (cronograma)"
+        totalEtiqueta={
+          contadorMes === 0
+            ? `PM programados en ${contadorAnio} (todos los meses)`
+            : "PM programados en el mes (cronograma)"
+        }
         chipArea={filtroArea || undefined}
         tarjetas={[
           {
