@@ -3,6 +3,7 @@
  * Coordenadas calibradas sobre public/templates/GC-RE-009-v2.pdf (A4, 596 x 842 pt).
  */
 import { PDFDocument, StandardFonts, type PDFFont, type PDFPage } from "pdf-lib";
+import { rutaPublica } from "../../lib/rutaPublica";
 import type { RegistroNc, RegistroNcDatos } from "./types";
 
 const PAGE_H = 842;
@@ -37,9 +38,16 @@ function textoSiNo(valor: string): string {
 
 async function cargarPlantilla(): Promise<ArrayBuffer> {
   if (plantillaCache) return plantillaCache;
-  const respuesta = await fetch(PLANTILLA_URL);
-  if (!respuesta.ok) throw new Error("No se pudo cargar la plantilla GC-RE-009.");
-  plantillaCache = await respuesta.arrayBuffer();
+  const respuesta = await fetch(rutaPublica(PLANTILLA_URL));
+  if (!respuesta.ok) {
+    throw new Error("No se pudo cargar la plantilla GC-RE-009.");
+  }
+  const buffer = await respuesta.arrayBuffer();
+  const marca = new TextDecoder("ascii").decode(new Uint8Array(buffer).slice(0, 5));
+  if (marca !== "%PDF-") {
+    throw new Error("No se pudo cargar la plantilla GC-RE-009.");
+  }
+  plantillaCache = buffer;
   return plantillaCache;
 }
 

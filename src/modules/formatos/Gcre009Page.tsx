@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AREAS_SISTEMA } from "../../lib/areas";
 import { imprimirPdf } from "../../lib/imprimirPdf";
+import { rutaPublica } from "../../lib/rutaPublica";
 import {
   generarPdfGcRe009,
   obtenerPdfRegistro,
@@ -606,7 +607,7 @@ function Gcre009Page() {
           <h2>Registros guardados</h2>
           <p className="formatos__plantilla">
             Plantilla en blanco:{" "}
-            <a href="/templates/GC-RE-009-v2.pdf" target="_blank" rel="noreferrer">
+            <a href={rutaPublica("/templates/GC-RE-009-v2.pdf")} target="_blank" rel="noreferrer">
               GC-RE-009-v2.pdf
             </a>
           </p>
