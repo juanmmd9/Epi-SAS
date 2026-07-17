@@ -11,6 +11,8 @@ import SolicitudesPage from "./modules/solicitudes/SolicitudesPage";
 import SolicitudesAreaPage from "./modules/solicitudes/SolicitudesAreaPage";
 import HojasPage from "./modules/hojas/HojasPage";
 import HojaDetallePage from "./modules/hojas/HojaDetallePage";
+import ComputadoresPage from "./modules/computadores/ComputadoresPage";
+import ComputadorDetallePage from "./modules/computadores/ComputadorDetallePage";
 import IndicadoresPage from "./modules/indicadores/IndicadoresPage";
 import FormatosPage from "./modules/formatos/FormatosPage";
 import Gcre001Page from "./modules/formatos/Gcre001Page";
@@ -39,6 +41,8 @@ function App() {
             <Route path="solicitudes/area/:area" element={<SolicitudesAreaPage />} />
             <Route path="hojas-de-vida" element={<HojasPage />} />
             <Route path="hojas-de-vida/:id" element={<HojaDetallePage />} />
+            <Route path="computadores" element={<ComputadoresPage />} />
+            <Route path="computadores/:id" element={<ComputadorDetallePage />} />
             <Route path="indicadores" element={<IndicadoresPage />} />
             <Route path="formatos" element={<FormatosPage />} />
             <Route path="formatos/gc-re-001" element={<Gcre001Page />} />

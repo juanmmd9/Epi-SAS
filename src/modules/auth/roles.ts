@@ -24,6 +24,7 @@ export type Permiso =
   | "ver.correctivo"
   | "ver.solicitudes"
   | "ver.hojas"
+  | "ver.computadores"
   | "ver.indicadores"
   | "ver.formatos"
   | "ver.personal"
@@ -31,6 +32,7 @@ export type Permiso =
   | "ver.matriz"
   | "ver.horario"
   | "editar.hojas"
+  | "editar.computadores"
   | "editar.personal"
   | "editar.horario"
   | "editar.indicadores"
@@ -49,6 +51,7 @@ const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
   "ver.correctivo": ["admin", "operador", "consulta"],
   "ver.solicitudes": ["admin", "operador", "consulta", "solicitante"],
   "ver.hojas": ["admin", "operador", "consulta", "solicitante"],
+  "ver.computadores": ["admin", "operador", "consulta"],
   "ver.indicadores": ["admin", "consulta"],
   "ver.formatos": ["admin", "operador"],
   "ver.personal": ["admin"],
@@ -56,6 +59,7 @@ const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
   "ver.matriz": ["admin"],
   "ver.horario": ["admin"],
   "editar.hojas": ["admin", "operador", "solicitante"],
+  "editar.computadores": ["admin", "operador"],
   "editar.personal": ["admin"],
   "editar.horario": ["admin"],
   "editar.indicadores": ["admin"],
@@ -86,6 +90,7 @@ export const ENLACES_NAV: EnlaceNav[] = [
   { ruta: "/correctivo", texto: "Mant. correctivo", permiso: "ver.correctivo" },
   { ruta: "/solicitudes", texto: "Solicitudes", permiso: "ver.solicitudes" },
   { ruta: "/hojas-de-vida", texto: "Hojas de vida", permiso: "ver.hojas" },
+  { ruta: "/computadores", texto: "Computadores", permiso: "ver.computadores" },
   { ruta: "/indicadores", texto: "Indicadores", permiso: "ver.indicadores" },
   { ruta: "/formatos", texto: "Formatos", permiso: "ver.formatos" },
   { ruta: "/personal", texto: "Personal", permiso: "ver.personal" },
