@@ -9,9 +9,17 @@ import {
   importarComputadores,
   listarComputadores,
   listarPiezasTodas,
+  reemplazarInventario,
 } from "./computadoresService";
 import { esErrorTablaComputadores, SQL_MIGRACION_COMPUTADORES } from "./computadoresSetup";
-import { SEMILLA_COMPUTADORES, compararCodigoPc, normalizarTipoComputador, pmProximoEnDias, pmVencido } from "./computadoresUtil";
+import {
+  SEMILLA_COMPUTADORES,
+  compararCodigoPc,
+  normalizarTipoComputador,
+  parseFechaExcel,
+  pmProximoEnDias,
+  pmVencido,
+} from "./computadoresUtil";
 import {
   ETIQUETAS_TIPO_COMPUTADOR,
   TIPOS_COMPUTADOR,
@@ -224,20 +232,17 @@ function ComputadoresPage() {
   }
 
   async function cargarSemilla() {
-    if (lista.length > 0) {
-      if (
-        !window.confirm(
-          "Ya hay computadores registrados. ¿Importar de todos modos la lista del Excel (se agregarán)?",
-        )
-      ) {
-        return;
-      }
-    }
+    const aviso =
+      lista.length > 0
+        ? `Se reemplazarán los ${lista.length} computadores actuales por la lista oficial del Excel (51 equipos). ¿Continuar?`
+        : "Se cargarán los 51 computadores de la lista oficial del Excel. ¿Continuar?";
+    if (!window.confirm(aviso)) return;
+
     setGuardando(true);
     setError(null);
     try {
-      const { creados } = await importarComputadores(SEMILLA_COMPUTADORES);
-      setMensaje(`Se importaron ${creados} computadores desde la lista base.`);
+      const { creados } = await reemplazarInventario(SEMILLA_COMPUTADORES);
+      setMensaje(`Lista actualizada: ${creados} computadores cargados desde el Excel oficial.`);
       await cargar();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Error al importar";
@@ -259,29 +264,66 @@ function ComputadoresPage() {
       const hoja = libro.worksheets[0];
       if (!hoja) throw new Error("El Excel no tiene hojas.");
 
+      function textoCelda(
+        fila: { getCell: (col: number) => { value: unknown; text?: string } },
+        col: number,
+      ): string {
+        const c = fila.getCell(col);
+        if (c.value instanceof Date) return parseFechaExcel(c.value) ?? "";
+        if (c.value && typeof c.value === "object" && "result" in c.value) {
+          return String((c.value as { result?: unknown }).result ?? "").trim();
+        }
+        return String(c.text ?? c.value ?? "").trim();
+      }
+
       const items: ComputadorInput[] = [];
       hoja.eachRow((fila, numero) => {
-        if (numero <= 3) return;
-        const equipo = String(fila.getCell(2).text ?? "").trim();
-        const ubicacion = String(fila.getCell(3).text ?? "").trim();
-        const tipoRaw = String(fila.getCell(4).text ?? "").trim();
-        const usuario = String(fila.getCell(5).text ?? "").trim();
-        if (!ubicacion && !equipo) return;
-        if (/solicitado por|miguel torres|director/i.test(ubicacion) && !equipo) return;
+        if (numero <= 2) return;
+        const item = textoCelda(fila, 1);
+        if (!/^\d+$/.test(item)) return;
+
+        const ubicacion = textoCelda(fila, 2).replace(/\s+/g, " ").trim();
+        const tipoRaw = textoCelda(fila, 3);
+        const usuario = textoCelda(fila, 4).replace(/\s+/g, " ").trim();
+        const compra = textoCelda(fila, 5);
+        const ultimo = parseFechaExcel(fila.getCell(6).value) ?? parseFechaExcel(textoCelda(fila, 6));
+        const proximo =
+          parseFechaExcel(fila.getCell(7).value) ?? parseFechaExcel(textoCelda(fila, 7));
+        const obs = textoCelda(fila, 8);
+        const siesa = textoCelda(fila, 9).toUpperCase();
+        if (!ubicacion && !usuario) return;
+
         items.push({
-          codigo: equipo,
+          codigo: `PC ${String(item).padStart(2, "0")}`,
           ubicacion: ubicacion || "SIN UBICACIÓN",
           tipo: normalizarTipoComputador(tipoRaw),
           usuario_asignado: usuario,
-          frecuencia_pm_meses: 6,
-          ultimo_pm: "2022-04-01",
-          proximo_pm: null,
-          datos: {},
+          frecuencia_pm_meses: 12,
+          ultimo_pm: ultimo,
+          proximo_pm: proximo,
+          datos: {
+            ...(obs ? { observaciones: obs } : {}),
+            ...(siesa ? { siesa } : {}),
+            ...(compra ? { compra } : {}),
+            ...(tipoRaw ? { tipoDetalle: tipoRaw } : {}),
+          },
         });
       });
 
-      if (items.length === 0) throw new Error("No se encontraron filas de equipos en el Excel.");
-      const { creados } = await importarComputadores(items);
+      if (items.length === 0) {
+        throw new Error(
+          "No se encontraron equipos. El Excel debe tener columnas: ITEM, UBICACIÓN, TIPO, USUARIO…",
+        );
+      }
+
+      const reemplazar =
+        lista.length === 0 ||
+        window.confirm(
+          `Se leyeron ${items.length} equipos. ¿Reemplazar la lista actual (${lista.length})?`,
+        );
+      const { creados } = reemplazar
+        ? await reemplazarInventario(items)
+        : await importarComputadores(items);
       setMensaje(`Importados ${creados} equipos desde ${archivo.name}.`);
       await cargar();
     } catch (e) {
@@ -565,6 +607,7 @@ function ComputadoresPage() {
                 <th>Ubicación</th>
                 <th>Tipo</th>
                 <th>Usuario</th>
+                <th>SIESA</th>
                 <th>Último PM</th>
                 <th>Próximo PM</th>
                 <th>Estado</th>
@@ -582,6 +625,7 @@ function ComputadoresPage() {
                     <td>{pc.ubicacion}</td>
                     <td>{ETIQUETAS_TIPO_COMPUTADOR[pc.tipo]}</td>
                     <td>{pc.usuario_asignado || "—"}</td>
+                    <td>{pc.datos.siesa || "—"}</td>
                     <td>{pc.ultimo_pm || "—"}</td>
                     <td>
                       <span className={prox.clase}>{prox.texto}</span>

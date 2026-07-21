@@ -43,6 +43,11 @@ export interface ComputadorDatos {
   observaciones?: string;
   fechaBaja?: string;
   motivoBaja?: string;
+  /** SI/NO según columna SIESA del Excel. */
+  siesa?: string;
+  compra?: string;
+  /** Texto original del tipo en Excel (MESA, PORTATIL ACCER…). */
+  tipoDetalle?: string;
 }
 
 export interface Computador {

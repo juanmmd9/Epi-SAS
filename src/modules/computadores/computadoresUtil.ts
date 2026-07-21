@@ -1,50 +1,32 @@
-import type { ComputadorInput, TipoComputador } from "./types";
+import type { TipoComputador } from "./types";
 
-/** Lista inicial tomada del Excel de Mantenimiento Preventivo (Abr-2022). */
-export const SEMILLA_COMPUTADORES: ComputadorInput[] = [
-  { codigo: "PC 04", ubicacion: "ALMACEN", tipo: "escritorio", usuario_asignado: "FRANKLIN CHILMA", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 05", ubicacion: "ALMACEN", tipo: "escritorio", usuario_asignado: "FELIPE ROSALES", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 23", ubicacion: "ASESOR COMERCIAL CALI", tipo: "escritorio", usuario_asignado: "YILMER MARIN", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 17", ubicacion: "CALIDAD", tipo: "escritorio", usuario_asignado: "ROBINSON ARISTIZABAL", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 12", ubicacion: "CARTERA", tipo: "escritorio", usuario_asignado: "NATALIA MORALES", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 15", ubicacion: "COMERCIO EXTERIOR (EXPORTACIONES)", tipo: "portatil", usuario_asignado: "TATIANA ARICAPA", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 14", ubicacion: "COMERCIO EXTERIOR (IMPORTACIONES)", tipo: "escritorio", usuario_asignado: "LUIS CORDOBA", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 11", ubicacion: "COMPRAS", tipo: "escritorio", usuario_asignado: "ESTEFANY CRUZ", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 10", ubicacion: "CONTABILIDAD", tipo: "escritorio", usuario_asignado: "ADRIANA VELASCO", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 19", ubicacion: "COSTOS", tipo: "portatil", usuario_asignado: "TATIANA", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 07", ubicacion: "DESPACHOS", tipo: "escritorio", usuario_asignado: "CARLOS MARIO CAMAYO", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 22", ubicacion: "DIRECTOR COMERCIAL", tipo: "escritorio", usuario_asignado: "DE JESUS MOSQUERA", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 25", ubicacion: "DIRECTOR DE DISEÑO Y DESARROLLO", tipo: "escritorio", usuario_asignado: "ANDRES MONTES", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 08", ubicacion: "DIRECTOR DE LABORATORIO", tipo: "escritorio", usuario_asignado: "JUAN GUILLERMO ALVAREZ", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 03", ubicacion: "DIRECTOR DE LOGISTICA", tipo: "escritorio", usuario_asignado: "ESTIVEN GARCIA", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 31", ubicacion: "DIRECTOR DE MANTENIMIENTO", tipo: "portatil", usuario_asignado: "MIGUEL TORRES", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "", ubicacion: "DIRECTOR DE PRODUCCION", tipo: "escritorio", usuario_asignado: "FELIPE HOYOS", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 28", ubicacion: "DISEÑADOR", tipo: "escritorio", usuario_asignado: "", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 27", ubicacion: "DISEÑADOR PASANTE", tipo: "escritorio", usuario_asignado: "", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 26", ubicacion: "DISEÑO Y DESARROLLO", tipo: "escritorio", usuario_asignado: "JUAN MANUEL MONCAYO", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 30", ubicacion: "GERENCIA ADMINISTRATIVA", tipo: "escritorio", usuario_asignado: "YISELA LARGO", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 29", ubicacion: "GERENCIA GENERAL", tipo: "portatil", usuario_asignado: "FREDDY MORCILLO", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 13", ubicacion: "GESTION HUMANA", tipo: "escritorio", usuario_asignado: "LIGIA ESPAÑA", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 32", ubicacion: "LIDER DE PRODUCCION", tipo: "escritorio", usuario_asignado: "JUAN DAVID MUÑOZ", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 34", ubicacion: "MANTENIMIENTO", tipo: "escritorio", usuario_asignado: "ALEJANDRO OSPINA", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 06", ubicacion: "MAQUILA", tipo: "escritorio", usuario_asignado: "FRANKLIN CHILMA", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 20", ubicacion: "MERCADEO", tipo: "escritorio", usuario_asignado: "LAURA HERNANDEZ", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 09", ubicacion: "METROLOGO", tipo: "escritorio", usuario_asignado: "YERSON MURILLO", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 18", ubicacion: "PRACTICANTE ING DE MATERIALES", tipo: "portatil", usuario_asignado: "", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 33", ubicacion: "PRODUCCION CODIGO DE BARRAS", tipo: "escritorio", usuario_asignado: "JUAN DAVID MUÑOZ", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 21", ubicacion: "PUBLICIDAD", tipo: "escritorio", usuario_asignado: "JUAN CAMILO RAMOS", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 24", ubicacion: "REVISOR FISCAL", tipo: "portatil", usuario_asignado: "JAIRO CERON", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 01", ubicacion: "SERVICIO AL CLIENTE", tipo: "escritorio", usuario_asignado: "GUILLERMINA LARGO", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 02", ubicacion: "SERVICIO AL CLIENTE", tipo: "escritorio", usuario_asignado: "SEBASTIAN GARCIA", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "", ubicacion: "SGC LABORATORIO", tipo: "escritorio", usuario_asignado: "FABIO BOTERO", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-  { codigo: "PC 16", ubicacion: "SISTEMA DE GESTION DE CALIDAD", tipo: "escritorio", usuario_asignado: "SANDRA ANGEL", frecuencia_pm_meses: 6, ultimo_pm: "2022-04-01", proximo_pm: null, datos: {} },
-];
+export { SEMILLA_COMPUTADORES } from "./computadoresSemilla";
 
 export function normalizarTipoComputador(valor: string): TipoComputador {
   const t = valor.trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
   if (t.includes("porta")) return "portatil";
-  if (t.includes("escrit")) return "escritorio";
+  if (t.includes("mesa") || t.includes("escrit")) return "escritorio";
   return "otro";
+}
+
+/** Interpreta fechas del Excel (Date, YYYY-MM-DD o M/D/YY). */
+export function parseFechaExcel(valor: unknown): string | null {
+  if (valor == null || valor === "") return null;
+  if (valor instanceof Date && !Number.isNaN(valor.getTime())) {
+    const y = valor.getUTCFullYear();
+    const m = String(valor.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(valor.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  const texto = String(valor).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(texto)) return texto.slice(0, 10);
+  const mdy = texto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (mdy) {
+    let y = Number(mdy[3]);
+    if (y < 100) y += 2000;
+    return `${y}-${String(mdy[1]).padStart(2, "0")}-${String(mdy[2]).padStart(2, "0")}`;
+  }
+  return null;
 }
 
 /** Suma meses a una fecha ISO (YYYY-MM-DD). */

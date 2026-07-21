@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { areaTienePreventivo } from "../../lib/areas";
+import { imprimirFormatoHtml } from "../../lib/imprimirFormato";
 import { construirMtre045DesdePreventivo } from "../formatos/mtre045DesdePreventivo";
 import { listarPersonalActivo } from "../personal/personalService";
 import type { Persona } from "../personal/types";
+import HojaVidaFormatoImpresion, {
+  ID_HOJA_VIDA_IMPRESION,
+} from "./HojaVidaFormatoImpresion";
 import { obtenerHistorialMaquina, obtenerHojaPorId } from "./hojasService";
 import type { HistorialMaquina } from "./hojasService";
 import type { HojaVida } from "./types";
@@ -17,6 +21,7 @@ function HojaDetallePage() {
   const [personal, setPersonal] = useState<Persona[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorImpresion, setErrorImpresion] = useState<string | null>(null);
 
   useEffect(() => {
     listarPersonalActivo().then(setPersonal).catch(() => setPersonal([]));
@@ -78,6 +83,18 @@ function HojaDetallePage() {
     navigate("/formatos/mt-re-045", { state: { mtre045Datos: datos } });
   }
 
+  function imprimirHoja() {
+    setErrorImpresion(null);
+    try {
+      document.body.classList.add("imprimiendo-hoja-vida");
+      imprimirFormatoHtml(ID_HOJA_VIDA_IMPRESION);
+    } catch (e) {
+      setErrorImpresion(e instanceof Error ? e.message : "No se pudo imprimir");
+    } finally {
+      window.setTimeout(() => document.body.classList.remove("imprimiendo-hoja-vida"), 600);
+    }
+  }
+
   return (
     <section className="hojas hoja-detalle">
       <header className="hoja-detalle__encabezado">
@@ -92,11 +109,21 @@ function HojaDetallePage() {
               {!hoja.activa ? " · Fuera de circulación" : ""}
             </p>
           </div>
-          <button type="button" className="btn" onClick={() => navigate("/hojas-de-vida")}>
-            Cambiar máquina
-          </button>
+          <div className="hoja-detalle__acciones-print">
+            <button type="button" className="btn btn--primario" onClick={imprimirHoja}>
+              Imprimir hoja de vida
+            </button>
+            <button type="button" className="btn" onClick={() => navigate("/hojas-de-vida")}>
+              Cambiar máquina
+            </button>
+          </div>
         </div>
+        {errorImpresion && (
+          <p className="hojas__mensaje hojas__mensaje--error">{errorImpresion}</p>
+        )}
       </header>
+
+      <HojaVidaFormatoImpresion hoja={hoja} historial={historial} />
 
       <div className="hoja-detalle__layout">
         <aside className="hoja-detalle__ficha">

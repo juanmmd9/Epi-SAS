@@ -127,6 +127,18 @@ export async function eliminarComputador(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/** Borra todo el inventario (cascade PM/piezas) e importa la lista dada. */
+export async function reemplazarInventario(
+  items: ComputadorInput[],
+): Promise<{ creados: number }> {
+  const { error: errorBorrar } = await supabase
+    .from(TABLA)
+    .delete()
+    .neq("id", "00000000-0000-0000-0000-000000000000");
+  if (errorBorrar) throw new Error(errorBorrar.message);
+  return importarComputadores(items);
+}
+
 export async function importarComputadores(
   items: ComputadorInput[],
 ): Promise<{ creados: number }> {
