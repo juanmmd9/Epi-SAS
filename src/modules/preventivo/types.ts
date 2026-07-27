@@ -13,6 +13,11 @@ export interface PreventivoDatos {
   numeroReporte?: string;
   /** Reporte MT-RE-045 vinculado */
   mtre045?: Mtre045Datos;
+  /**
+   * Fecha de la cita del cronograma (primer_pm + frecuencia) a la que corresponde este PM.
+   * La fecha del registro puede diferir unos días; no se modifica primer_pm.
+   */
+  fechaProgramada?: string;
   personalIds?: string[];
   personalNombres?: string[];
   /** @deprecated usar personalIds */

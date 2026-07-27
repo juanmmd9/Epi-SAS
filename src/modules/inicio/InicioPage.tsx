@@ -11,7 +11,7 @@ import { hojaEstaActiva } from "../hojas/hojasFiltro";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
 import { listarPreventivo } from "../preventivo/preventivoService";
-import { indicesPmCompletado } from "../preventivo/pmCompletado";
+import { indicesPmCompletado, vincularPreventivoConHojas } from "../preventivo/pmCompletado";
 import type { RegistroPreventivo } from "../preventivo/types";
 import "./inicio.css";
 
@@ -47,7 +47,11 @@ function construirDatosArea(
   const maquinasArea = maquinas.filter((m) => coincideArea(m.area, area));
   const maquinasPorId = new Map(maquinasArea.map((m) => [m.id, m]));
   const mapa = mapaCitasDelAnio(maquinas, excepciones, area, anio);
-  const indicesCompletado = indicesPmCompletado(preventivo, anio);
+  const indicesCompletado = indicesPmCompletado(
+    vincularPreventivoConHojas(preventivo, maquinas),
+    anio,
+    maquinas,
+  );
 
   const hoy = new Date();
   const valorHoy = valorFecha(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate());

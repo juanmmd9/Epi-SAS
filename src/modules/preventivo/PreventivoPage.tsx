@@ -38,8 +38,15 @@ import type { Mtre045Datos } from "../formatos/mtre045Types";
 import { listarExcepciones } from "../cronograma/cronogramaService";
 import type { ExcepcionCronograma } from "../cronograma/types";
 import { ContadorListaMensual } from "../../components/ContadorListaMensual";
+import BarraBusquedaLista from "../../components/BarraBusquedaLista";
+import {
+  coincideBusqueda,
+  paginarLista,
+  registroEnPeriodo,
+} from "../../lib/listaRegistros";
 import { contarPreventivoMes } from "./preventivoConteo";
 import type { RegistroPreventivo } from "./types";
+import { resolverFechaProgramadaCercana } from "./pmCompletado";
 import {
   calcularMapaNumerosReporte,
   clavesGrupoAfectadas,
@@ -96,7 +103,13 @@ function PreventivoPage() {
   const [editandoId, setEditandoId] = useState<string | null>(
     () => borradorInicial.current?.editandoId ?? null,
   );
+  /** Cita del cronograma enlazada (no se altera primer_pm al cambiar la fecha de ejecución). */
+  const [fechaProgramada, setFechaProgramada] = useState<string | null>(null);
   const [filtroArea, setFiltroArea] = useState("");
+  const [busquedaLista, setBusquedaLista] = useState("");
+  const [listaMes, setListaMes] = useState(() => new Date().getMonth() + 1);
+  const [listaAnio, setListaAnio] = useState(() => new Date().getFullYear());
+  const [paginaLista, setPaginaLista] = useState(1);
   const [excepciones, setExcepciones] = useState<ExcepcionCronograma[]>([]);
   const [contadorAnio, setContadorAnio] = useState(() => new Date().getFullYear());
   const [contadorMes, setContadorMes] = useState(() => new Date().getMonth() + 1);
@@ -162,10 +175,13 @@ function PreventivoPage() {
     if (!estado?.registrarPm) return;
     const { maquinaId, area, fecha } = estado.registrarPm;
     setEditandoId(null);
+    setFechaProgramada(fecha);
     setCampos({ area, maquinaId, fecha, descripcion: "" });
     setFormatoMtre045(camposFormatoMtre045Vacios());
     setPersonalIds([]);
-    setMensaje("Datos cargados desde el panel de inicio. Completa la actividad y guarda.");
+    setMensaje(
+      "Datos cargados desde el panel. Puedes ajustar la fecha real del trabajo; la cita programada se mantiene enlazada (sin cambiar la fecha base de la máquina).",
+    );
     window.history.replaceState({}, "");
   }, [ubicacion.state]);
 
@@ -215,7 +231,24 @@ function PreventivoPage() {
   }, [maquinas, campos.area]);
 
   const registrosFiltrados = useMemo(() => {
-    const lista = filtroArea ? registros.filter((r) => r.area === filtroArea) : registros;
+    const lista = registros.filter((r) => {
+      if (filtroArea && r.area !== filtroArea) return false;
+      if (!registroEnPeriodo(r.fecha, listaMes, listaAnio)) return false;
+      const maquina = maquinas.find((m) => m.id === r.hoja_id);
+      return coincideBusqueda(
+        busquedaLista,
+        r.fecha,
+        r.area,
+        r.descripcion,
+        r.datos.equipo,
+        r.datos.codigo,
+        r.datos.numeroReporte,
+        maquina?.nombre,
+        maquina?.codigo,
+        ...(r.datos.personalNombres ?? []),
+        r.datos.personalNombre,
+      );
+    });
     return [...lista].sort((a, b) => {
       const porFecha = b.fecha.localeCompare(a.fecha);
       if (porFecha !== 0) return porFecha;
@@ -224,7 +257,20 @@ function PreventivoPage() {
       if (porNumero !== 0) return porNumero;
       return (b.creado_en ?? "").localeCompare(a.creado_en ?? "");
     });
-  }, [registros, filtroArea, mapaNumerosReporte]);
+  }, [
+    registros,
+    filtroArea,
+    mapaNumerosReporte,
+    listaMes,
+    listaAnio,
+    busquedaLista,
+    maquinas,
+  ]);
+
+  const registrosPagina = useMemo(
+    () => paginarLista(registrosFiltrados, paginaLista),
+    [registrosFiltrados, paginaLista],
+  );
 
   const conteoMes = useMemo(
     () =>
@@ -257,6 +303,7 @@ function PreventivoPage() {
 
   function iniciarEdicion(registro: RegistroPreventivo) {
     setEditandoId(registro.id);
+    setFechaProgramada(registro.datos.fechaProgramada?.slice(0, 10) || null);
     setCampos({
       area: registro.area,
       maquinaId: registro.hoja_id ?? "",
@@ -270,6 +317,7 @@ function PreventivoPage() {
 
   function cancelarEdicion() {
     setEditandoId(null);
+    setFechaProgramada(null);
     setCampos(formularioVacio);
     setFormatoMtre045(camposFormatoMtre045Vacios());
     setPersonalIds([]);
@@ -347,6 +395,11 @@ function PreventivoPage() {
 
     setGuardando(true);
     try {
+      const fechaProgramadaResuelta =
+        fechaProgramada ||
+        resolverFechaProgramadaCercana(maquina, campos.fecha) ||
+        undefined;
+
       const datosPersonal = construirDatosPersonal(idsValidos, personal);
       const datosBase = {
         equipo: maquina.nombre,
@@ -354,6 +407,7 @@ function PreventivoPage() {
         marca: maquina.datos?.marca ?? "",
         serial: maquina.datos?.serial ?? "",
         ...datosPersonal,
+        ...(fechaProgramadaResuelta ? { fechaProgramada: fechaProgramadaResuelta } : {}),
       };
 
       const inputBase = {
@@ -502,7 +556,10 @@ function PreventivoPage() {
             <select
               required
               value={campos.maquinaId}
-              onChange={(e) => setCampos((c) => ({ ...c, maquinaId: e.target.value }))}
+              onChange={(e) => {
+                setFechaProgramada(null);
+                setCampos((c) => ({ ...c, maquinaId: e.target.value }));
+              }}
             >
               <option value="">
                 {campos.area
@@ -549,6 +606,12 @@ function PreventivoPage() {
               value={campos.fecha}
               onChange={(e) => setCampos((c) => ({ ...c, fecha: e.target.value }))}
             />
+            <span className="preventivo-form__ayuda">
+              Fecha real del trabajo. Puedes cambiarla si se hizo otros días; no altera la fecha
+              base (primer PM) ni el indicador de preventivo: la cita del cronograma sigue igual y
+              solo se marca como cumplida.
+              {fechaProgramada ? ` Cita programada enlazada: ${fechaProgramada}.` : ""}
+            </span>
           </label>
 
           <label className="preventivo-form__descripcion">
@@ -624,17 +687,37 @@ function PreventivoPage() {
       {mensaje && <p className="preventivo__mensaje preventivo__mensaje--ok">{mensaje}</p>}
       {error && <p className="preventivo__mensaje preventivo__mensaje--error">{error}</p>}
 
-      <div className="preventivo__filtros">
-        <h2>Registros ({registrosFiltrados.length})</h2>
-        <select value={filtroArea} onChange={(e) => setFiltroArea(e.target.value)}>
-          <option value="">Todas las áreas</option>
-          {AREAS_CON_PM.map((area) => (
-            <option key={area} value={area}>
-              {area}
-            </option>
-          ))}
-        </select>
-      </div>
+      <BarraBusquedaLista
+        titulo="Registros"
+        busqueda={busquedaLista}
+        onBusqueda={setBusquedaLista}
+        placeholder="Buscar máquina, código, técnico, descripción, Nº reporte…"
+        total={registrosFiltrados.length}
+        pagina={paginaLista}
+        onPagina={setPaginaLista}
+        mes={listaMes}
+        anio={listaAnio}
+        onMes={setListaMes}
+        onAnio={setListaAnio}
+      >
+        <label>
+          Área
+          <select
+            value={filtroArea}
+            onChange={(e) => {
+              setFiltroArea(e.target.value);
+              setPaginaLista(1);
+            }}
+          >
+            <option value="">Todas las áreas</option>
+            {AREAS_CON_PM.map((area) => (
+              <option key={area} value={area}>
+                {area}
+              </option>
+            ))}
+          </select>
+        </label>
+      </BarraBusquedaLista>
 
       <ContadorListaMensual
         titulo="Contador del mes"
@@ -686,10 +769,14 @@ function PreventivoPage() {
 
       {cargando && <p>Cargando registros...</p>}
       {!cargando && registrosFiltrados.length === 0 && (
-        <p className="preventivo__vacio">No hay registros preventivos todavía.</p>
+        <p className="preventivo__vacio">
+          {busquedaLista.trim() || listaMes !== 0 || filtroArea
+            ? "No hay registros con esos filtros. Prueba otra búsqueda o «Todos los meses»."
+            : "No hay registros preventivos todavía."}
+        </p>
       )}
 
-      {registrosFiltrados.length > 0 && (
+      {registrosPagina.length > 0 && (
         <div className="preventivo__tabla-contenedor">
           <table className="preventivo__tabla">
             <thead>
@@ -704,7 +791,7 @@ function PreventivoPage() {
               </tr>
             </thead>
             <tbody>
-              {registrosFiltrados.map((registro) => (
+              {registrosPagina.map((registro) => (
                 <tr key={registro.id}>
                   <td>{registro.fecha}</td>
                   <td>{numeroReporteDeRegistro(registro, mapaNumerosReporte) || "—"}</td>

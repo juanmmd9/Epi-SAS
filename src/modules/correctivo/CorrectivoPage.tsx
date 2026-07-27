@@ -30,7 +30,9 @@ import {
   type CriterioFechaCorrectivo,
   type FiltroEstadoCorrectivoMes,
 } from "./correctivoConteo";
+import BarraBusquedaLista from "../../components/BarraBusquedaLista";
 import { ContadorListaMensual, etiquetaPeriodoContador } from "../../components/ContadorListaMensual";
+import { coincideBusqueda, paginarLista } from "../../lib/listaRegistros";
 import {
   ESTADOS_MAQUINA,
   TIPOS_SOLICITUD,
@@ -96,6 +98,10 @@ function CorrectivoPage() {
     () => borradorInicial.current?.editandoId ?? null,
   );
   const [filtroArea, setFiltroArea] = useState("");
+  const [busquedaLista, setBusquedaLista] = useState("");
+  const [listaMes, setListaMes] = useState(() => new Date().getMonth() + 1);
+  const [listaAnio, setListaAnio] = useState(() => new Date().getFullYear());
+  const [paginaLista, setPaginaLista] = useState(1);
   const [contadorAnio, setContadorAnio] = useState(() => new Date().getFullYear());
   const [contadorMes, setContadorMes] = useState(() => new Date().getMonth() + 1);
   const [criterioContador, setCriterioContador] = useState<CriterioFechaCorrectivo>("solicitud");
@@ -153,28 +159,47 @@ function CorrectivoPage() {
   );
 
   const registrosFiltrados = useMemo(() => {
-    if (filtroContador) {
-      return ordenarRegistrosCorrectivo(
-        filtrarCorrectivosMes(
-          registros,
-          contadorAnio,
-          contadorMes,
-          criterioContador,
-          filtroContador,
-          filtroArea,
-        ),
-      );
-    }
-    const lista = filtroArea ? registros.filter((r) => r.area === filtroArea) : registros;
+    const estado = filtroContador ?? "todas";
+    const delPeriodo = filtrarCorrectivosMes(
+      registros,
+      listaAnio,
+      listaMes,
+      criterioContador,
+      estado,
+      filtroArea,
+    );
+    const lista = delPeriodo.filter((r) =>
+      coincideBusqueda(
+        busquedaLista,
+        r.fecha,
+        r.area,
+        String(r.datos.numeroSolicitud),
+        r.datos.maquinaEquipoLocacion,
+        r.datos.codigoMaquina,
+        r.datos.descripcionSolicitud,
+        r.datos.solucionSolicitud,
+        r.datos.nombreSolicitante,
+        r.datos.quienRevisa,
+        r.datos.estadoMaquina,
+        ...(r.datos.tiposSolicitud ?? []),
+        ...(r.datos.personalNombres ?? []),
+      ),
+    );
     return ordenarRegistrosCorrectivo(lista);
   }, [
     registros,
     filtroArea,
     filtroContador,
-    contadorAnio,
-    contadorMes,
+    listaAnio,
+    listaMes,
     criterioContador,
+    busquedaLista,
   ]);
+
+  const registrosPagina = useMemo(
+    () => paginarLista(registrosFiltrados, paginaLista),
+    [registrosFiltrados, paginaLista],
+  );
 
   const conteoMes = useMemo(
     () =>
@@ -191,6 +216,9 @@ function CorrectivoPage() {
   function seleccionarFiltroContador(key: string) {
     const siguiente = key as FiltroEstadoCorrectivoMes;
     setFiltroContador((prev) => (prev === siguiente ? null : siguiente));
+    setListaMes(contadorMes);
+    setListaAnio(contadorAnio);
+    setPaginaLista(1);
   }
 
   function actualizar(nombre: keyof typeof formularioVacio, valor: string) {
@@ -536,15 +564,19 @@ function CorrectivoPage() {
       {mensaje && <p className="correctivo__mensaje correctivo__mensaje--ok">{mensaje}</p>}
       {error && <p className="correctivo__mensaje correctivo__mensaje--error">{error}</p>}
 
-      <div className="correctivo__filtros">
-        <h2>Solicitudes ({registrosFiltrados.length})</h2>
-        <div className="correctivo__filtros-acciones">
-          <select value={filtroArea} onChange={(e) => setFiltroArea(e.target.value)}>
-            <option value="">Todas las áreas</option>
-            {AREAS_SISTEMA.map((area) => (
-              <option key={area} value={area}>{area}</option>
-            ))}
-          </select>
+      <BarraBusquedaLista
+        titulo="Solicitudes"
+        busqueda={busquedaLista}
+        onBusqueda={setBusquedaLista}
+        placeholder="Buscar No., máquina, código, solicitante, descripción…"
+        total={registrosFiltrados.length}
+        pagina={paginaLista}
+        onPagina={setPaginaLista}
+        mes={listaMes}
+        anio={listaAnio}
+        onMes={setListaMes}
+        onAnio={setListaAnio}
+        extraAcciones={
           <button
             className="btn"
             disabled={registrosFiltrados.length === 0}
@@ -552,8 +584,26 @@ function CorrectivoPage() {
           >
             Exportar CSV
           </button>
-        </div>
-      </div>
+        }
+      >
+        <label>
+          Área
+          <select
+            value={filtroArea}
+            onChange={(e) => {
+              setFiltroArea(e.target.value);
+              setPaginaLista(1);
+            }}
+          >
+            <option value="">Todas las áreas</option>
+            {AREAS_SISTEMA.map((area) => (
+              <option key={area} value={area}>
+                {area}
+              </option>
+            ))}
+          </select>
+        </label>
+      </BarraBusquedaLista>
 
       <ContadorListaMensual
         titulo="Contador del mes"
@@ -638,13 +688,13 @@ function CorrectivoPage() {
       {cargando && <p>Cargando solicitudes...</p>}
       {!cargando && registrosFiltrados.length === 0 && (
         <p className="correctivo__vacio">
-          {filtroContador
-            ? `No hay solicitudes en ${etiquetaPeriodoContador(contadorMes, contadorAnio)} para este filtro.`
+          {filtroContador || busquedaLista.trim() || listaMes !== 0 || filtroArea
+            ? "No hay solicitudes con esos filtros. Prueba otra búsqueda o «Todos los meses»."
             : "No hay solicitudes registradas todavía."}
         </p>
       )}
 
-      {registrosFiltrados.length > 0 && (
+      {registrosPagina.length > 0 && (
         <div className="correctivo__tabla-contenedor">
           <table className="correctivo__tabla">
             <thead>
@@ -663,7 +713,7 @@ function CorrectivoPage() {
               </tr>
             </thead>
             <tbody>
-              {registrosFiltrados.map((registro) => (
+              {registrosPagina.map((registro) => (
                 <tr key={registro.id}>
                   <td>{registro.datos.numeroSolicitud}</td>
                   <td>{registro.fecha}</td>

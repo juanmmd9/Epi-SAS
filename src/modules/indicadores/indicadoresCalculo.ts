@@ -10,6 +10,7 @@ import type { HojaVida } from "../hojas/types";
 import {
   indicesPmCompletado,
   pmCompletado,
+  resolverFechaProgramadaCercana,
   vincularPreventivoConHojas,
 } from "../preventivo/pmCompletado";
 import type { RegistroPreventivo } from "../preventivo/types";
@@ -262,7 +263,7 @@ export function clasificarCitasPreventivas(
   mes: number,
 ): ClasificacionPreventivo {
   const preventivoVinculado = vincularPreventivoConHojas(preventivo, maquinas);
-  const indicesPm = indicesPmCompletado(preventivoVinculado, anio);
+  const indicesPm = indicesPmCompletado(preventivoVinculado, anio, maquinas);
   const maquinasVigentes = maquinas.filter(hojaEstaActiva);
   const maquinasPorId = new Map(maquinasVigentes.map((m) => [m.id, m]));
   const maquinasMes = maquinasEnCirculacionParaMes(maquinasVigentes, anio, mes);
@@ -311,6 +312,15 @@ export function clasificarCitasPreventivas(
     if (yaContadas.has(maquina.id)) continue;
     const pm = buscarPmEnMes(maquina.id);
     if (!pm) continue;
+
+    // Si el PM ya se enlaza a una cita del cronograma (aunque la fecha real sea otra),
+    // no crear una cita extra en este mes: evita alterar el % de indicadores.
+    const programadaGuardada = (pm.datos.fechaProgramada ?? "").slice(0, 10);
+    const enlazadaACronograma =
+      programadaGuardada.length >= 10 ||
+      Boolean(resolverFechaProgramadaCercana(maquina, pm.fecha));
+    if (enlazadaACronograma) continue;
+
     const diaPm = Number.parseInt(pm.fecha.slice(8, 10), 10) || 1;
     cumplidas.push({
       maquinaId: maquina.id,

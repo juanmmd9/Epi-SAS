@@ -11,6 +11,28 @@ import type { HojaVida } from "../hojas/types";
 import "../correctivo/correctivo.css";
 import "./solicitudes.css";
 
+function textoBusqueda(valor: string | null | undefined): string {
+  return (valor ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function coincideBusquedaMolde(maquina: HojaVida, consulta: string): boolean {
+  const q = textoBusqueda(consulta);
+  if (!q) return true;
+  const campos = [
+    maquina.nombre,
+    maquina.codigo,
+    maquina.datos.ubicacion,
+    maquina.datos.marca,
+    maquina.datos.modelo,
+    maquina.datos.serial,
+  ];
+  return campos.some((campo) => textoBusqueda(campo).includes(q));
+}
+
 function horaActual(): string {
   const ahora = new Date();
   return `${String(ahora.getHours()).padStart(2, "0")}:${String(ahora.getMinutes()).padStart(2, "0")}`;
@@ -73,9 +95,11 @@ function NuevaSolicitudAreaForm({
   const [descripcion, setDescripcion] = useState(
     () => borradorInicial.current?.descripcion ?? "",
   );
+  const [busquedaMolde, setBusquedaMolde] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const esMoldes = coincideArea(area, "Moldes");
 
   useEffect(() => {
     if (!borradorInicial.current?.solicitante) {
@@ -119,8 +143,21 @@ function NuevaSolicitudAreaForm({
   ]);
 
   const maquinasArea = useMemo(
-    () => maquinas.filter((m) => coincideArea(m.area, area)),
+    () =>
+      maquinas
+        .filter((m) => coincideArea(m.area, area) && m.activa)
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
     [maquinas, area],
+  );
+
+  const moldesFiltrados = useMemo(() => {
+    if (!esMoldes) return [];
+    return maquinasArea.filter((m) => coincideBusquedaMolde(m, busquedaMolde));
+  }, [esMoldes, maquinasArea, busquedaMolde]);
+
+  const moldeSeleccionado = useMemo(
+    () => (esMoldes ? maquinasArea.find((m) => m.id === maquinaId) ?? null : null),
+    [esMoldes, maquinasArea, maquinaId],
   );
 
   function seleccionarMaquina(id: string) {
@@ -130,6 +167,18 @@ function NuevaSolicitudAreaForm({
       setMaquinaTexto(maquina.nombre);
       setCodigoMaquina(maquina.codigo ?? "");
     }
+  }
+
+  function seleccionarMolde(maquina: HojaVida) {
+    setMaquinaId(maquina.id);
+    setMaquinaTexto(maquina.nombre);
+    setCodigoMaquina(maquina.codigo ?? "");
+  }
+
+  function limpiarMolde() {
+    setMaquinaId("");
+    setMaquinaTexto("");
+    setCodigoMaquina("");
   }
 
   function alternarTipo(tipo: string) {
@@ -143,6 +192,10 @@ function NuevaSolicitudAreaForm({
 
     if (tipos.length === 0) {
       setError("Marca al menos un tipo de solicitud.");
+      return;
+    }
+    if (esMoldes && !maquinaId) {
+      setError("Busca y selecciona el molde de la hoja de vida.");
       return;
     }
     if (!maquinaTexto.trim()) {
@@ -185,6 +238,7 @@ function NuevaSolicitudAreaForm({
       setMaquinaId("");
       setMaquinaTexto("");
       setCodigoMaquina("");
+      setBusquedaMolde("");
       setEstadoMaquina("");
       setFecha(fechaHoy());
       setHoraSolicitud(horaActual());
@@ -232,27 +286,31 @@ function NuevaSolicitudAreaForm({
               onChange={(e) => setSolicitante(e.target.value)}
             />
           </label>
-          <label>
-            Máquina (lista)
-            <select value={maquinaId} onChange={(e) => seleccionarMaquina(e.target.value)}>
-              <option value="">— Escribir abajo si no está —</option>
-              {maquinasArea.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.codigo ? `${m.codigo} — ` : ""}
-                  {m.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="repuesto-form__completa">
-            Máquina / equipo / locación *
-            <input
-              required
-              value={maquinaTexto}
-              onChange={(e) => setMaquinaTexto(e.target.value)}
-              placeholder="Nombre o ubicación"
-            />
-          </label>
+          {!esMoldes && (
+            <>
+              <label>
+                Máquina (lista)
+                <select value={maquinaId} onChange={(e) => seleccionarMaquina(e.target.value)}>
+                  <option value="">— Escribir abajo si no está —</option>
+                  {maquinasArea.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.codigo ? `${m.codigo} — ` : ""}
+                      {m.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="repuesto-form__completa">
+                Máquina / equipo / locación *
+                <input
+                  required
+                  value={maquinaTexto}
+                  onChange={(e) => setMaquinaTexto(e.target.value)}
+                  placeholder="Nombre o ubicación"
+                />
+              </label>
+            </>
+          )}
           <label>
             Estado máquina
             <select
@@ -268,6 +326,86 @@ function NuevaSolicitudAreaForm({
             </select>
           </label>
         </div>
+
+        {esMoldes && (
+          <div className="solicitud-moldes">
+            <label className="solicitud-moldes__buscar">
+              Buscar molde por palabra *
+              <input
+                type="search"
+                value={busquedaMolde}
+                onChange={(e) => setBusquedaMolde(e.target.value)}
+                placeholder="Código, nombre, ubicación, marca…"
+                autoComplete="off"
+              />
+            </label>
+
+            {moldeSeleccionado && (
+              <div className="solicitud-moldes__elegido">
+                <div className="solicitud-moldes__foto">
+                  {moldeSeleccionado.foto_url ? (
+                    <img src={moldeSeleccionado.foto_url} alt={moldeSeleccionado.nombre} />
+                  ) : (
+                    <span>Sin foto</span>
+                  )}
+                </div>
+                <div className="solicitud-moldes__elegido-info">
+                  <strong>{moldeSeleccionado.nombre}</strong>
+                  <span>
+                    {moldeSeleccionado.codigo || "Sin código"}
+                    {moldeSeleccionado.datos.ubicacion
+                      ? ` · ${moldeSeleccionado.datos.ubicacion}`
+                      : ""}
+                  </span>
+                </div>
+                <button type="button" className="btn" onClick={limpiarMolde}>
+                  Cambiar
+                </button>
+              </div>
+            )}
+
+            {!moldeSeleccionado && (
+              <>
+                <p className="solicitud-moldes__ayuda">
+                  {busquedaMolde.trim()
+                    ? `${moldesFiltrados.length} resultado(s). Elige el molde.`
+                    : `Escribe para filtrar entre ${maquinasArea.length} moldes con foto de hoja de vida.`}
+                </p>
+                <div className="solicitud-moldes__grid" role="listbox" aria-label="Moldes">
+                  {moldesFiltrados.length === 0 ? (
+                    <p className="solicitud-moldes__vacio">
+                      No hay moldes que coincidan con “{busquedaMolde.trim()}”.
+                    </p>
+                  ) : (
+                    moldesFiltrados.map((molde) => (
+                      <button
+                        key={molde.id}
+                        type="button"
+                        role="option"
+                        aria-selected={false}
+                        className="solicitud-moldes__tarjeta"
+                        onClick={() => seleccionarMolde(molde)}
+                      >
+                        <div className="solicitud-moldes__foto">
+                          {molde.foto_url ? (
+                            <img src={molde.foto_url} alt="" />
+                          ) : (
+                            <span>Sin foto</span>
+                          )}
+                        </div>
+                        <div className="solicitud-moldes__info">
+                          <strong>{molde.nombre}</strong>
+                          <span>{molde.codigo || "Sin código"}</span>
+                          {molde.datos.ubicacion && <small>{molde.datos.ubicacion}</small>}
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <fieldset className="correctivo-form__tipos">
           <legend>Tipo de solicitud *</legend>

@@ -13,12 +13,13 @@ export interface ConteoCorrectivoMes {
 }
 
 function enMes(fechaTexto: string | null | undefined, anio: number, mes: number): boolean {
-  /** mes = 0 → todos los meses (sin filtro de fecha). */
-  if (mes === 0) return true;
+  /** mes = 0 → todos los meses del año indicado. */
   if (!fechaTexto) return false;
   const partes = fechaTexto.slice(0, 10).split("-");
   if (partes.length < 2) return false;
-  return Number.parseInt(partes[0], 10) === anio && Number.parseInt(partes[1], 10) === mes;
+  if (Number.parseInt(partes[0], 10) !== anio) return false;
+  if (mes === 0) return true;
+  return Number.parseInt(partes[1], 10) === mes;
 }
 
 function fechaConteo(registro: RegistroCorrectivo, criterio: CriterioFechaCorrectivo): string {
@@ -84,9 +85,11 @@ export function filtrarCorrectivosMes(
 ): RegistroCorrectivo[] {
   return registros.filter((r) => {
     if (areaFiltro && r.area !== areaFiltro) return false;
+    const fecha = fechaConteo(r, criterio);
     if (mes === 0) {
-      if (criterio === "cierre" && !r.datos.fechaCierre?.trim()) return false;
-    } else if (!enMes(fechaConteo(r, criterio), anio, mes)) {
+      if (criterio === "cierre" && !fecha.trim()) return false;
+      if (!enMes(fecha, anio, 0)) return false;
+    } else if (!enMes(fecha, anio, mes)) {
       return false;
     }
     const abierta = !r.datos.fechaCierre?.trim();

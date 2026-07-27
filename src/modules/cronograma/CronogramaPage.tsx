@@ -6,7 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
 import { listarPreventivo } from "../preventivo/preventivoService";
-import { indicesPmCompletado, pmCompletado } from "../preventivo/pmCompletado";
+import { indicesPmCompletado, pmCompletado, vincularPreventivoConHojas } from "../preventivo/pmCompletado";
 import type { RegistroPreventivo } from "../preventivo/types";
 import { mapaCitasDelAnio, ocurrenciasEnAnio } from "./cronogramaCalculo";
 import {
@@ -80,8 +80,8 @@ function CronogramaPage() {
   );
 
   const indicesCompletado = useMemo(
-    () => indicesPmCompletado(preventivo, anio),
-    [preventivo, anio],
+    () => indicesPmCompletado(vincularPreventivoConHojas(preventivo, maquinas), anio, maquinas),
+    [preventivo, maquinas, anio],
   );
 
   const resumenMaquinas = useMemo(
