@@ -1,7 +1,8 @@
 export const ESTADOS_PERMISO = [
   { clave: "borrador", etiqueta: "Borrador" },
   { clave: "solicitado", etiqueta: "Solicitado" },
-  { clave: "autorizado", etiqueta: "Autorizado" },
+  { clave: "autorizado", etiqueta: "Aprobado" },
+  { clave: "rechazado", etiqueta: "Rechazado" },
   { clave: "en_permiso", etiqueta: "En permiso" },
   { clave: "cerrado", etiqueta: "Cerrado" },
 ] as const;
@@ -47,6 +48,16 @@ export interface PermisoDatos {
   motivo: MotivoPermiso;
   descripcion: string;
   observaciones: string;
+  /** True cuando el administrador ya asignó remunerado/motivo. */
+  tipoDefinidoPorAdmin?: boolean;
+  /** Usuario portal que registró la solicitud. */
+  solicitadoPorId?: string;
+  solicitadoPorNombre?: string;
+  /** Usuario portal que aprobó o rechazó. */
+  decisionPorId?: string;
+  decisionPorNombre?: string;
+  decisionEn?: string;
+  motivoRechazo?: string;
 }
 
 export interface RegistroPermiso {
@@ -120,4 +131,8 @@ export function prefillDesdePersonal(datos: PrefillDesdePersonal): PermisoDatos 
 
 export function normalizarDatosPermiso(parcial: Partial<PermisoDatos>): PermisoDatos {
   return { ...formularioPermisoVacio(), ...parcial };
+}
+
+export function permisoPuedeImprimirse(estado: EstadoPermiso): boolean {
+  return estado === "autorizado" || estado === "en_permiso" || estado === "cerrado";
 }

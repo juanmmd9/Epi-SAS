@@ -42,6 +42,8 @@ export type Permiso =
   | "crear.correctivo"
   | "crear.solicitudes"
   | "crear.repuestos"
+  | "crear.permisos"
+  | "aprobar.permisos"
   | "eliminar.registros"
   | "gestionar.usuarios";
 
@@ -55,7 +57,7 @@ const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
   "ver.indicadores": ["admin", "consulta"],
   "ver.formatos": ["admin"],
   "ver.personal": ["admin"],
-  "ver.permisos": ["admin"],
+  "ver.permisos": ["admin", "operador"],
   "ver.matriz": ["admin"],
   "ver.horario": ["admin"],
   "editar.hojas": ["admin", "operador", "solicitante"],
@@ -69,6 +71,8 @@ const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
   "crear.correctivo": ["admin", "operador"],
   "crear.solicitudes": ["admin", "operador", "solicitante"],
   "crear.repuestos": ["admin", "operador", "solicitante"],
+  "crear.permisos": ["admin", "operador"],
+  "aprobar.permisos": ["admin"],
   "eliminar.registros": ["admin"],
   "gestionar.usuarios": ["admin"],
 };

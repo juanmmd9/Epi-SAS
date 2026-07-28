@@ -1,7 +1,7 @@
 import { supabase } from "../../services/supabase";
 import { recalcularDatosPermiso } from "./permisosCalculo";
 import { faltaTablaPermisos } from "./permisosSetup";
-import type { EstadoPermiso, PermisoDatos, RegistroPermiso } from "./types";
+import type { EstadoPermiso, PermisoDatos, RegistroPermiso, MotivoPermiso, TipoRemuneracion } from "./types";
 
 const TABLA = "permisos_personal";
 
@@ -27,6 +27,16 @@ export async function listarPermisosPorPersonal(personalId: string): Promise<Reg
     .select("*")
     .eq("personal_id", personalId)
     .order("creado_en", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as RegistroPermiso[];
+}
+
+export async function listarPermisosPendientes(): Promise<RegistroPermiso[]> {
+  const { data, error } = await supabase
+    .from(TABLA)
+    .select("*")
+    .eq("estado", "solicitado")
+    .order("creado_en", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as RegistroPermiso[];
 }
@@ -67,6 +77,39 @@ export async function actualizarEstadoPermiso(
     .from(TABLA)
     .update({ estado })
     .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as RegistroPermiso;
+}
+
+/** Aprueba o rechaza un permiso solicitado (guarda auditoría en datos). */
+export async function decidirPermiso(
+  registro: RegistroPermiso,
+  decision: "autorizado" | "rechazado",
+  auditor: { id: string; nombre: string },
+  motivoRechazo = "",
+  tipo?: { remunerado: TipoRemuneracion; motivo: MotivoPermiso },
+): Promise<RegistroPermiso> {
+  const datos: PermisoDatos = recalcularDatosPermiso({
+    ...registro.datos,
+    ...(decision === "autorizado" && tipo
+      ? {
+          remunerado: tipo.remunerado,
+          motivo: tipo.motivo,
+          tipoDefinidoPorAdmin: true,
+        }
+      : {}),
+    decisionPorId: auditor.id,
+    decisionPorNombre: auditor.nombre,
+    decisionEn: new Date().toISOString(),
+    motivoRechazo: decision === "rechazado" ? motivoRechazo.trim() : "",
+  });
+
+  const { data, error } = await supabase
+    .from(TABLA)
+    .update({ estado: decision, datos })
+    .eq("id", registro.id)
     .select()
     .single();
   if (error) throw new Error(error.message);

@@ -251,13 +251,18 @@
 }
 
 .permisos__chip--solicitado {
-  background: #e0e7ff;
-  color: #3730a3;
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .permisos__chip--autorizado {
-  background: #fef9c3;
-  color: #854d0e;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.permisos__chip--rechazado {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .permisos__chip--en_permiso {
@@ -266,13 +271,106 @@
 }
 
 .permisos__chip--cerrado {
-  background: #dcfce7;
-  color: #166534;
+  background: #e2e8f0;
+  color: #334155;
 }
 
 .permisos__chip--borrador {
   background: #f1f5f9;
   color: #475569;
+}
+
+.permisos__bandeja {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  background: #fffbeb;
+}
+
+.permisos__bandeja-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.permisos__bandeja-cabecera h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.permisos__bandeja-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.permisos__bandeja-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #fcd34d;
+}
+
+.permisos__bandeja-item p {
+  margin: 0.2rem 0 0;
+  color: var(--color-texto-suave);
+  font-size: 0.9rem;
+}
+
+.permisos__fila--pendiente {
+  background: #fffbeb;
+}
+
+.permisos__motivo-rechazo {
+  display: block;
+  margin-top: 0.2rem;
+  color: #991b1b;
+  font-size: 0.75rem;
+}
+
+.permisos__tipo-admin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.55rem;
+}
+
+.permisos__tipo-admin label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+}
+
+.permisos__tipo-admin select {
+  font: inherit;
+  font-weight: 400;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 6px;
+  background: #fff;
+  min-width: 160px;
+}
+
+.permisos__ayuda-tipo {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-texto-suave);
 }
 
 .horario-form {

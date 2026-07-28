@@ -9,6 +9,7 @@ export function permisoParaRuta(pathname: string): Permiso | null {
   if (pathname.startsWith("/hojas-de-vida")) return "ver.hojas";
   if (pathname.startsWith("/computadores")) return "ver.computadores";
   if (pathname.startsWith("/indicadores")) return "ver.indicadores";
+  if (pathname.startsWith("/formatos/gh-re-030")) return "crear.permisos";
   if (pathname.startsWith("/formatos")) return "ver.formatos";
   if (pathname === "/personal/usuarios") return "gestionar.usuarios";
   if (pathname.startsWith("/personal/permisos")) return "ver.permisos";

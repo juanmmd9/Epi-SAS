@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { listarPersonalActivo } from "../personal/personalService";
 import type { Persona } from "../personal/types";
 import { imprimirPdf } from "../../lib/imprimirPdf";
@@ -24,6 +26,7 @@ import {
   ESTADOS_PERMISO,
   formularioPermisoVacio,
   MOTIVOS_PERMISO,
+  permisoPuedeImprimirse,
   prefillDesdePersonal,
   TIPOS_REMUNERACION,
   type EstadoPermiso,
@@ -41,6 +44,9 @@ interface EstadoNavegacion {
 }
 
 function Ghre030Page() {
+  const { perfil, puede, esAdmin } = useAuth();
+  const puedeCrear = puede("crear.permisos");
+  const puedeAprobar = puede("aprobar.permisos");
   const ubicacion = useLocation();
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [personalId, setPersonalId] = useState("");
@@ -77,6 +83,12 @@ function Ghre030Page() {
   const anioPermiso = datos.fechaDesde
     ? Number.parseInt(datos.fechaDesde.slice(0, 4), 10)
     : new Date().getFullYear();
+
+  const registrosVisibles = useMemo(() => {
+    if (puedeAprobar) return registros;
+    if (!perfil?.id) return [];
+    return registros.filter((r) => r.datos.solicitadoPorId === perfil.id);
+  }, [registros, puedeAprobar, perfil?.id]);
 
   useEffect(() => {
     listarFestivosAnio(anioPermiso)
@@ -175,6 +187,10 @@ function Ghre030Page() {
     setError(null);
     setMensaje(null);
 
+    if (!puedeCrear) {
+      setError("No tienes permiso para registrar solicitudes.");
+      return;
+    }
     if (!personalId || !datos.nombreTrabajador.trim()) {
       setError("Selecciona un trabajador.");
       return;
@@ -184,17 +200,35 @@ function Ghre030Page() {
       return;
     }
 
+    const estadoGuardar: EstadoPermiso = puedeAprobar ? estado : "solicitado";
+    const datosConSolicitante: PermisoDatos = {
+      ...datos,
+      solicitadoPorId: datos.solicitadoPorId || perfil?.id || "",
+      solicitadoPorNombre:
+        datos.solicitadoPorNombre || perfil?.nombre || perfil?.email || "Operador",
+      tipoDefinidoPorAdmin: puedeAprobar ? Boolean(datos.tipoDefinidoPorAdmin ?? true) : false,
+    };
+
     setGuardando(true);
     try {
-      const registro = await guardarPermiso(personalId, datos, estado, editandoId);
+      const registro = await guardarPermiso(
+        personalId,
+        datosConSolicitante,
+        estadoGuardar,
+        editandoId,
+      );
       setRegistros((previos) => {
         const filtrados = previos.filter((p) => p.id !== registro.id);
         return [registro, ...filtrados];
       });
       setEditandoId(registro.id);
       setNumeroActual(registro.numero);
+      setEstado(registro.estado);
+      setDatos(registro.datos);
       setMensaje(
-        `Permiso GH-RE-030 No. ${registro.numero} guardado. Imprima el formato y archive el documento firmado en carpeta física.`,
+        registro.estado === "solicitado"
+          ? `Solicitud No. ${registro.numero} enviada. El administrador debe aprobarla o rechazarla.`
+          : `Permiso GH-RE-030 No. ${registro.numero} guardado.`,
       );
     } catch (e) {
       setError("No se pudo guardar: " + (e as Error).message);
@@ -207,6 +241,10 @@ function Ghre030Page() {
     setError(null);
     if (!numeroActual) {
       setError("Guarda el permiso primero para obtener el número oficial antes de imprimir.");
+      return;
+    }
+    if (!esAdmin && !permisoPuedeImprimirse(estado)) {
+      setError("Solo se imprime cuando el administrador aprueba el permiso.");
       return;
     }
     setImprimiendo(true);
@@ -223,6 +261,10 @@ function Ghre030Page() {
 
   async function imprimirRegistro(registro: RegistroPermiso) {
     setError(null);
+    if (!esAdmin && !permisoPuedeImprimirse(registro.estado)) {
+      setError("Ese permiso aún no está aprobado.");
+      return;
+    }
     setImprimiendo(true);
     try {
       const pdfBytes = await obtenerPdfPermiso(registro);
@@ -252,15 +294,17 @@ function Ghre030Page() {
         <div>
           <h1>GH-RE-030 — Solicitud de permiso</h1>
           <p className="formatos__descripcion">
-            Registre el permiso en el sistema. Cuando necesite el formato oficial, use{" "}
-            <strong>Imprimir</strong> y guarde el documento firmado en carpeta física de
-            Gestión Humana.
+            {puedeAprobar
+              ? "Registra o ajusta permisos. Las solicitudes del operador aparecen como Solicitado hasta que las apruebes."
+              : "Completa la solicitud del trabajador. El administrador recibirá el permiso para aprobarlo o rechazarlo."}
           </p>
         </div>
         <div className="permisos__enlaces-cabecera">
-          <Link className="btn" to="/formatos">
-            Volver a Formatos
-          </Link>
+          {puede("ver.formatos") && (
+            <Link className="btn" to="/formatos">
+              Volver a Formatos
+            </Link>
+          )}
           <Link className="btn" to="/personal/permisos">
             Ver control de permisos
           </Link>
@@ -268,9 +312,12 @@ function Ghre030Page() {
       </header>
 
       {numeroActual !== null && (
-        <p className="permisos__numero-actual">Registro No. {numeroActual}</p>
+        <p className="permisos__numero-actual">
+          Registro No. {numeroActual} · {estado}
+        </p>
       )}
 
+      <SoloConPermiso permiso="crear.permisos">
       <form className="permiso-form" onSubmit={(e) => void manejarGuardar(e)}>
         <h2>Datos del trabajador</h2>
         <div className="permiso-form__grid">
@@ -374,46 +421,76 @@ function Ghre030Page() {
               onChange={(e) => actualizarDatos({ horaLlegadaGh: e.target.value })}
             />
           </label>
-          <label>
-            Estado
-            <select value={estado} onChange={(e) => setEstado(e.target.value as EstadoPermiso)}>
-              {ESTADOS_PERMISO.map((item) => (
-                <option key={item.clave} value={item.clave}>
-                  {item.etiqueta}
-                </option>
-              ))}
-            </select>
-          </label>
+          {puedeAprobar ? (
+            <label>
+              Estado
+              <select value={estado} onChange={(e) => setEstado(e.target.value as EstadoPermiso)}>
+                {ESTADOS_PERMISO.map((item) => (
+                  <option key={item.clave} value={item.clave}>
+                    {item.etiqueta}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <label>
+              Estado
+              <input
+                readOnly
+                value="Solicitado (pendiente de aprobación)"
+                className="permiso-form__solo-lectura"
+              />
+            </label>
+          )}
         </div>
 
         <fieldset className="permiso-form__opciones">
-          <legend>Tipo de permiso</legend>
-          <div className="permiso-form__radios">
-            {TIPOS_REMUNERACION.map((item) => (
-              <label key={item.clave}>
-                <input
-                  type="radio"
-                  name="remunerado"
-                  checked={datos.remunerado === item.clave}
-                  onChange={() => actualizarDatos({ remunerado: item.clave })}
-                />
-                {item.etiqueta}
-              </label>
-            ))}
-          </div>
-          <div className="permiso-form__radios">
-            {MOTIVOS_PERMISO.map((item) => (
-              <label key={item.clave}>
-                <input
-                  type="radio"
-                  name="motivo"
-                  checked={datos.motivo === item.clave}
-                  onChange={() => actualizarDatos({ motivo: item.clave })}
-                />
-                {item.etiqueta}
-              </label>
-            ))}
-          </div>
+          <legend>Tipo de permiso {puedeAprobar ? "" : "(lo define el administrador)"}</legend>
+          {puedeAprobar ? (
+            <>
+              <div className="permiso-form__radios">
+                {TIPOS_REMUNERACION.map((item) => (
+                  <label key={item.clave}>
+                    <input
+                      type="radio"
+                      name="remunerado"
+                      checked={datos.remunerado === item.clave}
+                      onChange={() =>
+                        actualizarDatos({
+                          remunerado: item.clave,
+                          tipoDefinidoPorAdmin: true,
+                        })
+                      }
+                    />
+                    {item.etiqueta}
+                  </label>
+                ))}
+              </div>
+              <div className="permiso-form__radios">
+                {MOTIVOS_PERMISO.map((item) => (
+                  <label key={item.clave}>
+                    <input
+                      type="radio"
+                      name="motivo"
+                      checked={datos.motivo === item.clave}
+                      onChange={() =>
+                        actualizarDatos({
+                          motivo: item.clave,
+                          tipoDefinidoPorAdmin: true,
+                        })
+                      }
+                    />
+                    {item.etiqueta}
+                  </label>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="permisos__ayuda-tipo">
+              El administrador elegirá si es remunerado / no remunerado y el motivo al aprobar
+              la solicitud.
+            </p>
+          )}
         </fieldset>
 
         <label className="permiso-form__ancho">
@@ -435,12 +512,20 @@ function Ghre030Page() {
 
         <div className="permiso-form__acciones">
           <button type="submit" className="btn btn--primario" disabled={guardando}>
-            {guardando ? "Guardando..." : editandoId ? "Guardar cambios" : "Guardar"}
+            {guardando
+              ? "Guardando..."
+              : editandoId
+                ? "Guardar cambios"
+                : puedeAprobar
+                  ? "Guardar"
+                  : "Enviar solicitud"}
           </button>
           <button
             type="button"
             className="btn"
-            disabled={imprimiendo || guardando}
+            disabled={
+              imprimiendo || guardando || (!esAdmin && !permisoPuedeImprimirse(estado))
+            }
             onClick={() => void manejarImprimir()}
           >
             {imprimiendo ? "Generando..." : "Imprimir formato"}
@@ -450,6 +535,7 @@ function Ghre030Page() {
           </button>
         </div>
       </form>
+      </SoloConPermiso>
 
       {mensaje && <p className="permisos__mensaje permisos__mensaje--ok">{mensaje}</p>}
       {error && <p className="permisos__mensaje permisos__mensaje--error">{error}</p>}
@@ -467,32 +553,45 @@ function Ghre030Page() {
       )}
 
       <section className="permisos__lista">
-        <h2>Permisos guardados ({registros.length})</h2>
-        {registros.length === 0 && <p className="formatos__vacio">Aún no hay permisos registrados.</p>}
+        <h2>
+          {puedeAprobar ? "Permisos guardados" : "Mis solicitudes"} ({registrosVisibles.length})
+        </h2>
+        {registrosVisibles.length === 0 && (
+          <p className="formatos__vacio">Aún no hay permisos registrados.</p>
+        )}
         <div className="permisos__lista-items">
-          {registros.slice(0, 15).map((registro) => (
+          {registrosVisibles.slice(0, 15).map((registro) => (
             <article key={registro.id} className="item-permiso">
               <div>
                 <strong>No. {registro.numero}</strong> — {registro.datos.nombreTrabajador}
                 <p>
                   {registro.datos.fechaDesde} {registro.datos.horaDesde} → {registro.datos.horaHasta}{" "}
                   · {formatearTiempoConcedido(registro.datos.tiempoConcedidoMinutos)}
+                  {" · "}
+                  {registro.estado}
                 </p>
               </div>
               <div className="item-permiso__acciones">
                 <button type="button" className="btn" onClick={() => cargarRegistro(registro)}>
                   Editar
                 </button>
-                <button type="button" className="btn" onClick={() => void imprimirRegistro(registro)}>
-                  Imprimir
-                </button>
                 <button
                   type="button"
-                  className="btn btn--peligro"
-                  onClick={() => void manejarEliminar(registro)}
+                  className="btn"
+                  disabled={!esAdmin && !permisoPuedeImprimirse(registro.estado)}
+                  onClick={() => void imprimirRegistro(registro)}
                 >
-                  Eliminar
+                  Imprimir
                 </button>
+                <SoloConPermiso permiso="eliminar.registros">
+                  <button
+                    type="button"
+                    className="btn btn--peligro"
+                    onClick={() => void manejarEliminar(registro)}
+                  >
+                    Eliminar
+                  </button>
+                </SoloConPermiso>
               </div>
             </article>
           ))}

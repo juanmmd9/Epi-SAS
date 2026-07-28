@@ -97,7 +97,8 @@ export function etiquetaEstadoPermiso(estado: string): string {
   const mapa: Record<string, string> = {
     borrador: "Borrador",
     solicitado: "Solicitado",
-    autorizado: "Autorizado",
+    autorizado: "Aprobado",
+    rechazado: "Rechazado",
     en_permiso: "En permiso",
     cerrado: "Cerrado",
   };
@@ -105,6 +106,7 @@ export function etiquetaEstadoPermiso(estado: string): string {
 }
 
 export function etiquetaTipoPermiso(datos: PermisoDatos): string {
+  if (!datos.tipoDefinidoPorAdmin) return "Pendiente (lo define el admin)";
   const rem = datos.remunerado === "remunerado" ? "Remunerado" : "No remunerado";
   const mot =
     datos.motivo === "personal" ? "Permiso personal" : "Salida laboral";
