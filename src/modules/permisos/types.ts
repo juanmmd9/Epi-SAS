@@ -3,6 +3,7 @@ export const ESTADOS_PERMISO = [
   { clave: "solicitado", etiqueta: "Solicitado" },
   { clave: "autorizado", etiqueta: "Aprobado" },
   { clave: "rechazado", etiqueta: "Rechazado" },
+  { clave: "cancelado", etiqueta: "Cancelado" },
   { clave: "en_permiso", etiqueta: "En permiso" },
   { clave: "cerrado", etiqueta: "Cerrado" },
 ] as const;
@@ -75,6 +76,11 @@ export interface PermisoDatos {
   decisionPorNombre?: string;
   decisionEn?: string;
   motivoRechazo?: string;
+  /** Cuando el operador cancela su propia solicitud pendiente. */
+  canceladoPorId?: string;
+  canceladoPorNombre?: string;
+  canceladoEn?: string;
+  motivoCancelacion?: string;
 }
 
 export interface RegistroPermiso {
@@ -159,4 +165,9 @@ export function normalizarDatosPermiso(parcial: Partial<PermisoDatos>): PermisoD
 
 export function permisoPuedeImprimirse(estado: EstadoPermiso): boolean {
   return estado === "autorizado" || estado === "en_permiso" || estado === "cerrado";
+}
+
+/** Solo se puede cancelar una solicitud aún pendiente de aprobación. */
+export function permisoPuedeCancelarse(estado: EstadoPermiso): boolean {
+  return estado === "solicitado";
 }

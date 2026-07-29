@@ -12,12 +12,14 @@ import {
 } from "../permisos/ghre030Pdf";
 import {
   calcularTiempoConcedidoMinutos,
+  etiquetaEstadoPermiso,
   formatearTiempoConcedido,
   obtenerFestivo,
   recalcularDatosPermiso,
 } from "../permisos/permisosCalculo";
 import { listarFestivosAnio } from "../permisos/horarioService";
 import {
+  cancelarPermiso,
   eliminarPermiso,
   guardarPermiso,
   listarPermisos,
@@ -29,16 +31,18 @@ import {
   horaLocalAhora,
   MOTIVOS_PERMISO,
   normalizarDatosPermiso,
+  permisoPuedeCancelarse,
   permisoPuedeImprimirse,
   prefillDesdePersonal,
   TIPOS_REMUNERACION,
   type EstadoPermiso,
+  type Festivo,
   type PermisoDatos,
   type PrefillDesdePersonal,
   type RegistroPermiso,
 } from "../permisos/types";
-import type { Festivo } from "../permisos/types";
 import AvisoPoliticaPermisosOperador from "../permisos/AvisoPoliticaPermisosOperador";
+import { SQL_MIGRACION_PERMISO_CANCELADO } from "../permisos/permisosSetup";
 import "../formatos/formatos.css";
 import "../permisos/permisos.css";
 
@@ -243,7 +247,20 @@ function Ghre030Page() {
           : `Permiso GH-RE-030 No. ${registro.numero} guardado.`,
       );
     } catch (e) {
-      setError("No se pudo guardar: " + (e as Error).message);
+      const msg = (e as Error).message;
+      if (/permisos_personal_estado_check|check constraint/i.test(msg)) {
+        setError(
+          "Supabase aún no acepta el estado (falta actualizar el check). Copia y ejecuta la migración de estados en SQL Editor.",
+        );
+        try {
+          await navigator.clipboard.writeText(SQL_MIGRACION_PERMISO_CANCELADO);
+          setMensaje("Migración SQL copiada al portapapeles. Pégala en Supabase → SQL Editor → Run.");
+        } catch {
+          setMensaje("Abre Personal → Permisos y usa el botón para copiar la migración SQL.");
+        }
+      } else {
+        setError("No se pudo guardar: " + msg);
+      }
     } finally {
       setGuardando(false);
     }
@@ -301,6 +318,48 @@ function Ghre030Page() {
       if (editandoId === registro.id) limpiarFormulario();
     } catch (e) {
       setError("No se pudo eliminar: " + (e as Error).message);
+    }
+  }
+
+  async function manejarCancelar(registro: RegistroPermiso) {
+    if (!perfil) {
+      setError("No se pudo verificar tu sesión. Recarga la página e intenta de nuevo.");
+      return;
+    }
+    if (!permisoPuedeCancelarse(registro.estado)) {
+      setError("Solo se pueden anular solicitudes en estado Solicitado.");
+      return;
+    }
+    if (!puedeAprobar && registro.datos.solicitadoPorId && registro.datos.solicitadoPorId !== perfil.id) {
+      setError("Solo puedes anular tus propias solicitudes.");
+      return;
+    }
+    const ok = window.confirm(
+      `La solicitud No. ${registro.numero} se marcará como CANCELADA.\n\nPulsa ACEPTAR para confirmar.`,
+    );
+    if (!ok) return;
+    try {
+      const actualizado = await cancelarPermiso(registro, {
+        id: perfil.id,
+        nombre: perfil.nombre || perfil.email,
+      });
+      setRegistros((previos) =>
+        previos.map((p) => (p.id === actualizado.id ? actualizado : p)),
+      );
+      if (editandoId === registro.id) {
+        setEstado(actualizado.estado);
+        setDatos(normalizarDatosPermiso(actualizado.datos));
+      }
+      setMensaje(`Solicitud No. ${registro.numero} anulada (estado: Cancelado).`);
+    } catch (e) {
+      const msg = (e as Error).message;
+      if (/check|cancelado|estado/i.test(msg)) {
+        setError(
+          "Falta habilitar el estado «cancelado» en Supabase. Ejecuta permisos_estado_cancelado.sql.",
+        );
+      } else {
+        setError("No se pudo anular la solicitud: " + msg);
+      }
     }
   }
 
@@ -598,13 +657,25 @@ function Ghre030Page() {
                   {registro.datos.fechaDesde} {registro.datos.horaDesde} → {registro.datos.horaHasta}{" "}
                   · {formatearTiempoConcedido(registro.datos.tiempoConcedidoMinutos)}
                   {" · "}
-                  {registro.estado}
+                  {etiquetaEstadoPermiso(registro.estado)}
                 </p>
               </div>
               <div className="item-permiso__acciones">
                 <button type="button" className="btn" onClick={() => cargarRegistro(registro)}>
                   Editar
                 </button>
+                {permisoPuedeCancelarse(registro.estado) &&
+                  (puedeAprobar ||
+                    !registro.datos.solicitadoPorId ||
+                    registro.datos.solicitadoPorId === perfil?.id) && (
+                    <button
+                      type="button"
+                      className="btn btn--advertencia"
+                      onClick={() => void manejarCancelar(registro)}
+                    >
+                      Anular solicitud
+                    </button>
+                  )}
                 <button
                   type="button"
                   className="btn"

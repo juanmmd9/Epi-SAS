@@ -265,6 +265,11 @@
   color: #991b1b;
 }
 
+.permisos__chip--cancelado {
+  background: #e2e8f0;
+  color: #475569;
+}
+
 .permisos__chip--en_permiso {
   background: #ffedd5;
   color: #9a3412;

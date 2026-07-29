@@ -116,6 +116,34 @@ export async function decidirPermiso(
   return data as RegistroPermiso;
 }
 
+/** El operador cancela su solicitud pendiente (no es un rechazo del admin). */
+export async function cancelarPermiso(
+  registro: RegistroPermiso,
+  actor: { id: string; nombre: string },
+  motivoCancelacion = "",
+): Promise<RegistroPermiso> {
+  if (registro.estado !== "solicitado") {
+    throw new Error("Solo se pueden cancelar solicitudes pendientes de aprobación.");
+  }
+
+  const datos: PermisoDatos = recalcularDatosPermiso({
+    ...registro.datos,
+    canceladoPorId: actor.id,
+    canceladoPorNombre: actor.nombre,
+    canceladoEn: new Date().toISOString(),
+    motivoCancelacion: motivoCancelacion.trim(),
+  });
+
+  const { data, error } = await supabase
+    .from(TABLA)
+    .update({ estado: "cancelado", datos })
+    .eq("id", registro.id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as RegistroPermiso;
+}
+
 export async function eliminarPermiso(id: string): Promise<void> {
   const { error } = await supabase.from(TABLA).delete().eq("id", id);
   if (error) throw new Error(error.message);

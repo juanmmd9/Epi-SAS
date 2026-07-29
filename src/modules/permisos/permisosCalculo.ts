@@ -99,6 +99,7 @@ export function etiquetaEstadoPermiso(estado: string): string {
     solicitado: "Solicitado",
     autorizado: "Aprobado",
     rechazado: "Rechazado",
+    cancelado: "Cancelado",
     en_permiso: "En permiso",
     cerrado: "Cerrado",
   };

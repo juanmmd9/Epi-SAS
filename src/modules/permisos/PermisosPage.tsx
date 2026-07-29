@@ -15,14 +15,20 @@ import {
   obtenerJornadaEsperada,
 } from "./permisosCalculo";
 import {
+  cancelarPermiso,
   decidirPermiso,
   eliminarPermiso,
   existeTablaPermisos,
   listarPermisos,
 } from "./permisosService";
-import { SQL_MIGRACION_PERMISOS, SQL_MIGRACION_PERMISO_RECHAZADO } from "./permisosSetup";
+import {
+  SQL_MIGRACION_PERMISOS,
+  SQL_MIGRACION_PERMISO_CANCELADO,
+  SQL_MIGRACION_PERMISO_RECHAZADO,
+} from "./permisosSetup";
 import AvisoPoliticaPermisosOperador from "./AvisoPoliticaPermisosOperador";
 import {
+  permisoPuedeCancelarse,
   permisoPuedeImprimirse,
   MOTIVOS_PERMISO,
   TIPOS_REMUNERACION,
@@ -297,9 +303,60 @@ function PermisosPage() {
     }
   }
 
+  async function manejarCancelar(permiso: RegistroPermiso) {
+    if (!perfil) {
+      setError("No se pudo verificar tu sesión. Recarga la página e intenta de nuevo.");
+      return;
+    }
+    if (!permisoPuedeCancelarse(permiso.estado)) {
+      setError("Solo se pueden anular solicitudes en estado Solicitado.");
+      return;
+    }
+    if (!puedeAprobar && permiso.datos.solicitadoPorId && permiso.datos.solicitadoPorId !== perfil.id) {
+      setError("Solo puedes anular tus propias solicitudes.");
+      return;
+    }
+    // En español el diálogo nativo dice «Aceptar / Cancelar»: hay que pulsar ACEPTAR.
+    const ok = window.confirm(
+      `La solicitud No. ${permiso.numero} se marcará como CANCELADA.\n\nPulsa ACEPTAR para confirmar.`,
+    );
+    if (!ok) return;
+
+    setDecidiendoId(permiso.id);
+    setError(null);
+    setMensaje(null);
+    try {
+      const actualizado = await cancelarPermiso(permiso, {
+        id: perfil.id,
+        nombre: perfil.nombre || perfil.email,
+      });
+      setPermisos((previos) =>
+        previos.map((p) => (p.id === actualizado.id ? actualizado : p)),
+      );
+      setFiltroEstado("cancelado");
+      setMensaje(`Solicitud No. ${permiso.numero} anulada (estado: Cancelado).`);
+    } catch (e) {
+      const msg = (e as Error).message;
+      if (/check|cancelado|estado/i.test(msg)) {
+        setError(
+          "Falta habilitar el estado «cancelado» en Supabase. Ejecuta la migración permisos_estado_cancelado.sql.",
+        );
+      } else {
+        setError("No se pudo anular la solicitud: " + msg);
+      }
+    } finally {
+      setDecidiendoId(null);
+    }
+  }
+
   function copiarMigracionRechazo() {
     void navigator.clipboard.writeText(SQL_MIGRACION_PERMISO_RECHAZADO);
-    setMensaje("Script de migración copiado. Pégalo en SQL Editor de Supabase.");
+    setMensaje("Script de migración (rechazado/cancelado) copiado. Pégalo en SQL Editor de Supabase.");
+  }
+
+  function copiarMigracionCancelado() {
+    void navigator.clipboard.writeText(SQL_MIGRACION_PERMISO_CANCELADO);
+    setMensaje("Script de migración «cancelado» copiado. Pégalo en SQL Editor de Supabase.");
   }
 
   return (
@@ -424,10 +481,10 @@ function PermisosPage() {
         </aside>
       )}
 
-      {puedeAprobar && (
+      {(puedeAprobar || puede("crear.permisos")) && (
         <p className="permisos__ayuda-sql">
-          Si al rechazar aparece error de estado,{" "}
-          <button type="button" className="btn" onClick={copiarMigracionRechazo}>
+          Si al rechazar o cancelar aparece error de estado,{" "}
+          <button type="button" className="btn" onClick={copiarMigracionCancelado}>
             copia la migración SQL
           </button>{" "}
           y ejecútala en Supabase.
@@ -469,6 +526,7 @@ function PermisosPage() {
             <option value="solicitado">Solicitado</option>
             <option value="autorizado">Aprobado</option>
             <option value="rechazado">Rechazado</option>
+            <option value="cancelado">Cancelado</option>
             <option value="en_permiso">En permiso</option>
             <option value="cerrado">Cerrado</option>
             <option value="borrador">Borrador</option>
@@ -567,6 +625,11 @@ function PermisosPage() {
                           {permiso.datos.motivoRechazo}
                         </small>
                       )}
+                      {permiso.datos.motivoCancelacion && (
+                        <small className="permisos__motivo-rechazo">
+                          {permiso.datos.motivoCancelacion}
+                        </small>
+                      )}
                     </td>
                     <td>
                       <div className="permisos__tabla-acciones">
@@ -590,6 +653,19 @@ function PermisosPage() {
                             </button>
                           </>
                         )}
+                        {permisoPuedeCancelarse(permiso.estado) &&
+                          (puedeAprobar ||
+                            !permiso.datos.solicitadoPorId ||
+                            permiso.datos.solicitadoPorId === perfil?.id) && (
+                            <button
+                              type="button"
+                              className="btn btn--advertencia"
+                              disabled={decidiendoId === permiso.id}
+                              onClick={() => void manejarCancelar(permiso)}
+                            >
+                              {decidiendoId === permiso.id ? "Anulando..." : "Anular solicitud"}
+                            </button>
+                          )}
                         <button
                           type="button"
                           className="btn"
