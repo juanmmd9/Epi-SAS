@@ -24,8 +24,11 @@ import {
 } from "../permisos/permisosService";
 import {
   ESTADOS_PERMISO,
+  fechaLocalHoy,
   formularioPermisoVacio,
+  horaLocalAhora,
   MOTIVOS_PERMISO,
+  normalizarDatosPermiso,
   permisoPuedeImprimirse,
   prefillDesdePersonal,
   TIPOS_REMUNERACION,
@@ -114,7 +117,7 @@ function Ghre030Page() {
       setEditandoId(registro.id);
       setNumeroActual(registro.numero);
       setPersonalId(registro.personal_id);
-      setDatos(registro.datos);
+      setDatos(normalizarDatosPermiso(registro.datos));
       setEstado(registro.estado);
       setMensaje(`Permiso No. ${registro.numero} cargado para edición.`);
       window.history.replaceState({}, "");
@@ -168,7 +171,7 @@ function Ghre030Page() {
     setEditandoId(registro.id);
     setNumeroActual(registro.numero);
     setPersonalId(registro.personal_id);
-    setDatos(registro.datos);
+    setDatos(normalizarDatosPermiso(registro.datos));
     setEstado(registro.estado);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -202,8 +205,16 @@ function Ghre030Page() {
     }
 
     const estadoGuardar: EstadoPermiso = puedeAprobar ? estado : "solicitado";
+    const esNuevo = !editandoId;
     const datosConSolicitante: PermisoDatos = {
       ...datos,
+      // Hora (y fecha si faltan) se fijan solas al crear; el operario no las edita.
+      fechaElaboracion: esNuevo
+        ? fechaLocalHoy()
+        : datos.fechaElaboracion || fechaLocalHoy(),
+      horaElaboracion: esNuevo
+        ? horaLocalAhora()
+        : datos.horaElaboracion || horaLocalAhora(),
       solicitadoPorId: datos.solicitadoPorId || perfil?.id || "",
       solicitadoPorNombre:
         datos.solicitadoPorNombre || perfil?.nombre || perfil?.email || "Operador",
@@ -250,7 +261,11 @@ function Ghre030Page() {
     }
     setImprimiendo(true);
     try {
-      const pdfBytes = await generarPdfGhRe030(datos, numeroActual, estado);
+      const datosImpresion: PermisoDatos = {
+        ...datos,
+        horaElaboracion: datos.horaElaboracion || horaLocalAhora(),
+      };
+      const pdfBytes = await generarPdfGhRe030(datosImpresion, numeroActual, estado);
       mostrarPreview(pdfBytes);
       imprimirPdf(pdfBytes);
     } catch (e) {
@@ -351,7 +366,19 @@ function Ghre030Page() {
             <input
               type="date"
               value={datos.fechaElaboracion}
-              onChange={(e) => actualizarDatos({ fechaElaboracion: e.target.value })}
+              readOnly
+              className="permiso-form__solo-lectura"
+              title="Se asigna automáticamente al guardar"
+            />
+          </label>
+          <label>
+            Hora elaboración
+            <input
+              type="time"
+              value={datos.horaElaboracion || ""}
+              readOnly
+              className="permiso-form__solo-lectura"
+              title="Se asigna automáticamente al guardar"
             />
           </label>
         </div>

@@ -6,7 +6,7 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf
 import { textoCompatibleWinAnsi } from "../../lib/pdfTextoWinAnsi";
 import { rutaPublica } from "../../lib/rutaPublica";
 import { formatearTiempoConcedido } from "./permisosCalculo";
-import type { EstadoPermiso, PermisoDatos, RegistroPermiso } from "./types";
+import { horaLocalAhora, type EstadoPermiso, type PermisoDatos, type RegistroPermiso } from "./types";
 
 const PAGE_W = 595;
 const PAGE_H = 842;
@@ -32,6 +32,22 @@ function partesFecha(fechaIso: string) {
   if (!fechaIso) return { dia: "", mes: "", anio: "" };
   const [y, m, d] = fechaIso.split("-");
   return { dia: d ?? "", mes: m ?? "", anio: y ?? "" };
+}
+
+function horaDesdeIso(iso: string): string {
+  if (!iso) return "";
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return "";
+  return `${String(fecha.getHours()).padStart(2, "0")}:${String(fecha.getMinutes()).padStart(2, "0")}`;
+}
+
+/** Hora de elaboración para el PDF: guardada, o la del registro, o la actual. */
+function resolverHoraElaboracion(datos: PermisoDatos, creadoEn?: string): string {
+  const guardada = String(datos.horaElaboracion ?? "").trim();
+  if (guardada) return guardada.slice(0, 5);
+  const desdeCreacion = horaDesdeIso(creadoEn ?? "");
+  if (desdeCreacion) return desdeCreacion;
+  return horaLocalAhora();
 }
 
 function rect(
@@ -245,11 +261,13 @@ export async function generarPdfGhRe030(
   datos: PermisoDatos,
   _numero: number,
   _estado: EstadoPermiso,
+  creadoEn?: string,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const page = doc.addPage([PAGE_W, PAGE_H]);
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const horaElaboracion = resolverHoraElaboracion(datos, creadoEn);
 
   // —— Encabezado: logo (fondo azul) + título ——
   let y = 28;
@@ -297,10 +315,14 @@ export async function generarPdfGhRe030(
   y += hHeader;
   const hLab = 20;
   const hVal = 26;
-  const wNombre = 248;
-  const wCedula = 118;
+  const wNombre = 220;
+  const wCedula = 95;
   const wFecha = CONTENT_W - wNombre - wCedula;
-  const wFechaPart = wFecha / 3;
+  const wDia = 34;
+  const wMes = 34;
+  const wAnio = 48;
+  const wHora = wFecha - wDia - wMes - wAnio;
+  const anchosFecha = [wDia, wMes, wAnio, wHora];
 
   rect(page, MARGIN, y, wNombre, hLab, GRAY);
   textoCentradoEnCaja(
@@ -320,7 +342,7 @@ export async function generarPdfGhRe030(
   rect(page, MARGIN + wNombre + wCedula, y, wFecha, hLab, GRAY);
   textoCentradoEnCaja(
     page,
-    "FECHA DE ELABORACIÓN",
+    "FECHA / HORA DE ELABORACIÓN",
     bold,
     7,
     MARGIN + wNombre + wCedula,
@@ -328,16 +350,10 @@ export async function generarPdfGhRe030(
     wFecha,
     hLab * 0.55,
   );
-  ["DIA", "MES", "AÑO"].forEach((lab, i) => {
-    centrarTexto(
-      page,
-      lab,
-      bold,
-      6,
-      MARGIN + wNombre + wCedula + i * wFechaPart,
-      wFechaPart,
-      yTop(y + hLab - 3, 6),
-    );
+  let xFechaLab = MARGIN + wNombre + wCedula;
+  ["DIA", "MES", "AÑO", "HORA"].forEach((lab, i) => {
+    centrarTexto(page, lab, bold, 6, xFechaLab, anchosFecha[i], yTop(y + hLab - 3, 6));
+    xFechaLab += anchosFecha[i];
   });
 
   y += hLab;
@@ -348,10 +364,12 @@ export async function generarPdfGhRe030(
   rect(page, MARGIN + wNombre, y, wCedula, hVal);
   textoCentradoEnCaja(page, datos.cedula || "", font, 10, MARGIN + wNombre, y, wCedula, hVal);
 
-  [fe.dia, fe.mes, fe.anio].forEach((val, i) => {
-    const x = MARGIN + wNombre + wCedula + i * wFechaPart;
-    rect(page, x, y, wFechaPart, hVal);
-    textoCentradoEnCaja(page, val, font, 10, x, y, wFechaPart, hVal);
+  const valoresFecha = [fe.dia, fe.mes, fe.anio, horaElaboracion];
+  let xFechaVal = MARGIN + wNombre + wCedula;
+  valoresFecha.forEach((val, i) => {
+    rect(page, xFechaVal, y, anchosFecha[i], hVal);
+    textoCentradoEnCaja(page, val, font, i === 3 ? 9 : 10, xFechaVal, y, anchosFecha[i], hVal);
+    xFechaVal += anchosFecha[i];
   });
 
   // —— Condiciones del permiso ——
@@ -628,5 +646,5 @@ export async function generarPdfGhRe030(
 }
 
 export async function obtenerPdfPermiso(registro: RegistroPermiso): Promise<Uint8Array> {
-  return generarPdfGhRe030(registro.datos, registro.numero, registro.estado);
+  return generarPdfGhRe030(registro.datos, registro.numero, registro.estado, registro.creado_en);
 }

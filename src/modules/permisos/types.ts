@@ -33,10 +33,27 @@ export const DIAS_SEMANA = [
   { valor: 0, etiqueta: "Domingo" },
 ] as const;
 
+/** Fecha local YYYY-MM-DD (evita desfase UTC de toISOString). */
+export function fechaLocalHoy(): string {
+  const n = new Date();
+  const y = n.getFullYear();
+  const m = String(n.getMonth() + 1).padStart(2, "0");
+  const d = String(n.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Hora local HH:MM. */
+export function horaLocalAhora(): string {
+  const n = new Date();
+  return `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
+}
+
 export interface PermisoDatos {
   nombreTrabajador: string;
   cedula: string;
   fechaElaboracion: string;
+  /** Hora de elaboración automática (HH:MM); no la edita el operario. */
+  horaElaboracion: string;
   fechaDesde: string;
   fechaHasta: string;
   horaDesde: string;
@@ -103,12 +120,14 @@ export interface PrefillDesdePersonal {
 }
 
 export function formularioPermisoVacio(): PermisoDatos {
+  const hoy = fechaLocalHoy();
   return {
     nombreTrabajador: "",
     cedula: "",
-    fechaElaboracion: new Date().toISOString().slice(0, 10),
-    fechaDesde: new Date().toISOString().slice(0, 10),
-    fechaHasta: new Date().toISOString().slice(0, 10),
+    fechaElaboracion: hoy,
+    horaElaboracion: horaLocalAhora(),
+    fechaDesde: hoy,
+    fechaHasta: hoy,
     horaDesde: "07:30",
     horaHasta: "12:00",
     tiempoConcedidoMinutos: 0,
@@ -130,7 +149,12 @@ export function prefillDesdePersonal(datos: PrefillDesdePersonal): PermisoDatos 
 }
 
 export function normalizarDatosPermiso(parcial: Partial<PermisoDatos>): PermisoDatos {
-  return { ...formularioPermisoVacio(), ...parcial };
+  return {
+    ...formularioPermisoVacio(),
+    ...parcial,
+    // Registros viejos pueden no traer hora; no inventar la hora actual al abrirlos.
+    horaElaboracion: parcial.horaElaboracion ?? "",
+  };
 }
 
 export function permisoPuedeImprimirse(estado: EstadoPermiso): boolean {
