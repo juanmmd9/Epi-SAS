@@ -21,6 +21,7 @@ import {
   listarPermisos,
 } from "./permisosService";
 import { SQL_MIGRACION_PERMISOS, SQL_MIGRACION_PERMISO_RECHAZADO } from "./permisosSetup";
+import AvisoPoliticaPermisosOperador from "./AvisoPoliticaPermisosOperador";
 import {
   permisoPuedeImprimirse,
   MOTIVOS_PERMISO,
@@ -330,6 +331,8 @@ function PermisosPage() {
           </SoloConPermiso>
         </div>
       </header>
+
+      {!puedeAprobar && <AvisoPoliticaPermisosOperador />}
 
       {faltaTabla && <AvisoSetupPermisos />}
 

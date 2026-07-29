@@ -373,6 +373,35 @@
   color: var(--color-texto-suave);
 }
 
+.permisos__aviso-operador {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #93c5fd;
+  border-radius: 12px;
+  background: #eff6ff;
+}
+
+.permisos__aviso-operador h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.98rem;
+  color: #1e3a8a;
+}
+
+.permisos__aviso-operador ul {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: #1e293b;
+}
+
+.permisos__aviso-operador li strong {
+  font-weight: 700;
+}
+
 .horario-form {
   background: var(--color-superficie);
   border: 1px solid var(--color-borde);

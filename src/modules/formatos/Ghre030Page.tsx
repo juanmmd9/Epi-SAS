@@ -35,6 +35,7 @@ import {
   type RegistroPermiso,
 } from "../permisos/types";
 import type { Festivo } from "../permisos/types";
+import AvisoPoliticaPermisosOperador from "../permisos/AvisoPoliticaPermisosOperador";
 import "../formatos/formatos.css";
 import "../permisos/permisos.css";
 
@@ -310,6 +311,8 @@ function Ghre030Page() {
           </Link>
         </div>
       </header>
+
+      {!puedeAprobar && <AvisoPoliticaPermisosOperador />}
 
       {numeroActual !== null && (
         <p className="permisos__numero-actual">
