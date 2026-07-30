@@ -554,7 +554,7 @@ function CronogramaPage() {
                       {puedeQuitarRepro && (
                         <button
                           type="button"
-                          className="btn"
+                          className="btn btn--advertencia"
                           disabled={guardandoReprog || guardandoQuitar}
                           onClick={() =>
                             void quitarReprogramacion(
@@ -569,6 +569,12 @@ function CronogramaPage() {
                       )}
                     </div>
                   </div>
+                  {puedeQuitarRepro && (
+                    <p className="actividad-card__ayuda">
+                      Esta cita fue movida. Usa <strong>Quitar reprogramación</strong> para
+                      devolverla a la fecha original.
+                    </p>
+                  )}
                   {estado === "no_realizado" && !reprogramadoA && (
                     <p className="actividad-card__ayuda">
                       ¿No puedes hacerlo este día? Usa <strong>Reprogramar</strong> o arrastra
