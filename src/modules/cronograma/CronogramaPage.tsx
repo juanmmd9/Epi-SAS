@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type DragEvent } from "react";
 import { Link } from "react-router-dom";
 import { AREAS_CON_PM, coincideArea } from "../../lib/areas";
 import { aFechaIso, diasEnMes, NOMBRES_MESES, valorFecha } from "../../lib/fechas";
@@ -19,6 +19,7 @@ import {
   crearExcepcion,
   eliminarExcepcion,
   listarExcepciones,
+  quitarReprogramacionPm,
   reprogramarCitaPm,
 } from "./cronogramaService";
 import type { CitaCronograma, ExcepcionCronograma } from "./types";
@@ -29,10 +30,20 @@ const NOMBRES_MESES_CORTOS_TEXTO = [
   "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
 ];
 
+const DRAG_TIPO = "application/x-cronograma-cita";
+
 interface ReprogramarContexto {
   cita: CitaCronograma;
   mes: number;
   dia: number;
+}
+
+interface DragCitaPayload {
+  maquinaId: string;
+  nombre: string;
+  origenMes: number;
+  origenDia: number;
+  origenAutomatica: boolean;
 }
 
 function CronogramaPage() {
@@ -51,6 +62,9 @@ function CronogramaPage() {
   const [reprogramar, setReprogramar] = useState<ReprogramarContexto | null>(null);
   const [guardandoReprog, setGuardandoReprog] = useState(false);
   const [exito, setExito] = useState<string | null>(null);
+  const [dragActivo, setDragActivo] = useState<DragCitaPayload | null>(null);
+  const [dropSobre, setDropSobre] = useState<{ mes: number; dia: number } | null>(null);
+  const [guardandoQuitar, setGuardandoQuitar] = useState(false);
 
   const valorHoy = useMemo(() => {
     const hoy = new Date();
@@ -141,6 +155,7 @@ function CronogramaPage() {
 
     if (citas.length === 0) {
       if (seleccionado) clase += " mes__dia--seleccionado";
+      if (dropSobre?.mes === mes && dropSobre?.dia === dia) clase += " mes__dia--drop";
       return clase;
     }
 
@@ -161,7 +176,45 @@ function CronogramaPage() {
     }
 
     if (seleccionado) clase += " mes__dia--seleccionado";
+    if (dragActivo && dragActivo.origenMes === mes && dragActivo.origenDia === dia) {
+      clase += " mes__dia--drag-origen";
+    }
+    if (dropSobre?.mes === mes && dropSobre?.dia === dia) clase += " mes__dia--drop";
     return clase;
+  }
+
+  async function moverCitaADia(
+    payload: DragCitaPayload,
+    destinoMes: number,
+    destinoDia: number,
+  ) {
+    if (payload.origenMes === destinoMes && payload.origenDia === destinoDia) return;
+    setGuardandoReprog(true);
+    setError(null);
+    try {
+      await reprogramarCitaPm(excepciones, {
+        area,
+        anio,
+        maquinaId: payload.maquinaId,
+        origenMes: payload.origenMes,
+        origenDia: payload.origenDia,
+        origenAutomatica: payload.origenAutomatica,
+        destinoMes,
+        destinoDia,
+      });
+      const lista = await listarExcepciones();
+      setExcepciones(lista);
+      setDiaSeleccionado({ mes: destinoMes, dia: destinoDia });
+      setExito(
+        `${payload.nombre} movida al ${destinoDia} de ${NOMBRES_MESES[destinoMes - 1]} ${anio}.`,
+      );
+    } catch (e) {
+      setError("No se pudo mover la máquina: " + (e as Error).message);
+    } finally {
+      setGuardandoReprog(false);
+      setDragActivo(null);
+      setDropSobre(null);
+    }
   }
 
   async function confirmarReprogramacion(destinoMes: number, destinoDia: number) {
@@ -191,6 +244,78 @@ function CronogramaPage() {
       setError("No se pudo reprogramar: " + (e as Error).message);
     } finally {
       setGuardandoReprog(false);
+    }
+  }
+
+  async function quitarReprogramacion(cita: CitaCronograma, mes: number, dia: number) {
+    if (
+      !window.confirm(
+        `¿Quitar la reprogramación de ${cita.nombre}?\nVolverá a la fecha original programada.\n\nPulsa ACEPTAR para confirmar.`,
+      )
+    ) {
+      return;
+    }
+    setGuardandoQuitar(true);
+    setError(null);
+    try {
+      await quitarReprogramacionPm(excepciones, {
+        area,
+        anio,
+        maquinaId: cita.maquinaId,
+        mesVista: mes,
+        diaVista: dia,
+      });
+      const lista = await listarExcepciones();
+      setExcepciones(lista);
+      setExito(`Reprogramación de ${cita.nombre} quitada. Volvió a la fecha original.`);
+    } catch (e) {
+      setError("No se pudo quitar la reprogramación: " + (e as Error).message);
+    } finally {
+      setGuardandoQuitar(false);
+    }
+  }
+
+  function iniciarDrag(
+    evento: DragEvent,
+    cita: CitaCronograma,
+    mes: number,
+    dia: number,
+  ) {
+    const payload: DragCitaPayload = {
+      maquinaId: cita.maquinaId,
+      nombre: cita.nombre,
+      origenMes: mes,
+      origenDia: dia,
+      origenAutomatica: cita.origen === "automatica",
+    };
+    evento.dataTransfer.setData(DRAG_TIPO, JSON.stringify(payload));
+    evento.dataTransfer.effectAllowed = "move";
+    setDragActivo(payload);
+  }
+
+  function permitirDrop(evento: DragEvent, mes: number, dia: number) {
+    if (!dragActivo && !evento.dataTransfer.types.includes(DRAG_TIPO)) return;
+    evento.preventDefault();
+    evento.dataTransfer.dropEffect = "move";
+    if (!dropSobre || dropSobre.mes !== mes || dropSobre.dia !== dia) {
+      setDropSobre({ mes, dia });
+    }
+  }
+
+  async function soltarEnDia(evento: DragEvent, mes: number, dia: number) {
+    evento.preventDefault();
+    const crudo = evento.dataTransfer.getData(DRAG_TIPO);
+    setDropSobre(null);
+    if (!crudo) {
+      setDragActivo(null);
+      return;
+    }
+    try {
+      const payload = JSON.parse(crudo) as DragCitaPayload;
+      await moverCitaADia(payload, mes, dia);
+    } catch {
+      setDragActivo(null);
+      setError("No se pudo interpretar el movimiento de la máquina.");
     }
   }
 
@@ -233,7 +358,8 @@ function CronogramaPage() {
       <h1>Calendario de mantenimiento preventivo</h1>
       <p className="cronograma__descripcion">
         Programación desde hojas de vida (primer PM + frecuencia). La fecha base no cambia:
-        puedes <strong>reprogramar</strong> si no se pudo hacer el PM en el día planeado.
+        puedes <strong>reprogramar</strong> o <strong>arrastrar</strong> la máquina a otro día
+        si no se pudo hacer el PM en la fecha planeada.
       </p>
 
       <div className="cronograma__controles">
@@ -331,6 +457,14 @@ function CronogramaPage() {
                           })
                           .join(", ")}
                         onClick={() => setDiaSeleccionado({ mes, dia })}
+                        onDragOver={(e) => permitirDrop(e, mes, dia)}
+                        onDragEnter={(e) => permitirDrop(e, mes, dia)}
+                        onDragLeave={() => {
+                          if (dropSobre?.mes === mes && dropSobre?.dia === dia) {
+                            setDropSobre(null);
+                          }
+                        }}
+                        onDrop={(e) => void soltarEnDia(e, mes, dia)}
                       >
                         {dia}
                       </button>
@@ -363,11 +497,26 @@ function CronogramaPage() {
                 (estado === "programada" ||
                   estado === "vencida" ||
                   estado === "reprogramada");
+              const puedeQuitarRepro =
+                puedeGestionar &&
+                (estado === "reprogramada" ||
+                  (estado === "no_realizado" && Boolean(reprogramadoA)));
 
               return (
                 <article
                   key={cita.maquinaId}
-                  className={`actividad-card actividad-card--${estado.replaceAll("_", "-")}`}
+                  className={`actividad-card actividad-card--${estado.replaceAll("_", "-")}${
+                    puedeReprogramar ? " actividad-card--arrastrable" : ""
+                  }`}
+                  draggable={puedeReprogramar && !guardandoReprog}
+                  onDragStart={(e) => {
+                    if (!puedeReprogramar) return;
+                    iniciarDrag(e, cita, diaSeleccionado.mes, diaSeleccionado.dia);
+                  }}
+                  onDragEnd={() => {
+                    setDragActivo(null);
+                    setDropSobre(null);
+                  }}
                 >
                   <div className="actividad-card__principal">
                     <div>
@@ -377,6 +526,7 @@ function CronogramaPage() {
                       <h3>{cita.nombre}</h3>
                       <p className="actividad-card__meta">
                         {cita.codigo} · cada {cita.frecuencia}m
+                        {puedeReprogramar ? " · Arrastra al calendario" : ""}
                       </p>
                       {reprogramadoA && estado === "no_realizado" && (
                         <p className="actividad-card__destino">
@@ -384,26 +534,45 @@ function CronogramaPage() {
                         </p>
                       )}
                     </div>
-                    {puedeReprogramar && (
-                      <button
-                        type="button"
-                        className="btn btn--reprogramar"
-                        onClick={() =>
-                          setReprogramar({
-                            cita,
-                            mes: diaSeleccionado.mes,
-                            dia: diaSeleccionado.dia,
-                          })
-                        }
-                      >
-                        Reprogramar
-                      </button>
-                    )}
+                    <div className="actividad-card__acciones">
+                      {puedeReprogramar && (
+                        <button
+                          type="button"
+                          className="btn btn--reprogramar"
+                          disabled={guardandoReprog || guardandoQuitar}
+                          onClick={() =>
+                            setReprogramar({
+                              cita,
+                              mes: diaSeleccionado.mes,
+                              dia: diaSeleccionado.dia,
+                            })
+                          }
+                        >
+                          Reprogramar
+                        </button>
+                      )}
+                      {puedeQuitarRepro && (
+                        <button
+                          type="button"
+                          className="btn"
+                          disabled={guardandoReprog || guardandoQuitar}
+                          onClick={() =>
+                            void quitarReprogramacion(
+                              cita,
+                              diaSeleccionado.mes,
+                              diaSeleccionado.dia,
+                            )
+                          }
+                        >
+                          {guardandoQuitar ? "Quitando..." : "Quitar reprogramación"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {estado === "no_realizado" && !reprogramadoA && (
                     <p className="actividad-card__ayuda">
-                      ¿No puedes hacerlo este día? Usa <strong>Reprogramar</strong> en la fecha original
-                      o abre el día nuevo si ya fue movida.
+                      ¿No puedes hacerlo este día? Usa <strong>Reprogramar</strong> o arrastra
+                      la tarjeta a otra fecha del calendario.
                     </p>
                   )}
                 </article>
@@ -441,9 +610,15 @@ function CronogramaPage() {
         <h2>¿Cómo reprogramar?</h2>
         <ol>
           <li>Selecciona el <strong>área</strong> y haz clic en el día con PM programado.</li>
-          <li>Pulsa <strong>Reprogramar</strong> en la tarjeta de la máquina.</li>
-          <li>Elige la <strong>nueva fecha</strong> en el calendario y confirma.</li>
+          <li>
+            <strong>Arrastra</strong> la tarjeta de la máquina a otro día del calendario, o pulsa{" "}
+            <strong>Reprogramar</strong> y elige la fecha.
+          </li>
           <li>La fecha original queda como <strong>no realizado</strong>; la nueva como <strong>reprogramado</strong>.</li>
+          <li>
+            Para deshacer, abre el día reprogramado (o el original) y pulsa{" "}
+            <strong>Quitar reprogramación</strong>.
+          </li>
         </ol>
         <p>
           <Link to="/">Ver resumen en Inicio</Link>

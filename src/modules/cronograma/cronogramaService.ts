@@ -142,3 +142,72 @@ export async function reprogramarCitaPm(
 
   return nuevas;
 }
+
+export interface QuitarReprogramacionInput {
+  area: string;
+  anio: number;
+  maquinaId: string;
+  /** Día donde está la cita reprogramada (destino) o el origen no_realizado. */
+  mesVista: number;
+  diaVista: number;
+}
+
+/**
+ * Revierte una reprogramación: borra el `agregar` destino y el `no_realizado` del origen.
+ * La cita automática vuelve a la fecha original (sin tocar hoja de vida).
+ */
+export async function quitarReprogramacionPm(
+  excepciones: ExcepcionCronograma[],
+  input: QuitarReprogramacionInput,
+): Promise<void> {
+  const { area, anio, maquinaId, mesVista, diaVista } = input;
+  void area;
+
+  const agregarEnVista = excepciones.find(
+    (e) =>
+      e.datos.tipo === "agregar" &&
+      e.datos.maquinaId === maquinaId &&
+      e.datos.anio === anio &&
+      e.datos.mes === mesVista &&
+      e.datos.dia === diaVista &&
+      Boolean(e.datos.reprogramadoDesde),
+  );
+
+  let fechaOriginal = agregarEnVista?.datos.reprogramadoDesde ?? null;
+  let idAgregar: string | null = agregarEnVista?.id ?? null;
+
+  if (!fechaOriginal || !idAgregar) {
+    // Vista en origen (no_realizado): buscar el agregar que apunta a esta fecha
+    const destino = excepciones.find((e) => {
+      const d = e.datos;
+      const desde = d.reprogramadoDesde;
+      return (
+        d.tipo === "agregar" &&
+        d.maquinaId === maquinaId &&
+        Boolean(desde) &&
+        desde!.anio === anio &&
+        desde!.mes === mesVista &&
+        desde!.dia === diaVista
+      );
+    });
+    if (!destino?.datos.reprogramadoDesde) {
+      throw new Error("No se encontró una reprogramación para quitar en esta cita.");
+    }
+    fechaOriginal = destino.datos.reprogramadoDesde;
+    idAgregar = destino.id;
+  }
+
+  await eliminarExcepcion(idAgregar);
+
+  const noRealizado = excepciones.find(
+    (e) =>
+      e.datos.tipo === "no_realizado" &&
+      e.datos.maquinaId === maquinaId &&
+      e.datos.anio === fechaOriginal.anio &&
+      e.datos.mes === fechaOriginal.mes &&
+      e.datos.dia === fechaOriginal.dia,
+  );
+  if (noRealizado) {
+    await eliminarExcepcion(noRealizado.id);
+  }
+}

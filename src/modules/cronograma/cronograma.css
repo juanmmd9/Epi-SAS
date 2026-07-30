@@ -192,6 +192,17 @@
   outline: 2px solid var(--color-primario);
 }
 
+.mes__dia--drag-origen {
+  outline: 2px dashed #7c3aed;
+  opacity: 0.75;
+}
+
+.mes__dia--drop {
+  outline: 2px solid #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  transform: scale(1.06);
+}
+
 /* ----- Detalle de un día ----- */
 
 .dia-detalle {
@@ -299,6 +310,22 @@
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
+}
+
+.actividad-card__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+
+.actividad-card--arrastrable {
+  cursor: grab;
+}
+
+.actividad-card--arrastrable:active {
+  cursor: grabbing;
 }
 
 .actividad-card h3 {

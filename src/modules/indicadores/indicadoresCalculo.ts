@@ -234,10 +234,6 @@ export interface ClasificacionPreventivo {
   porcentaje: number;
 }
 
-function mesSiguiente(anio: number, mes: number): { anio: number; mes: number } {
-  return mes >= 12 ? { anio: anio + 1, mes: 1 } : { anio, mes: mes + 1 };
-}
-
 /** True si la máquina estuvo en circulación al menos un día del mes. */
 function maquinaEnCirculacionEnMes(maquina: HojaVida, anio: number, mes: number): boolean {
   for (let dia = 1; dia <= diasEnMes(anio, mes); dia++) {
@@ -331,44 +327,46 @@ export function clasificarCitasPreventivas(
     });
   }
 
-  // Citas excluidas este mes que reaparecen el mes siguiente = reprogramadas
-  const siguiente = mesSiguiente(anio, mes);
-  const maquinasMesSiguiente = maquinasEnCirculacionParaMes(maquinasVigentes, siguiente.anio, siguiente.mes);
-  const mapaSiguiente = mapaCitasDelAnio(maquinasMesSiguiente, excepciones, area, siguiente.anio);
+  // Reprogramaciones del mes (origen no_realizado / excluir con destino vía reprogramadoDesde)
+  const idsReprogramadas = new Set<string>();
   for (const excepcion of excepciones) {
     const d = excepcion.datos;
-    if (d.tipo !== "excluir" && d.tipo !== "no_realizado") continue;
-    if (!coincideArea(d.area, area) || d.anio !== anio || d.mes !== mes) continue;
+    if (d.tipo !== "agregar" || !d.reprogramadoDesde) continue;
+    if (!coincideArea(d.area, area)) continue;
+    const desde = d.reprogramadoDesde;
+    // Contar en el mes del ORIGEN de la reprogramación
+    if (desde.anio !== anio || desde.mes !== mes) continue;
+
     const maquina = maquinasVigentes.find((m) => m.id === d.maquinaId);
     if (!maquina || !hojaEstaActiva(maquina)) continue;
-    if (!maquinaActivaEnFecha(maquina, anio, mes, d.dia)) continue;
+    if (!maquinaActivaEnFecha(maquina, anio, mes, desde.dia)) continue;
 
-    let destino: CitaClasificada["destino"];
-    for (const [clave, citas] of mapaSiguiente) {
-      const [mesClave, diaClave] = clave.split("|").map(Number);
-      if (mesClave !== siguiente.mes) continue;
-      if (citas.some((c) => c.maquinaId === d.maquinaId)) {
-        destino = { anio: siguiente.anio, mes: siguiente.mes, dia: diaClave };
-        break;
+    const destino = { anio: d.anio, mes: d.mes, dia: d.dia };
+    const pm = buscarPmEnMes(maquina.id);
+    const baseReprogramada: CitaClasificada = {
+      maquinaId: maquina.id,
+      nombre: maquina.nombre,
+      codigo: maquina.codigo ?? "",
+      dia: desde.dia,
+      destino,
+    };
+
+    if (pm) {
+      // Si ya hay PM en el mes, cuenta como cumplida (no como pendiente del origen).
+      if (!cumplidas.some((c) => c.maquinaId === maquina.id)) {
+        const diaPm = Number.parseInt(pm.fecha.slice(8, 10), 10) || desde.dia;
+        cumplidas.push({ ...baseReprogramada, dia: diaPm, fechaPm: pm.fecha });
       }
-    }
-    if (destino) {
-      const pm = buscarPmEnMes(maquina.id);
-      const baseReprogramada: CitaClasificada = {
-        maquinaId: maquina.id,
-        nombre: maquina.nombre,
-        codigo: maquina.codigo ?? "",
-        dia: d.dia,
-        destino,
-      };
-      if (pm) {
-        if (!cumplidas.some((c) => c.maquinaId === maquina.id)) {
-          const diaPm = Number.parseInt(pm.fecha.slice(8, 10), 10) || d.dia;
-          cumplidas.push({ ...baseReprogramada, dia: diaPm, fechaPm: pm.fecha });
-        }
-      } else {
+      // Quitar de pendientes si el destino del mismo mes la había metido y el PM cubre.
+      const idxPend = pendientes.findIndex((c) => c.maquinaId === maquina.id);
+      if (idxPend >= 0) pendientes.splice(idxPend, 1);
+    } else {
+      if (!idsReprogramadas.has(maquina.id)) {
         reprogramadas.push(baseReprogramada);
+        idsReprogramadas.add(maquina.id);
       }
+      // El origen no debe pesar como pendiente; el destino (si es este mes) sí queda en mapa.
+      // Si el pendiente es solo el origen movido fuera de este mes, ya no está en mapa.
     }
   }
 
