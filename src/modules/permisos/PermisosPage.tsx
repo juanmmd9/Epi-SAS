@@ -24,7 +24,6 @@ import {
 import {
   SQL_MIGRACION_PERMISOS,
   SQL_MIGRACION_PERMISO_CANCELADO,
-  SQL_MIGRACION_PERMISO_RECHAZADO,
 } from "./permisosSetup";
 import AvisoPoliticaPermisosOperador from "./AvisoPoliticaPermisosOperador";
 import {
@@ -351,11 +350,6 @@ function PermisosPage() {
     } finally {
       setDecidiendoId(null);
     }
-  }
-
-  function copiarMigracionRechazo() {
-    void navigator.clipboard.writeText(SQL_MIGRACION_PERMISO_RECHAZADO);
-    setMensaje("Script de migración (rechazado/cancelado) copiado. Pégalo en SQL Editor de Supabase.");
   }
 
   function copiarMigracionCancelado() {
