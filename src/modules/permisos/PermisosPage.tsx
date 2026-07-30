@@ -193,6 +193,10 @@ function PermisosPage() {
   }
 
   function editarPermiso(permiso: RegistroPermiso) {
+    if (!puedeAprobar) {
+      setError("El operador no puede modificar una solicitud ya enviada. Solo puede anularla si sigue pendiente.");
+      return;
+    }
     navigate("/formatos/gh-re-030", { state: { editarPermiso: permiso } });
   }
 
@@ -367,7 +371,7 @@ function PermisosPage() {
           <p className="personal__descripcion">
             {puedeAprobar
               ? "Aprueba o rechaza solicitudes GH-RE-030. El operador registra; tú decides."
-              : "Registra permisos de trabajadores. Quedan pendientes hasta que el administrador los apruebe."}
+              : "Registra permisos de trabajadores. Tras enviarlos no se pueden editar; solo anular si siguen pendientes."}
           </p>
         </div>
         <div className="permisos__enlaces-cabecera">
@@ -666,13 +670,15 @@ function PermisosPage() {
                               {decidiendoId === permiso.id ? "Anulando..." : "Anular solicitud"}
                             </button>
                           )}
-                        <button
-                          type="button"
-                          className="btn"
-                          onClick={() => editarPermiso(permiso)}
-                        >
-                          Editar
-                        </button>
+                        {puedeAprobar && (
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => editarPermiso(permiso)}
+                          >
+                            Editar
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="btn"

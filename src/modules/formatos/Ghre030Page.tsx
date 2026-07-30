@@ -118,6 +118,11 @@ function Ghre030Page() {
     if (!nav) return;
     if (nav.editarPermiso) {
       const registro = nav.editarPermiso;
+      if (!puedeAprobar) {
+        setError("El operador no puede modificar una solicitud ya enviada. Solo puede anularla si sigue pendiente.");
+        window.history.replaceState({}, "");
+        return;
+      }
       setEditandoId(registro.id);
       setNumeroActual(registro.numero);
       setPersonalId(registro.personal_id);
@@ -133,7 +138,7 @@ function Ghre030Page() {
     setDatos(prefillDesdePersonal(nav.permiso));
     setMensaje("Formulario precargado desde Personal.");
     window.history.replaceState({}, "");
-  }, [ubicacion.state]);
+  }, [ubicacion.state, puedeAprobar]);
 
   useEffect(() => {
     return () => {
@@ -172,6 +177,10 @@ function Ghre030Page() {
   }
 
   function cargarRegistro(registro: RegistroPermiso) {
+    if (!puedeAprobar) {
+      setError("El operador no puede modificar una solicitud ya enviada. Solo puede anularla si sigue pendiente.");
+      return;
+    }
     setEditandoId(registro.id);
     setNumeroActual(registro.numero);
     setPersonalId(registro.personal_id);
@@ -197,6 +206,10 @@ function Ghre030Page() {
 
     if (!puedeCrear) {
       setError("No tienes permiso para registrar solicitudes.");
+      return;
+    }
+    if (!puedeAprobar && editandoId) {
+      setError("No puedes modificar una solicitud ya enviada. Anúlala si sigue pendiente y crea una nueva.");
       return;
     }
     if (!personalId || !datos.nombreTrabajador.trim()) {
@@ -237,15 +250,19 @@ function Ghre030Page() {
         const filtrados = previos.filter((p) => p.id !== registro.id);
         return [registro, ...filtrados];
       });
-      setEditandoId(registro.id);
-      setNumeroActual(registro.numero);
-      setEstado(registro.estado);
-      setDatos(registro.datos);
-      setMensaje(
-        registro.estado === "solicitado"
-          ? `Solicitud No. ${registro.numero} enviada. El administrador debe aprobarla o rechazarla.`
-          : `Permiso GH-RE-030 No. ${registro.numero} guardado.`,
-      );
+      if (puedeAprobar) {
+        setEditandoId(registro.id);
+        setNumeroActual(registro.numero);
+        setEstado(registro.estado);
+        setDatos(registro.datos);
+        setMensaje(`Permiso GH-RE-030 No. ${registro.numero} guardado.`);
+      } else {
+        // Operador: tras enviar no queda en edición; solo puede crear otra o anular la pendiente.
+        limpiarFormulario();
+        setMensaje(
+          `Solicitud No. ${registro.numero} enviada. Ya no puedes modificarla; si te equivocaste, anúlala mientras esté pendiente.`,
+        );
+      }
     } catch (e) {
       const msg = (e as Error).message;
       if (/permisos_personal_estado_check|check constraint/i.test(msg)) {
@@ -371,7 +388,7 @@ function Ghre030Page() {
           <p className="formatos__descripcion">
             {puedeAprobar
               ? "Registra o ajusta permisos. Las solicitudes del operador aparecen como Solicitado hasta que las apruebes."
-              : "Completa la solicitud del trabajador. El administrador recibirá el permiso para aprobarlo o rechazarlo."}
+              : "Envía la solicitud del trabajador. Después de enviarla no podrás modificarla; solo anularla si sigue pendiente."}
           </p>
         </div>
         <div className="permisos__enlaces-cabecera">
@@ -661,9 +678,11 @@ function Ghre030Page() {
                 </p>
               </div>
               <div className="item-permiso__acciones">
-                <button type="button" className="btn" onClick={() => cargarRegistro(registro)}>
-                  Editar
-                </button>
+                {puedeAprobar && (
+                  <button type="button" className="btn" onClick={() => cargarRegistro(registro)}>
+                    Editar
+                  </button>
+                )}
                 {permisoPuedeCancelarse(registro.estado) &&
                   (puedeAprobar ||
                     !registro.datos.solicitadoPorId ||
