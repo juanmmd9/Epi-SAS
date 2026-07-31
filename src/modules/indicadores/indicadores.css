@@ -1230,3 +1230,229 @@
   }
 }
 
+/* ----- Ranking y dona por máquina (no altera .grafico-barras) ----- */
+
+.panel-graficos__intro--secundario {
+  margin-top: 1.5rem;
+}
+
+.panel-graficos__grid--maquinas {
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+  align-items: start;
+}
+
+.grafico-ranking,
+.grafico-dona {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 14px;
+  padding: 1rem 1.1rem 0.85rem;
+}
+
+.grafico-ranking__cabecera,
+.grafico-dona__cabecera {
+  margin-bottom: 0.85rem;
+}
+
+.grafico-ranking__cabecera h3,
+.grafico-dona__cabecera h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+}
+
+.grafico-ranking__cabecera p,
+.grafico-dona__cabecera p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-texto-suave);
+}
+
+.grafico-ranking__vacio {
+  margin: 0.5rem 0;
+  color: var(--color-texto-suave);
+  font-size: 0.88rem;
+}
+
+.grafico-ranking__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.grafico-ranking__fila {
+  display: grid;
+  grid-template-columns: minmax(7rem, 11rem) 1fr minmax(5.5rem, 6.5rem);
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.grafico-ranking__etiqueta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.grafico-ranking__nombre {
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grafico-ranking__codigo {
+  font-size: 0.68rem;
+  color: var(--color-texto-suave);
+}
+
+.grafico-ranking__pista {
+  height: 1.05rem;
+  background: #eef2f7;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.grafico-ranking__barra {
+  height: 100%;
+  display: flex;
+  min-width: 4px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.grafico-ranking__seg--prev {
+  background: linear-gradient(90deg, #86efac, #16a34a);
+}
+
+.grafico-ranking__seg--corr {
+  background: linear-gradient(90deg, #60a5fa, #2563eb);
+}
+
+.grafico-ranking__conteos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+
+.grafico-ranking__total {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.grafico-ranking__detalle {
+  font-size: 0.65rem;
+  color: var(--color-texto-suave);
+}
+
+.grafico-ranking__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+  font-size: 0.75rem;
+  color: var(--color-texto-suave);
+}
+
+.grafico-ranking__leyenda span,
+.grafico-dona__stats li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.grafico-ranking__punto {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+}
+
+.grafico-ranking__punto--prev {
+  background: #16a34a;
+}
+
+.grafico-ranking__punto--corr {
+  background: #2563eb;
+}
+
+.grafico-dona__cuerpo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.grafico-dona__anillo {
+  width: 9.5rem;
+  height: 9.5rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.grafico-dona__centro {
+  width: 5.6rem;
+  height: 5.6rem;
+  border-radius: 50%;
+  background: var(--color-superficie);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+}
+
+.grafico-dona__centro strong {
+  font-size: 1.35rem;
+}
+
+.grafico-dona__centro span {
+  font-size: 0.72rem;
+  color: var(--color-texto-suave);
+}
+
+.grafico-dona__stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.85rem;
+  min-width: 10rem;
+}
+
+.grafico-dona__stats strong {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.grafico-dona__stats li {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.grafico-dona__abiertas {
+  margin-top: 0.15rem;
+  padding-top: 0.45rem;
+  border-top: 1px dashed var(--color-borde);
+  color: #92400e;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .panel-graficos__grid--maquinas {
+    grid-template-columns: 1fr;
+  }
+
+  .grafico-ranking__fila {
+    grid-template-columns: minmax(5.5rem, 8rem) 1fr minmax(4.8rem, 5.8rem);
+  }
+}
+
