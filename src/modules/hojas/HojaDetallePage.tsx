@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { areaTienePreventivo } from "../../lib/areas";
+import { areaTienePreventivo, coincideArea } from "../../lib/areas";
 import { imprimirFormatoHtml } from "../../lib/imprimirFormato";
 import { construirMtre045DesdePreventivo } from "../formatos/mtre045DesdePreventivo";
 import { listarPersonalActivo } from "../personal/personalService";
@@ -148,14 +148,29 @@ function HojaDetallePage() {
               <dt>Marca</dt>
               <dd>{hoja.datos.marca || "—"}</dd>
             </div>
-            <div>
-              <dt>Modelo</dt>
-              <dd>{hoja.datos.modelo || "—"}</dd>
-            </div>
-            <div>
-              <dt>Serial</dt>
-              <dd>{hoja.datos.serial || "—"}</dd>
-            </div>
+            {coincideArea(hoja.area, "Moldes") ? (
+              <>
+                <div>
+                  <dt>Peso del molde</dt>
+                  <dd>{hoja.datos.peso || "—"}</dd>
+                </div>
+                <div>
+                  <dt>Medidas del molde</dt>
+                  <dd>{hoja.datos.medidas || "—"}</dd>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <dt>Modelo</dt>
+                  <dd>{hoja.datos.modelo || "—"}</dd>
+                </div>
+                <div>
+                  <dt>Serial</dt>
+                  <dd>{hoja.datos.serial || "—"}</dd>
+                </div>
+              </>
+            )}
             <div>
               <dt>Ubicación</dt>
               <dd>{hoja.datos.ubicacion || "—"}</dd>

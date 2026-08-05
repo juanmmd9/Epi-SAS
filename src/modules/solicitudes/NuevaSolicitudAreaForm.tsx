@@ -27,6 +27,8 @@ function coincideBusquedaMolde(maquina: HojaVida, consulta: string): boolean {
     maquina.codigo,
     maquina.datos.ubicacion,
     maquina.datos.marca,
+    maquina.datos.peso,
+    maquina.datos.medidas,
     maquina.datos.modelo,
     maquina.datos.serial,
   ];

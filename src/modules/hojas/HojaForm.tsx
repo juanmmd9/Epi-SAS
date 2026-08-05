@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { AREAS_SISTEMA } from "../../lib/areas";
+import { AREAS_SISTEMA, coincideArea } from "../../lib/areas";
 import type { HojaVida, HojaVidaInput } from "./types";
 
 interface Props {
@@ -16,6 +16,8 @@ const formularioVacio = {
   marca: "",
   modelo: "",
   serial: "",
+  peso: "",
+  medidas: "",
   ubicacion: "",
   frecuencia: "12",
   primerPm: "",
@@ -24,6 +26,7 @@ const formularioVacio = {
 function HojaForm({ hojaEnEdicion, guardando, onGuardar, onCancelarEdicion }: Props) {
   const [campos, setCampos] = useState(formularioVacio);
   const [foto, setFoto] = useState<File | null>(null);
+  const esMoldes = coincideArea(campos.area, "Moldes");
 
   useEffect(() => {
     if (hojaEnEdicion) {
@@ -34,6 +37,8 @@ function HojaForm({ hojaEnEdicion, guardando, onGuardar, onCancelarEdicion }: Pr
         marca: hojaEnEdicion.datos.marca ?? "",
         modelo: hojaEnEdicion.datos.modelo ?? "",
         serial: hojaEnEdicion.datos.serial ?? "",
+        peso: hojaEnEdicion.datos.peso ?? "",
+        medidas: hojaEnEdicion.datos.medidas ?? "",
         ubicacion: hojaEnEdicion.datos.ubicacion ?? "",
         frecuencia: String(hojaEnEdicion.frecuencia_pm_meses ?? 12),
         primerPm: hojaEnEdicion.primer_pm ?? "",
@@ -50,6 +55,7 @@ function HojaForm({ hojaEnEdicion, guardando, onGuardar, onCancelarEdicion }: Pr
 
   function manejarEnvio(evento: FormEvent) {
     evento.preventDefault();
+    const areaMoldes = coincideArea(campos.area, "Moldes");
     onGuardar(
       {
         nombre: campos.nombre.trim(),
@@ -59,9 +65,22 @@ function HojaForm({ hojaEnEdicion, guardando, onGuardar, onCancelarEdicion }: Pr
         primer_pm: campos.primerPm || null,
         datos: {
           marca: campos.marca.trim(),
-          modelo: campos.modelo.trim(),
-          serial: campos.serial.trim(),
           ubicacion: campos.ubicacion.trim(),
+          ...(areaMoldes
+            ? {
+                peso: campos.peso.trim(),
+                medidas: campos.medidas.trim(),
+              }
+            : {
+                modelo: campos.modelo.trim(),
+                serial: campos.serial.trim(),
+              }),
+          ...(hojaEnEdicion?.datos.fechaBaja
+            ? { fechaBaja: hojaEnEdicion.datos.fechaBaja }
+            : {}),
+          ...(hojaEnEdicion?.datos.motivoBaja
+            ? { motivoBaja: hojaEnEdicion.datos.motivoBaja }
+            : {}),
         },
       },
       foto,
@@ -79,7 +98,7 @@ function HojaForm({ hojaEnEdicion, guardando, onGuardar, onCancelarEdicion }: Pr
             required
             value={campos.nombre}
             onChange={(e) => actualizarCampo("nombre", e.target.value)}
-            placeholder="Ej. Compresor principal"
+            placeholder={esMoldes ? "Ej. Molde tapa 500 ml" : "Ej. Compresor principal"}
           />
         </label>
 
@@ -89,7 +108,7 @@ function HojaForm({ hojaEnEdicion, guardando, onGuardar, onCancelarEdicion }: Pr
             required
             value={campos.codigo}
             onChange={(e) => actualizarCampo("codigo", e.target.value)}
-            placeholder="Ej. COM-001"
+            placeholder={esMoldes ? "Ej. MOL-001" : "Ej. COM-001"}
           />
         </label>
 
@@ -117,21 +136,45 @@ function HojaForm({ hojaEnEdicion, guardando, onGuardar, onCancelarEdicion }: Pr
           />
         </label>
 
-        <label>
-          Modelo
-          <input
-            value={campos.modelo}
-            onChange={(e) => actualizarCampo("modelo", e.target.value)}
-          />
-        </label>
+        {esMoldes ? (
+          <>
+            <label>
+              Peso del molde
+              <input
+                value={campos.peso}
+                onChange={(e) => actualizarCampo("peso", e.target.value)}
+                placeholder="Ej. 85 kg"
+              />
+            </label>
 
-        <label>
-          Serial
-          <input
-            value={campos.serial}
-            onChange={(e) => actualizarCampo("serial", e.target.value)}
-          />
-        </label>
+            <label>
+              Medidas del molde
+              <input
+                value={campos.medidas}
+                onChange={(e) => actualizarCampo("medidas", e.target.value)}
+                placeholder="Ej. 400 x 300 x 250 mm"
+              />
+            </label>
+          </>
+        ) : (
+          <>
+            <label>
+              Modelo
+              <input
+                value={campos.modelo}
+                onChange={(e) => actualizarCampo("modelo", e.target.value)}
+              />
+            </label>
+
+            <label>
+              Serial
+              <input
+                value={campos.serial}
+                onChange={(e) => actualizarCampo("serial", e.target.value)}
+              />
+            </label>
+          </>
+        )}
 
         <label>
           Ubicación

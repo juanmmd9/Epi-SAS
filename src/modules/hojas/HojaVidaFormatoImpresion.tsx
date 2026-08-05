@@ -1,4 +1,4 @@
-import { areaTienePreventivo } from "../../lib/areas";
+import { areaTienePreventivo, coincideArea } from "../../lib/areas";
 import type { HistorialMaquina } from "./hojasService";
 import type { HojaVida } from "./types";
 import "./hojaVidaImpresion.css";
@@ -19,6 +19,7 @@ function HojaVidaFormatoImpresion({ hoja, historial }: Props) {
   const preventivos = historial?.preventivos ?? [];
   const correctivos = historial?.correctivos ?? [];
   const fechaHoy = new Date().toLocaleDateString("es-CO");
+  const esMoldes = coincideArea(hoja.area, "Moldes");
 
   return (
     <article id={ID_HOJA_VIDA_IMPRESION} className="hv-print" aria-label="Formato imprimible hoja de vida">
@@ -63,14 +64,29 @@ function HojaVidaFormatoImpresion({ hoja, historial }: Props) {
               <dt>Marca</dt>
               <dd>{textoOGuion(hoja.datos.marca)}</dd>
             </div>
-            <div>
-              <dt>Modelo</dt>
-              <dd>{textoOGuion(hoja.datos.modelo)}</dd>
-            </div>
-            <div>
-              <dt>Serial</dt>
-              <dd>{textoOGuion(hoja.datos.serial)}</dd>
-            </div>
+            {esMoldes ? (
+              <>
+                <div>
+                  <dt>Peso del molde</dt>
+                  <dd>{textoOGuion(hoja.datos.peso)}</dd>
+                </div>
+                <div>
+                  <dt>Medidas del molde</dt>
+                  <dd>{textoOGuion(hoja.datos.medidas)}</dd>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <dt>Modelo</dt>
+                  <dd>{textoOGuion(hoja.datos.modelo)}</dd>
+                </div>
+                <div>
+                  <dt>Serial</dt>
+                  <dd>{textoOGuion(hoja.datos.serial)}</dd>
+                </div>
+              </>
+            )}
             <div>
               <dt>Ubicación</dt>
               <dd>{textoOGuion(hoja.datos.ubicacion)}</dd>

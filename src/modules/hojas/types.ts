@@ -2,6 +2,10 @@ export interface HojaVidaDatos {
   marca?: string;
   modelo?: string;
   serial?: string;
+  /** Solo área Moldes */
+  peso?: string;
+  /** Solo área Moldes */
+  medidas?: string;
   ubicacion?: string;
   fechaBaja?: string;
   motivoBaja?: string;
