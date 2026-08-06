@@ -11,6 +11,8 @@
 
 create table if not exists usuarios_portal (
   id uuid primary key references auth.users (id) on delete cascade,
+  -- Login del personal; Auth usa email interno usuario@epi.local
+  usuario text,
   email text not null,
   nombre text not null default '',
   rol text not null default 'operador'
@@ -22,6 +24,7 @@ create table if not exists usuarios_portal (
 
 create index if not exists idx_usuarios_portal_rol on usuarios_portal (rol);
 create index if not exists idx_usuarios_portal_personal on usuarios_portal (personal_id);
+create unique index if not exists idx_usuarios_portal_usuario on usuarios_portal (usuario);
 
 alter table usuarios_portal enable row level security;
 
@@ -271,8 +274,14 @@ create policy "auth borrar archivos epi" on storage.objects
     and public.usuario_es_admin()
   );
 
--- Ejemplo: crear primer administrador (reemplazar UUID y email)
--- insert into usuarios_portal (id, email, nombre, rol)
--- values ('00000000-0000-0000-0000-000000000000', 'admin@epi.com', 'Administrador', 'admin');
+-- Ejemplo: primer administrador (Auth email = admin@epi.local, login usuario = admin)
+-- insert into usuarios_portal (id, usuario, email, nombre, rol)
+-- values (
+--   '00000000-0000-0000-0000-000000000000',
+--   'admin',
+--   'admin@epi.local',
+--   'Administrador',
+--   'admin'
+-- );
 
-select 'RLS aplicado correctamente. Siguiente: crear usuario en Auth e insertar en usuarios_portal.' as resultado;
+select 'RLS aplicado correctamente. Preferible: crear usuarios desde Usuarios portal (usuario + contraseña).' as resultado;

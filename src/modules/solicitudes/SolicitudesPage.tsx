@@ -102,6 +102,7 @@ function SolicitudesPage() {
     });
   }, []);
 
+  // Mantenimiento: avisos globales en Layout. Solicitante: avisos en esta página.
   const {
     alertas,
     descartarAlerta,
@@ -115,6 +116,7 @@ function SolicitudesPage() {
     correctivos,
     onNuevaSolicitud: alNuevaSolicitud,
     habilitado: !cargando,
+    modo: esSolicitante ? "completo" : "solo-lista",
   });
 
   const totales = useMemo(
@@ -190,17 +192,34 @@ function SolicitudesPage() {
                 detalle.
               </>
             )}{" "}
-            Deja esta pantalla abierta para recibir avisos al instante.
+            {esSolicitante
+              ? "Deja esta pantalla abierta para recibir avisos al instante."
+              : "Los avisos de nuevas solicitudes llegan en toda la app (toast + notificación)."}
           </p>
         </div>
-        <PanelAlertasSolicitudes
-          enLinea={enLinea}
-          sondeoActivo={sondeoActivo}
-          sonidoActivo={sonidoActivo}
-          onToggleSonido={() => setSonidoActivo((v) => !v)}
-          alertas={alertas}
-          onDescartar={descartarAlerta}
-        />
+        {esSolicitante ? (
+          <PanelAlertasSolicitudes
+            enLinea={enLinea}
+            sondeoActivo={sondeoActivo}
+            sonidoActivo={sonidoActivo}
+            onToggleSonido={() => setSonidoActivo((v) => !v)}
+            alertas={alertas}
+            onDescartar={descartarAlerta}
+          />
+        ) : (
+          <div className="solicitudes-alerta__barra">
+            <span
+              className={
+                "solicitudes-alerta__estado" +
+                (enLinea || sondeoActivo
+                  ? " solicitudes-alerta__estado--en-linea"
+                  : " solicitudes-alerta__estado--off")
+              }
+            >
+              {enLinea ? "Lista en vivo" : sondeoActivo ? "Lista auto" : "Sin auto"}
+            </span>
+          </div>
+        )}
       </div>
 
       {error && <p className="solicitudes__error">{error}</p>}

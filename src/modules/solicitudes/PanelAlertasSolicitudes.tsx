@@ -10,6 +10,8 @@ interface Props {
   alertas: AlertaSolicitud[];
   onDescartar: (clave: string) => void;
   areaActual?: string;
+  /** Si true, solo toasts flotantes (avisos globales en Layout). */
+  soloToasts?: boolean;
 }
 
 function PanelAlertasSolicitudes({
@@ -20,39 +22,42 @@ function PanelAlertasSolicitudes({
   alertas,
   onDescartar,
   areaActual,
+  soloToasts = false,
 }: Props) {
   const actualizando = enLinea || sondeoActivo;
   return (
     <>
-      <div className="solicitudes-alerta__barra">
-        <span
-          className={
-            "solicitudes-alerta__estado" +
-            (actualizando
-              ? " solicitudes-alerta__estado--en-linea"
-              : " solicitudes-alerta__estado--off")
-          }
-          title={
-            enLinea
-              ? "Escuchando nuevas solicitudes en tiempo real"
-              : sondeoActivo
-                ? "Actualizando la lista cada pocos segundos (respaldo). Para avisos instantáneos ejecuta correctivo_realtime.sql en Supabase."
-                : "Sin actualización automática. Recarga o activa Realtime en Supabase."
-          }
-        >
-          {enLinea ? "En vivo" : sondeoActivo ? "Auto" : "Sin en vivo"}
-        </span>
-        <button
-          type="button"
-          className={"btn solicitudes-alerta__sonido" + (sonidoActivo ? " btn--primario" : "")}
-          onClick={onToggleSonido}
-        >
-          {sonidoActivo ? "Sonido ON" : "Sonido OFF"}
-        </button>
-        {alertas.length > 0 && (
-          <span className="solicitudes-alerta__badge">{alertas.length} nueva(s)</span>
-        )}
-      </div>
+      {!soloToasts && (
+        <div className="solicitudes-alerta__barra">
+          <span
+            className={
+              "solicitudes-alerta__estado" +
+              (actualizando
+                ? " solicitudes-alerta__estado--en-linea"
+                : " solicitudes-alerta__estado--off")
+            }
+            title={
+              enLinea
+                ? "Escuchando nuevas solicitudes en tiempo real"
+                : sondeoActivo
+                  ? "Actualizando la lista cada pocos segundos (respaldo). Para avisos instantáneos ejecuta correctivo_realtime.sql en Supabase."
+                  : "Sin actualización automática. Recarga o activa Realtime en Supabase."
+            }
+          >
+            {enLinea ? "En vivo" : sondeoActivo ? "Auto" : "Sin en vivo"}
+          </span>
+          <button
+            type="button"
+            className={"btn solicitudes-alerta__sonido" + (sonidoActivo ? " btn--primario" : "")}
+            onClick={onToggleSonido}
+          >
+            {sonidoActivo ? "Sonido ON" : "Sonido OFF"}
+          </button>
+          {alertas.length > 0 && (
+            <span className="solicitudes-alerta__badge">{alertas.length} nueva(s)</span>
+          )}
+        </div>
+      )}
 
       <div className="solicitudes-alerta__toasts" aria-live="polite">
         {alertas.map((alerta) => (

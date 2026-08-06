@@ -51,7 +51,9 @@ function Sidebar({ abierto, onCerrar }: Props) {
       </nav>
       {perfil && (
         <div className="sidebar__usuario">
-          <span className="sidebar__usuario-nombre">{perfil.nombre || perfil.email}</span>
+          <span className="sidebar__usuario-nombre">
+            {perfil.nombre || perfil.usuario || perfil.email}
+          </span>
           <span className="sidebar__usuario-rol">
             {ETIQUETAS_ROL[perfil.rol]}
             {areaUsuario(perfil) ? ` · ${areaUsuario(perfil)}` : ""}

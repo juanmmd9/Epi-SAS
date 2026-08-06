@@ -20,10 +20,15 @@ function AvisoSetupAuth() {
       <ol>
         <li>Abre Supabase → <strong>SQL Editor</strong>.</li>
         <li>Pega todo el script y pulsa <strong>Run</strong>.</li>
-        <li>Crea tu usuario en <strong>Authentication → Users</strong>.</li>
         <li>
-          Inserta tu perfil en <code>usuarios_portal</code> con rol{" "}
-          <strong>admin</strong> (ver comentario al final del script).
+          Crea el primer admin en <strong>Authentication → Users</strong> con email{" "}
+          <code>admin@epi.local</code> y una contraseña (login: usuario <code>admin</code>).
+        </li>
+        <li>
+          Inserta el perfil en <code>usuarios_portal</code> (usuario, email, rol admin; ver
+          comentario al final del script) y corre también{" "}
+          <code>usuarios_login_usuario.sql</code> si la columna <code>usuario</code> aún no
+          existe.
         </li>
         <li>Recarga esta página (Ctrl+F5).</li>
       </ol>

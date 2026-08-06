@@ -1,0 +1,81 @@
+PUSH FIREBASE — Portal Mantenimiento EPI
+========================================
+
+Objetivo: que admin/operador/consulta reciban notificación
+aunque la app esté CERRADA, cuando alguien cree una solicitud.
+
+Package Android: com.epi.portalmantenimiento
+
+------------------------------------------------
+PASO 1 — Firebase (consola web)
+------------------------------------------------
+1. Entra a https://console.firebase.google.com
+2. Crear proyecto (ej. epi-mantenimiento)
+3. Agregar app Android
+   - Nombre del paquete: com.epi.portalmantenimiento
+4. Descargar google-services.json
+5. Copiarlo a:
+   curso-web-paso1\android\app\google-services.json
+   (reemplaza el .example)
+
+6. Project settings → Service accounts → Generate new private key
+   Guarda el JSON (NO lo subas a Git).
+
+------------------------------------------------
+PASO 2 — Supabase SQL
+------------------------------------------------
+En SQL Editor ejecuta el archivo:
+  supabase/migrations/push_tokens.sql
+
+(Y si aún no: correctivo_realtime.sql)
+
+------------------------------------------------
+PASO 3 — Edge Function + secreto
+------------------------------------------------
+Con Supabase CLI (o Dashboard → Edge Functions):
+
+1. Secret:
+   FIREBASE_SERVICE_ACCOUNT_JSON = (pega TODO el JSON de la cuenta de servicio)
+
+   SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY suelen estar ya.
+
+2. Deploy:
+   supabase functions deploy avisar-solicitud-push --no-verify-jwt
+
+------------------------------------------------
+PASO 4 — Webhook al crear solicitud
+------------------------------------------------
+Supabase → Database → Webhooks → Create
+
+- Name: avisar-solicitud-push
+- Table: correctivo
+- Events: INSERT
+- Type: Supabase Edge Function
+- Function: avisar-solicitud-push
+  (o URL HTTP:
+   https://TU_PROJECT.supabase.co/functions/v1/avisar-solicitud-push
+   Header Authorization: Bearer SERVICE_ROLE_KEY)
+
+------------------------------------------------
+PASO 5 — Recompilar e instalar APK
+------------------------------------------------
+En la carpeta del portal:
+
+  npm run cap:sync
+
+Luego genera APK (Android Studio o gradlew assembleDebug)
+e instálalo en el celular.
+
+Al abrir con usuario admin/operador:
+- Acepta permiso de notificaciones
+- El token FCM se guarda solo
+
+Prueba: crea una solicitud desde otro usuario/área
+con la app CERRADA → debe llegar el aviso.
+
+------------------------------------------------
+Notas
+------------------------------------------------
+- iPhone: requiere Apple Developer + APNs (fase aparte).
+- Sin google-services.json el build sigue, pero push no funciona.
+- Los toasts/sonido en app abierta siguen funcionando sin Firebase.

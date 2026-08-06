@@ -22,11 +22,15 @@ function destinoSeguro(
   return rutaInicioParaRol(rol);
 }
 
+function etiquetaPerfil(perfil: { nombre: string; usuario: string; email: string }): string {
+  return perfil.nombre || perfil.usuario || perfil.email;
+}
+
 function LoginPage() {
   const navigate = useNavigate();
   const ubicacion = useLocation();
   const { session, perfil, cargando, salir } = useAuth();
-  const [email, setEmail] = useState("");
+  const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const [mostrarClave, setMostrarClave] = useState(false);
   const [recordar, setRecordar] = useState(false);
@@ -45,7 +49,7 @@ function LoginPage() {
   useEffect(() => {
     const guardadas = leerCredencialesRecordadas();
     if (guardadas) {
-      setEmail(guardadas.email);
+      setUsuario(guardadas.usuario);
       setPassword(guardadas.password);
       setRecordar(true);
     }
@@ -80,10 +84,10 @@ function LoginPage() {
     setError(null);
     setEnviando(true);
     try {
-      const correo = email.trim();
-      await iniciarSesion(correo, password);
+      const login = usuario.trim();
+      await iniciarSesion(login, password);
       if (recordar) {
-        guardarCredencialesRecordadas(correo, password);
+        guardarCredencialesRecordadas(login, password);
       } else {
         borrarCredencialesRecordadas();
       }
@@ -99,25 +103,32 @@ function LoginPage() {
 
   return (
     <div className="auth-login">
-      {faltaRls && <AvisoSetupAuth />}
+      {faltaRls && (
+        <div className="auth-login__aviso-rls">
+          <AvisoSetupAuth />
+        </div>
+      )}
+
       <div className="auth-login__tarjeta">
-        <div className="auth-login__marca">
+        <header className="auth-login__marca">
           <img
             className="auth-login__logo"
             src={rutaPublica("/Image/EPI-Logo.png")}
             alt="EPI — Empresa de Producción Industrial"
-            width={220}
-            height={70}
+            width={240}
+            height={76}
           />
-        </div>
+          <p className="auth-login__marca-texto">Empresa de Producción Industrial</p>
+        </header>
+
         <div className="auth-login__cuerpo">
           <h1>Portal de Mantenimiento</h1>
-          <p className="auth-login__subtitulo">Inicia sesión con tu cuenta corporativa</p>
+          <p className="auth-login__subtitulo">Inicia sesión con tu usuario o correo</p>
 
           {sesionActiva && (
             <div className="auth-login__sesion-activa">
               <p>
-                Ya hay una sesión abierta como <strong>{perfil.nombre || perfil.email}</strong> (
+                Ya hay una sesión abierta como <strong>{etiquetaPerfil(perfil)}</strong> (
                 {ETIQUETAS_ROL[perfil.rol]}).
               </p>
               <div className="auth-login__sesion-acciones">
@@ -147,13 +158,18 @@ function LoginPage() {
           {!sesionActiva && (
             <form className="auth-login__form" onSubmit={(e) => void manejarEnvio(e)}>
               <label>
-                Correo electrónico
+                Usuario o correo
                 <input
-                  type="email"
+                  type="text"
                   required
                   autoComplete="username"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="next"
+                  placeholder="ej. jperez o tu correo"
+                  value={usuario}
+                  onChange={(e) => setUsuario(e.target.value)}
                 />
               </label>
               <label>
@@ -163,6 +179,8 @@ function LoginPage() {
                     type={mostrarClave ? "text" : "password"}
                     required
                     autoComplete="current-password"
+                    enterKeyHint="go"
+                    placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
@@ -183,18 +201,16 @@ function LoginPage() {
                   checked={recordar}
                   onChange={(e) => setRecordar(e.target.checked)}
                 />
-                Recordar correo y contraseña en este equipo
+                Recordar usuario/correo y contraseña en este equipo
               </label>
               {error && <p className="auth-login__error">{error}</p>}
               <button type="submit" className="btn btn--primario auth-login__btn" disabled={enviando}>
-                {enviando ? "Entrando..." : "Entrar"}
+                {enviando ? "Entrando..." : "Iniciar sesión"}
               </button>
             </form>
           )}
 
-          <p className="auth-login__roles">
-            Roles: {Object.values(ETIQUETAS_ROL).join(" · ")}
-          </p>
+          <p className="auth-login__pie">Mantenimiento EPI</p>
         </div>
       </div>
     </div>

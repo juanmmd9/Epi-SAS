@@ -2,6 +2,9 @@ export type RolPortal = "admin" | "operador" | "consulta" | "solicitante";
 
 export interface UsuarioPortal {
   id: string;
+  /** Nombre de inicio de sesión (no es correo). */
+  usuario: string;
+  /** Email interno Auth (usuario@epi.local); no se usa en el login visible. */
   email: string;
   nombre: string;
   rol: RolPortal;

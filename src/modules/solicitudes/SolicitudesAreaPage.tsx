@@ -203,6 +203,9 @@ function SolicitudesAreaPage() {
     [correctivosDelAreaSinFiltro, contadorAnio, contadorMes, criterioContador],
   );
 
+  const esSolicitanteArea = perfil?.rol === "solicitante";
+  const puedeVerCorrectivo = puede("ver.correctivo");
+
   const alNuevaSolicitudRealtime = useCallback((registro: RegistroCorrectivo) => {
     setCorrectivos((prev) => {
       if (prev.some((r) => r.id === registro.id)) return prev;
@@ -226,6 +229,8 @@ function SolicitudesAreaPage() {
     correctivos,
     onNuevaSolicitud: alNuevaSolicitudRealtime,
     habilitado: areaValida && !cargando,
+    // Mantenimiento usa avisos globales; solicitante recibe avisos aquí.
+    modo: esSolicitanteArea ? "completo" : "solo-lista",
   });
 
   const alCrearSolicitud = useCallback(
@@ -236,9 +241,6 @@ function SolicitudesAreaPage() {
     },
     [marcarConocido],
   );
-
-  const esSolicitanteArea = perfil?.rol === "solicitante";
-  const puedeVerCorrectivo = puede("ver.correctivo");
 
   const etiquetaFiltroContador =
     filtroContador === "abiertas"
@@ -401,17 +403,34 @@ function SolicitudesAreaPage() {
               <Link to="/correctivo">Ir a mantenimiento correctivo</Link>
             </>
           )}
-          {" "}Deja esta pantalla abierta para avisos al instante.
+          {esSolicitanteArea
+            ? " Deja esta pantalla abierta para avisos al instante."
+            : " Los avisos llegan en toda la app (toast + notificación del celular)."}
         </p>
-        <PanelAlertasSolicitudes
-          enLinea={enLinea}
-          sondeoActivo={sondeoActivo}
-          sonidoActivo={sonidoActivo}
-          onToggleSonido={() => setSonidoActivo((v) => !v)}
-          alertas={alertas}
-          onDescartar={descartarAlerta}
-          areaActual={area}
-        />
+        {esSolicitanteArea ? (
+          <PanelAlertasSolicitudes
+            enLinea={enLinea}
+            sondeoActivo={sondeoActivo}
+            sonidoActivo={sonidoActivo}
+            onToggleSonido={() => setSonidoActivo((v) => !v)}
+            alertas={alertas}
+            onDescartar={descartarAlerta}
+            areaActual={area}
+          />
+        ) : (
+          <div className="solicitudes-alerta__barra">
+            <span
+              className={
+                "solicitudes-alerta__estado" +
+                (enLinea || sondeoActivo
+                  ? " solicitudes-alerta__estado--en-linea"
+                  : " solicitudes-alerta__estado--off")
+              }
+            >
+              {enLinea ? "Lista en vivo" : sondeoActivo ? "Lista auto" : "Sin auto"}
+            </span>
+          </div>
+        )}
       </div>
 
       {puedeEscribirArea ? (

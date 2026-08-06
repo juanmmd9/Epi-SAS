@@ -4,6 +4,7 @@ import { useAuth } from "../../modules/auth/AuthContext";
 import { rutaInicioParaRol } from "../../modules/auth/roles";
 import { permisoParaRuta } from "../../lib/guardRutas";
 import { areaUsuario } from "../../lib/usuarioArea";
+import AvisosSolicitudesGlobales from "../../modules/solicitudes/AvisosSolicitudesGlobales";
 import Sidebar from "./Sidebar";
 import "./Layout.css";
 
@@ -77,6 +78,7 @@ function Layout() {
           <Outlet />
         </main>
       </div>
+      <AvisosSolicitudesGlobales />
     </div>
   );
 }

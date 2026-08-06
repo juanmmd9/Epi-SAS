@@ -4,19 +4,19 @@ import { AREAS_SISTEMA } from "../../lib/areas";
 import { listarPersonal } from "../personal/personalService";
 import type { Persona } from "../personal/types";
 import { useAuth } from "./AuthContext";
+import { esUsuarioValido, normalizarUsuario } from "./loginUsuario";
 import { ETIQUETAS_ROL, type RolPortal } from "./roles";
 import {
   actualizarPerfilUsuario,
-  crearPerfilUsuario,
-  esUuidValido,
+  crearUsuarioPortalCompleto,
   listarUsuariosPortal,
 } from "./usuariosService";
 import type { UsuarioPortal } from "./roles";
 import "./usuarios.css";
 
 const formularioVacio = {
-  id: "",
-  email: "",
+  usuario: "",
+  password: "",
   nombre: "",
   rol: "operador" as RolPortal,
   personal_id: "",
@@ -68,11 +68,17 @@ function UsuariosPage() {
     setMensaje(null);
     setError(null);
 
-    if (!esUuidValido(campos.id)) {
-      setError("El UUID no es válido. Cópialo desde Supabase → Authentication → Users → User UID.");
+    const login = normalizarUsuario(campos.usuario);
+    if (!esUsuarioValido(login)) {
+      setError(
+        "Usuario inválido. Usa 2–63 caracteres: letras minúsculas, números, punto, guion o guion bajo.",
+      );
       return;
     }
-
+    if (campos.password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
     if (requiereArea(campos.rol) && !campos.area) {
       setError("El rol Solicitante de área requiere elegir el área de planta.");
       return;
@@ -80,16 +86,18 @@ function UsuariosPage() {
 
     setGuardando(true);
     try {
-      await crearPerfilUsuario({
-        id: campos.id.trim(),
-        email: campos.email.trim(),
+      const creado = await crearUsuarioPortalCompleto({
+        usuario: login,
+        password: campos.password,
         nombre: campos.nombre.trim(),
         rol: campos.rol,
         personal_id: campos.personal_id || null,
         area: campos.area || null,
       });
       setCampos(formularioVacio);
-      setMensaje("Usuario del portal creado. Ya puede iniciar sesión con su contraseña de Auth.");
+      setMensaje(
+        `Usuario "${creado.usuario}" creado. Ya puede iniciar sesión con ese usuario y la contraseña que definiste.`,
+      );
       await recargar();
     } catch (e) {
       setError((e as Error).message);
@@ -103,7 +111,9 @@ function UsuariosPage() {
     setError(null);
 
     if (requiereArea(usuario.rol) && !usuario.area) {
-      setError(`Asigna un área a ${usuario.nombre || usuario.email} (rol solicitante).`);
+      setError(
+        `Asigna un área a ${usuario.nombre || usuario.usuario || usuario.email} (rol solicitante).`,
+      );
       return;
     }
 
@@ -116,7 +126,7 @@ function UsuariosPage() {
         area: usuario.area,
         activo: usuario.activo,
       });
-      setMensaje(`Perfil de ${usuario.nombre || usuario.email} actualizado.`);
+      setMensaje(`Perfil de ${usuario.nombre || usuario.usuario || usuario.email} actualizado.`);
     } catch (e) {
       setError((e as Error).message);
       await recargar();
@@ -137,7 +147,8 @@ function UsuariosPage() {
         <div>
           <h1>Usuarios del portal</h1>
           <p className="usuarios__descripcion">
-            Administra quién puede entrar y con qué rol. La contraseña se crea en Supabase Auth.
+            Crea usuario y contraseña para cada operario. Las cuentas admin actuales pueden seguir
+            entrando con su Gmail o correo.
           </p>
         </div>
         <Link className="btn" to="/personal">
@@ -149,48 +160,59 @@ function UsuariosPage() {
         <strong>Cómo dar acceso a alguien nuevo</strong>
         <ol>
           <li>
-            Supabase → <strong>Authentication → Users → Add user</strong> (correo + contraseña).
-          </li>
-          <li>Copia el <strong>User UID</strong> de ese usuario.</li>
-          <li>Pégalo abajo y elige rol (<strong>operador</strong>, <strong>consulta</strong> o{" "}
-            <strong>solicitante de área</strong>).
+            Elige un <strong>usuario</strong> (ej. <code>jperez</code>) y una{" "}
+            <strong>contraseña</strong>; el personal entra con esos datos.
           </li>
           <li>
-            Para personal de producción: rol <strong>solicitante de área</strong> (el área del
-            perfil es opcional). Verán Inicio (PM solo consulta), el tablero de todas las áreas
-            donde pueden crear solicitudes en cualquiera, y Hojas de vida para registrar o
-            editar máquinas.
+            Asigna rol: <strong>operador</strong>, <strong>consulta</strong>,{" "}
+            <strong>solicitante de área</strong> o <strong>administrador</strong>.
+          </li>
+          <li>
+            Para personal de producción: rol <strong>solicitante de área</strong>. Verán Inicio,
+            el tablero de solicitudes y Hojas de vida.
           </li>
           <li>
             Si es operador de mantenimiento, vincula su fila de <strong>personal</strong> (para la
             matriz).
           </li>
         </ol>
+        <p className="usuarios__nota-migracion">
+          <strong>Cuentas actuales (Gmail / correo):</strong> no las toques en Authentication.
+          Solo ejecuta <code>usuarios_login_usuario.sql</code> una vez. Los operarios nuevos se
+          crean aquí con usuario + contraseña. Guía:{" "}
+          <code>presentacion/migrar-login-usuario.txt</code>.
+        </p>
       </aside>
 
       {mensaje && <p className="usuarios__mensaje usuarios__mensaje--ok">{mensaje}</p>}
       {error && <p className="usuarios__mensaje usuarios__mensaje--error">{error}</p>}
 
       <form className="usuarios-form" onSubmit={(e) => void manejarCrear(e)}>
-        <h2>Agregar perfil al portal</h2>
+        <h2>Crear usuario del portal</h2>
         <div className="usuarios-form__grid">
-          <label className="usuarios-form__uuid">
-            User UID (UUID de Supabase Auth)
+          <label>
+            Usuario (login)
             <input
               type="text"
               required
-              placeholder="f47ac10b-58cc-4372-a567-0e02b2c3d479"
-              value={campos.id}
-              onChange={(e) => setCampos({ ...campos, id: e.target.value.trim() })}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="jperez"
+              value={campos.usuario}
+              onChange={(e) => setCampos({ ...campos, usuario: e.target.value })}
             />
           </label>
           <label>
-            Correo (igual que en Auth)
+            Contraseña
             <input
-              type="email"
+              type="text"
               required
-              value={campos.email}
-              onChange={(e) => setCampos({ ...campos, email: e.target.value })}
+              minLength={6}
+              autoComplete="new-password"
+              placeholder="Mínimo 6 caracteres"
+              value={campos.password}
+              onChange={(e) => setCampos({ ...campos, password: e.target.value })}
             />
           </label>
           <label>
@@ -255,7 +277,7 @@ function UsuariosPage() {
         </div>
         <div className="usuarios-form__acciones">
           <button type="submit" className="btn btn--primario" disabled={guardando}>
-            {guardando ? "Guardando..." : "Crear perfil"}
+            {guardando ? "Creando..." : "Crear usuario"}
           </button>
         </div>
       </form>
@@ -269,12 +291,11 @@ function UsuariosPage() {
             <thead>
               <tr>
                 <th>Nombre</th>
-                <th>Correo</th>
+                <th>Usuario</th>
                 <th>Rol</th>
                 <th>Área</th>
                 <th>Técnico</th>
                 <th>Activo</th>
-                <th>UUID</th>
                 <th></th>
               </tr>
             </thead>
@@ -288,7 +309,9 @@ function UsuariosPage() {
                       onChange={(e) => actualizarCampoLista(u.id, { nombre: e.target.value })}
                     />
                   </td>
-                  <td>{u.email}</td>
+                  <td>
+                    <code>{u.usuario || "—"}</code>
+                  </td>
                   <td>
                     <span className={badgeRol(u.rol)}>{ETIQUETAS_ROL[u.rol]}</span>
                     <select
@@ -347,7 +370,6 @@ function UsuariosPage() {
                       onChange={(e) => actualizarCampoLista(u.id, { activo: e.target.checked })}
                     />
                   </td>
-                  <td className="usuarios-tabla__uuid">{u.id}</td>
                   <td>
                     <div className="usuarios-tabla__acciones">
                       <button

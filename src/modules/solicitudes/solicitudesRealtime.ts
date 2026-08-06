@@ -1,3 +1,5 @@
+import { Capacitor } from "@capacitor/core";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { coincideArea } from "../../lib/areas";
 import type { RegistroCorrectivo } from "../correctivo/types";
 import { solicitudAbierta } from "./solicitudesCalculo";
@@ -50,7 +52,9 @@ export function esSolicitudNuevaNotificable(
 
 export function reproducirSonidoNuevaSolicitud(): void {
   try {
-    const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const AudioCtx =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
     const osc = ctx.createOscillator();
@@ -71,24 +75,68 @@ export function reproducirSonidoNuevaSolicitud(): void {
   }
 }
 
-export async function solicitarPermisoNotificaciones(): Promise<NotificationPermission | null> {
-  if (!("Notification" in window)) return null;
-  if (Notification.permission === "granted") return "granted";
-  if (Notification.permission === "denied") return "denied";
+export async function solicitarPermisoNotificaciones(): Promise<boolean> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const actual = await LocalNotifications.checkPermissions();
+      if (actual.display === "granted") return true;
+      const pedido = await LocalNotifications.requestPermissions();
+      return pedido.display === "granted";
+    } catch {
+      return false;
+    }
+  }
+
+  if (!("Notification" in window)) return false;
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") return false;
   try {
-    return await Notification.requestPermission();
+    const permiso = await Notification.requestPermission();
+    return permiso === "granted";
   } catch {
-    return null;
+    return false;
   }
 }
 
-export function mostrarNotificacionSistema(alerta: AlertaSolicitud): void {
+/** Notificación del sistema / bandeja del celular (también con la app en primer plano). */
+export async function mostrarNotificacionSistema(alerta: AlertaSolicitud): Promise<void> {
+  const titulo = `Nueva solicitud #${alerta.numero || "—"}`;
+  const cuerpo = `${alerta.area} · ${alerta.maquina} — ${alerta.solicitante}`;
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const permiso = await LocalNotifications.checkPermissions();
+      if (permiso.display !== "granted") {
+        const pedido = await LocalNotifications.requestPermissions();
+        if (pedido.display !== "granted") return;
+      }
+      const id = Math.abs(
+        Array.from(alerta.registroId).reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) | 0, 7),
+      );
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: id % 2_000_000_000 || 1,
+            title: titulo,
+            body: cuerpo,
+            largeBody: cuerpo,
+            summaryText: "Portal Mantenimiento EPI",
+            extra: { registroId: alerta.registroId, area: alerta.area },
+          },
+        ],
+      });
+      return;
+    } catch {
+      // Continúa con Notification web si falla el plugin.
+    }
+  }
+
   if (!("Notification" in window) || Notification.permission !== "granted") return;
-  if (!document.hidden) return;
   try {
-    const notif = new Notification(`Nueva solicitud #${alerta.numero || "—"}`, {
-      body: `${alerta.area} · ${alerta.maquina}\n${alerta.solicitante}`,
+    const notif = new Notification(titulo, {
+      body: cuerpo,
       tag: `solicitud-${alerta.registroId}`,
+      requireInteraction: false,
     });
     notif.onclick = () => {
       window.focus();

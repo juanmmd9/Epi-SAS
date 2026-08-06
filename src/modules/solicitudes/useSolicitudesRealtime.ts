@@ -14,11 +14,19 @@ import {
   type AlertaSolicitud,
 } from "./solicitudesRealtime";
 
+export type ModoRealtimeSolicitudes = "completo" | "solo-lista" | "solo-alertas";
+
 interface OpcionesRealtime {
   areaFiltro?: string;
   correctivos: RegistroCorrectivo[];
   onNuevaSolicitud?: (registro: RegistroCorrectivo) => void;
   habilitado?: boolean;
+  /**
+   * completo: lista + toasts + notificación (páginas de solicitudes).
+   * solo-lista: actualiza lista sin avisar (si ya hay avisos globales).
+   * solo-alertas: toasts + notificación en toda la app (Layout).
+   */
+  modo?: ModoRealtimeSolicitudes;
 }
 
 const INTERVALO_SONDEO_MS = 8_000;
@@ -28,12 +36,14 @@ export function useSolicitudesRealtime({
   correctivos,
   onNuevaSolicitud,
   habilitado = true,
+  modo = "completo",
 }: OpcionesRealtime) {
   const conocidos = useRef(new Set<string>());
   const onNuevaRef = useRef(onNuevaSolicitud);
   const sonidoRef = useRef(leerPreferenciaSonido());
   const areaFiltroRef = useRef(areaFiltro);
   const sondeoEnCurso = useRef(false);
+  const listoParaAlertar = useRef(modo !== "solo-alertas");
 
   const [alertas, setAlertas] = useState<AlertaSolicitud[]>([]);
   const [enLinea, setEnLinea] = useState(false);
@@ -48,7 +58,29 @@ export function useSolicitudesRealtime({
 
   useEffect(() => {
     correctivos.forEach((r) => conocidos.current.add(r.id));
-  }, [correctivos]);
+    if (modo !== "solo-alertas" && correctivos.length > 0) {
+      listoParaAlertar.current = true;
+    }
+  }, [correctivos, modo]);
+
+  // En modo global: marcar existentes como conocidos antes de alertar.
+  useEffect(() => {
+    if (!habilitado || modo !== "solo-alertas") return;
+    let cancelado = false;
+    listoParaAlertar.current = false;
+    void listarCorrectivo()
+      .then((regs) => {
+        if (cancelado) return;
+        for (const r of regs) conocidos.current.add(r.id);
+        listoParaAlertar.current = true;
+      })
+      .catch(() => {
+        if (!cancelado) listoParaAlertar.current = true;
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [habilitado, modo]);
 
   useEffect(() => {
     guardarPreferenciaSonido(sonidoActivo);
@@ -69,14 +101,18 @@ export function useSolicitudesRealtime({
     }, 10_000);
   }, []);
 
+  const modoRef = useRef(modo);
+  modoRef.current = modo;
+
   const registrarAlerta = useCallback(
     (registro: RegistroCorrectivo) => {
+      if (modoRef.current === "solo-lista") return;
       const alerta = crearAlertaDesdeRegistro(registro);
       setAlertas((prev) => [alerta, ...prev].slice(0, 6));
       setAreasConNueva((prev) => new Set(prev).add(registro.area));
       destacarRegistro(registro.id);
       if (sonidoRef.current) reproducirSonidoNuevaSolicitud();
-      mostrarNotificacionSistema(alerta);
+      void mostrarNotificacionSistema(alerta);
     },
     [destacarRegistro],
   );
@@ -84,9 +120,15 @@ export function useSolicitudesRealtime({
   const procesarNueva = useCallback(
     (registro: RegistroCorrectivo) => {
       if (conocidos.current.has(registro.id)) return false;
+      if (!listoParaAlertar.current) {
+        conocidos.current.add(registro.id);
+        return false;
+      }
       conocidos.current.add(registro.id);
       if (!esSolicitudNuevaNotificable(registro, areaFiltroRef.current)) return false;
-      onNuevaRef.current?.(registro);
+      if (modoRef.current !== "solo-alertas") {
+        onNuevaRef.current?.(registro);
+      }
       registrarAlerta(registro);
       return true;
     },
