@@ -1,6 +1,7 @@
 import { aFechaIso, parseFechaIso } from "../../lib/fechas";
 import { ocurrenciasEnAnio } from "../cronograma/cronogramaCalculo";
 import type { HojaVida } from "../hojas/types";
+import { pmCuentaParaCronograma } from "./aprobacionPm";
 import type { RegistroPreventivo } from "./types";
 
 /** Preferencia corta: PM hecho unos días antes/después de la cita. */
@@ -136,6 +137,8 @@ export function indicesPmCompletado(
 
   for (const registro of preventivo) {
     if (!registro.hoja_id || !registro.fecha) continue;
+    // Pendiente o rechazado: el cronograma no lo cuenta como cumplido.
+    if (!pmCuentaParaCronograma(registro)) continue;
     const fechaEjec = registro.fecha.slice(0, 10);
     const anioReg = Number(fechaEjec.slice(0, 4));
     if (Number.isNaN(anioReg) || anioReg < anio - 1 || anioReg > anio + 1) continue;

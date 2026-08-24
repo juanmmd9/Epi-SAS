@@ -184,3 +184,8 @@
   background: #e8f5e9;
   color: #1b5e20;
 }
+
+.usuarios__badge--lider {
+  background: #e0f2f1;
+  color: #00695c;
+}

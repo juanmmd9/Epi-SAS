@@ -5,6 +5,7 @@ import LoginPage from "./modules/auth/LoginPage";
 import RequireAuth from "./modules/auth/RequireAuth";
 import InicioPage from "./modules/inicio/InicioPage";
 import PreventivoPage from "./modules/preventivo/PreventivoPage";
+import AprobacionPmPage from "./modules/preventivo/AprobacionPmPage";
 import CronogramaPage from "./modules/cronograma/CronogramaPage";
 import CorrectivoPage from "./modules/correctivo/CorrectivoPage";
 import SolicitudesPage from "./modules/solicitudes/SolicitudesPage";
@@ -35,6 +36,7 @@ function App() {
           <Route element={<Layout />}>
             <Route index element={<InicioPage />} />
             <Route path="preventivo" element={<PreventivoPage />} />
+            <Route path="preventivo/aprobaciones" element={<AprobacionPmPage />} />
             <Route path="preventivo/cronograma" element={<CronogramaPage />} />
             <Route path="correctivo" element={<CorrectivoPage />} />
             <Route path="solicitudes" element={<SolicitudesPage />} />

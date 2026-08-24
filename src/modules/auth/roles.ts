@@ -1,4 +1,4 @@
-export type RolPortal = "admin" | "operador" | "consulta" | "solicitante";
+export type RolPortal = "admin" | "operador" | "consulta" | "solicitante" | "lider";
 
 export interface UsuarioPortal {
   id: string;
@@ -19,6 +19,7 @@ export const ETIQUETAS_ROL: Record<RolPortal, string> = {
   operador: "Operador",
   consulta: "Consulta",
   solicitante: "Solicitante de área",
+  lider: "Líder de área",
 };
 
 export type Permiso =
@@ -47,18 +48,19 @@ export type Permiso =
   | "crear.repuestos"
   | "crear.permisos"
   | "aprobar.permisos"
+  | "aprobar.preventivo"
   | "eliminar.registros"
   | "gestionar.usuarios";
 
 const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
-  "ver.inicio": ["admin", "operador", "consulta", "solicitante"],
-  "ver.preventivo": ["admin", "operador", "consulta"],
+  "ver.inicio": ["admin", "operador", "consulta", "solicitante", "lider"],
+  "ver.preventivo": ["admin", "operador", "consulta", "lider"],
   "ver.correctivo": ["admin", "operador", "consulta"],
   "ver.solicitudes": ["admin", "operador", "consulta", "solicitante"],
-  "ver.hojas": ["admin", "operador", "consulta", "solicitante"],
+  "ver.hojas": ["admin", "operador", "consulta", "solicitante", "lider"],
   "ver.computadores": ["admin"],
   "ver.indicadores": ["admin", "consulta"],
-  "ver.formatos": ["admin"],
+  "ver.formatos": ["admin", "lider"],
   "ver.personal": ["admin"],
   "ver.permisos": ["admin", "operador"],
   "ver.matriz": ["admin"],
@@ -76,6 +78,7 @@ const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
   "crear.repuestos": ["admin", "operador", "solicitante"],
   "crear.permisos": ["admin", "operador"],
   "aprobar.permisos": ["admin"],
+  "aprobar.preventivo": ["admin", "lider"],
   "eliminar.registros": ["admin"],
   "gestionar.usuarios": ["admin"],
 };
@@ -94,6 +97,11 @@ export interface EnlaceNav {
 export const ENLACES_NAV: EnlaceNav[] = [
   { ruta: "/", texto: "Inicio", permiso: "ver.inicio" },
   { ruta: "/preventivo", texto: "Mant. preventivo", permiso: "ver.preventivo" },
+  {
+    ruta: "/preventivo/aprobaciones",
+    texto: "Aprobar PM",
+    permiso: "aprobar.preventivo",
+  },
   { ruta: "/correctivo", texto: "Mant. correctivo", permiso: "ver.correctivo" },
   { ruta: "/solicitudes", texto: "Solicitudes", permiso: "ver.solicitudes" },
   { ruta: "/hojas-de-vida", texto: "Hojas de vida", permiso: "ver.hojas" },
@@ -116,5 +124,6 @@ export function rutaInicioParaRol(
   _area?: string | null | undefined,
 ): string {
   if (rol === "solicitante") return "/solicitudes";
+  if (rol === "lider") return "/preventivo/aprobaciones";
   return "/";
 }

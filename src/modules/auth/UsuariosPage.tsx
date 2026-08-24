@@ -4,14 +4,15 @@ import { AREAS_SISTEMA } from "../../lib/areas";
 import { listarPersonal } from "../personal/personalService";
 import type { Persona } from "../personal/types";
 import { useAuth } from "./AuthContext";
-import { esUsuarioValido, normalizarUsuario } from "./loginUsuario";
-import { ETIQUETAS_ROL, type RolPortal } from "./roles";
+import { esUsuarioValido, normalizarUsuario, emailAuthDesdeUsuario } from "./loginUsuario";
+import { ETIQUETAS_ROL, type RolPortal, type UsuarioPortal } from "./roles";
 import {
   actualizarPerfilUsuario,
+  crearPerfilUsuario,
   crearUsuarioPortalCompleto,
+  esUuidValido,
   listarUsuariosPortal,
 } from "./usuariosService";
-import type { UsuarioPortal } from "./roles";
 import "./usuarios.css";
 
 const formularioVacio = {
@@ -23,8 +24,18 @@ const formularioVacio = {
   area: "",
 };
 
-function requiereArea(_rol: RolPortal): boolean {
-  return false;
+const vincularVacio = {
+  id: "",
+  usuario: "",
+  email: "",
+  nombre: "",
+  rol: "operador" as RolPortal,
+  personal_id: "",
+  area: "",
+};
+
+function requiereArea(rol: RolPortal): boolean {
+  return rol === "lider";
 }
 
 function badgeRol(rol: RolPortal) {
@@ -40,6 +51,7 @@ function UsuariosPage() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [campos, setCampos] = useState(formularioVacio);
+  const [vincular, setVincular] = useState(vincularVacio);
 
   const recargar = useCallback(async () => {
     setCargando(true);
@@ -80,7 +92,7 @@ function UsuariosPage() {
       return;
     }
     if (requiereArea(campos.rol) && !campos.area) {
-      setError("El rol Solicitante de área requiere elegir el área de planta.");
+      setError("El rol Líder de área requiere elegir el área de planta.");
       return;
     }
 
@@ -106,13 +118,57 @@ function UsuariosPage() {
     }
   }
 
+  async function manejarVincular(evento: FormEvent) {
+    evento.preventDefault();
+    setMensaje(null);
+    setError(null);
+
+    if (!esUuidValido(vincular.id)) {
+      setError("El UUID no es válido. Cópialo en Authentication → Users → User UID.");
+      return;
+    }
+    const login = normalizarUsuario(vincular.usuario);
+    if (!esUsuarioValido(login)) {
+      setError(
+        "Usuario inválido. Usa 2–63 caracteres: letras minúsculas, números, punto, guion o guion bajo.",
+      );
+      return;
+    }
+    if (requiereArea(vincular.rol) && !vincular.area) {
+      setError("El rol Líder de área requiere elegir el área de planta.");
+      return;
+    }
+
+    setGuardando(true);
+    try {
+      await crearPerfilUsuario({
+        id: vincular.id.trim(),
+        usuario: login,
+        email: vincular.email.trim() || emailAuthDesdeUsuario(login),
+        nombre: vincular.nombre.trim(),
+        rol: vincular.rol,
+        personal_id: vincular.personal_id || null,
+        area: vincular.area || null,
+      });
+      setVincular(vincularVacio);
+      setMensaje(
+        `Perfil vinculado. Puede entrar con usuario "${login}" (y el correo/clave de Auth).`,
+      );
+      await recargar();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   async function guardarFila(usuario: UsuarioPortal) {
     setMensaje(null);
     setError(null);
 
     if (requiereArea(usuario.rol) && !usuario.area) {
       setError(
-        `Asigna un área a ${usuario.nombre || usuario.usuario || usuario.email} (rol solicitante).`,
+        `Asigna un área a ${usuario.nombre || usuario.usuario || usuario.email} (rol líder de área).`,
       );
       return;
     }
@@ -165,11 +221,16 @@ function UsuariosPage() {
           </li>
           <li>
             Asigna rol: <strong>operador</strong>, <strong>consulta</strong>,{" "}
-            <strong>solicitante de área</strong> o <strong>administrador</strong>.
+            <strong>solicitante de área</strong>, <strong>líder de área</strong> o{" "}
+            <strong>administrador</strong>.
           </li>
           <li>
             Para personal de producción: rol <strong>solicitante de área</strong>. Verán Inicio,
             el tablero de solicitudes y Hojas de vida.
+          </li>
+          <li>
+            Para jefes de área que firman el PM: rol <strong>líder de área</strong> (elige el área).
+            Verán la bandeja <strong>Aprobar PM</strong> con los MT-RE-045 pendientes.
           </li>
           <li>
             Si es operador de mantenimiento, vincula su fila de <strong>personal</strong> (para la
@@ -234,6 +295,7 @@ function UsuariosPage() {
               <option value="operador">Operador</option>
               <option value="consulta">Consulta</option>
               <option value="solicitante">Solicitante de área</option>
+              <option value="lider">Líder de área</option>
             </select>
           </label>
           <label>
@@ -282,6 +344,90 @@ function UsuariosPage() {
         </div>
       </form>
 
+      <form className="usuarios-form" onSubmit={(e) => void manejarVincular(e)}>
+        <h2>Vincular usuario ya creado en Authentication</h2>
+        <p className="usuarios__descripcion">
+          Si ya lo creaste en Supabase → Authentication → Users, pega el UUID y define el{" "}
+          <strong>usuario</strong> de login (obligatorio).
+        </p>
+        <div className="usuarios-form__grid">
+          <label className="usuarios-form__uuid">
+            User UID (UUID de Auth)
+            <input
+              type="text"
+              required
+              placeholder="f47ac10b-58cc-4372-a567-0e02b2c3d479"
+              value={vincular.id}
+              onChange={(e) => setVincular({ ...vincular, id: e.target.value.trim() })}
+            />
+          </label>
+          <label>
+            Usuario (login) *
+            <input
+              type="text"
+              required
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="jperez"
+              value={vincular.usuario}
+              onChange={(e) => setVincular({ ...vincular, usuario: e.target.value })}
+            />
+          </label>
+          <label>
+            Correo Auth (opcional)
+            <input
+              type="email"
+              placeholder="si está vacío se usa usuario@epi.local"
+              value={vincular.email}
+              onChange={(e) => setVincular({ ...vincular, email: e.target.value })}
+            />
+          </label>
+          <label>
+            Nombre en el portal
+            <input
+              type="text"
+              required
+              value={vincular.nombre}
+              onChange={(e) => setVincular({ ...vincular, nombre: e.target.value })}
+            />
+          </label>
+          <label>
+            Rol
+            <select
+              value={vincular.rol}
+              onChange={(e) => setVincular({ ...vincular, rol: e.target.value as RolPortal })}
+            >
+              <option value="admin">Administrador</option>
+              <option value="operador">Operador</option>
+              <option value="consulta">Consulta</option>
+              <option value="solicitante">Solicitante de área</option>
+              <option value="lider">Líder de área</option>
+            </select>
+          </label>
+          <label>
+            Área {requiereArea(vincular.rol) ? "*" : "(opcional)"}
+            <select
+              required={requiereArea(vincular.rol)}
+              value={vincular.area}
+              onChange={(e) => setVincular({ ...vincular, area: e.target.value })}
+            >
+              <option value="">— Sin área —</option>
+              {AREAS_SISTEMA.map((area) => (
+                <option key={area} value={area}>
+                  {area}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="usuarios-form__acciones">
+          <button type="submit" className="btn btn--primario" disabled={guardando}>
+            {guardando ? "Vinculando..." : "Vincular perfil"}
+          </button>
+        </div>
+      </form>
+
       <h2>Usuarios registrados</h2>
       {cargando ? (
         <p>Cargando...</p>
@@ -324,6 +470,7 @@ function UsuariosPage() {
                       <option value="operador">Operador</option>
                       <option value="consulta">Consulta</option>
                       <option value="solicitante">Solicitante de área</option>
+                      <option value="lider">Líder de área</option>
                     </select>
                   </td>
                   <td>

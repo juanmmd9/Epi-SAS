@@ -59,19 +59,24 @@ Supabase → Database → Webhooks → Create
 ------------------------------------------------
 PASO 5 — Recompilar e instalar APK
 ------------------------------------------------
-En la carpeta del portal:
+IMPORTANTE: sin google-services.json la APK anterior podía cerrarse
+al abrir (Firebase). Hasta tener ese archivo, el build NO incluye
+el plugin de Push FCM. Los avisos con la app abierta siguen funcionando.
 
+Cuando ya tengas android\app\google-services.json:
+
+  npm install @capacitor/push-notifications
+  (restaurar el hook usePushNotificaciones)
   npm run cap:sync
+  luego assembleDebug
 
-Luego genera APK (Android Studio o gradlew assembleDebug)
-e instálalo en el celular.
+Sin Firebase todavía:
 
-Al abrir con usuario admin/operador:
-- Acepta permiso de notificaciones
-- El token FCM se guarda solo
+  $env:CAPACITOR="true"; npm run cap:sync
+  cd android; .\gradlew.bat assembleDebug
 
-Prueba: crea una solicitud desde otro usuario/área
-con la app CERRADA → debe llegar el aviso.
+APK: presentacion\Portal-Mantenimiento-EPI.apk
+
 
 ------------------------------------------------
 Notas

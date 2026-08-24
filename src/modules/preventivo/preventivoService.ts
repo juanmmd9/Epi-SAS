@@ -67,3 +67,68 @@ export async function eliminarPreventivo(id: string): Promise<void> {
   const { error } = await supabase.from(TABLA).delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
+
+type FirmaAprobacion = {
+  usuarioId: string;
+  nombre: string;
+};
+
+/** Envía / reenvía el PM al líder (pendiente de firma). */
+export function datosEnviarAprobacion(
+  datos: RegistroPreventivo["datos"],
+): RegistroPreventivo["datos"] {
+  const ahora = new Date().toISOString();
+  return {
+    ...datos,
+    estadoAprobacion: "pendiente_aprobacion",
+    enviadoAprobacionEn: ahora,
+    motivoRechazo: undefined,
+    rechazadoPorId: undefined,
+    rechazadoPorNombre: undefined,
+    rechazadoEn: undefined,
+    aprobadoPorId: undefined,
+    aprobadoPorNombre: undefined,
+    aprobadoEn: undefined,
+  };
+}
+
+export async function aprobarPreventivo(
+  registro: RegistroPreventivo,
+  firma: FirmaAprobacion,
+): Promise<RegistroPreventivo> {
+  const ahora = new Date().toISOString();
+  return actualizarPreventivo(registro.id, {
+    datos: {
+      ...registro.datos,
+      estadoAprobacion: "aprobado",
+      aprobadoPorId: firma.usuarioId,
+      aprobadoPorNombre: firma.nombre,
+      aprobadoEn: ahora,
+      motivoRechazo: undefined,
+      rechazadoPorId: undefined,
+      rechazadoPorNombre: undefined,
+      rechazadoEn: undefined,
+    },
+  });
+}
+
+export async function rechazarPreventivo(
+  registro: RegistroPreventivo,
+  firma: FirmaAprobacion,
+  motivo: string,
+): Promise<RegistroPreventivo> {
+  const ahora = new Date().toISOString();
+  return actualizarPreventivo(registro.id, {
+    datos: {
+      ...registro.datos,
+      estadoAprobacion: "rechazado",
+      rechazadoPorId: firma.usuarioId,
+      rechazadoPorNombre: firma.nombre,
+      rechazadoEn: ahora,
+      motivoRechazo: motivo.trim(),
+      aprobadoPorId: undefined,
+      aprobadoPorNombre: undefined,
+      aprobadoEn: undefined,
+    },
+  });
+}

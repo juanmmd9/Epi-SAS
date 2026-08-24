@@ -20,10 +20,15 @@ import type { Persona } from "../personal/types";
 import {
   actualizarPreventivo,
   crearPreventivo,
+  datosEnviarAprobacion,
   eliminarPreventivo,
   listarPreventivo,
   ordenarRegistrosPreventivo,
 } from "./preventivoService";
+import {
+  ETIQUETAS_ESTADO_APROBACION_PM,
+  estadoAprobacionPm,
+} from "./aprobacionPm";
 import {
   construirMtre045AlGuardar,
   construirMtre045DesdePreventivo,
@@ -443,9 +448,12 @@ function PreventivoPage() {
           formato: formatoMtre045,
           numeroReporte: numero,
         });
+        const datosConAprobacion = datosEnviarAprobacion(
+          datosConNumeroReporte({ ...datosBase, mtre045 }, numero),
+        );
         const actualizado = await actualizarPreventivo(editandoId, {
           ...inputBase,
-          datos: datosConNumeroReporte({ ...datosBase, mtre045 }, numero),
+          datos: datosConAprobacion,
         });
         let listaFinal = registros.map((r) => (r.id === actualizado.id ? actualizado : r));
         const claves = clavesGrupoAfectadas(registroAnterior, maquina.area, campos.fecha);
@@ -455,7 +463,9 @@ function PreventivoPage() {
           calcularMapaNumerosReporte(listaFinal),
         );
         setRegistros(ordenarRegistrosPreventivo(listaFinal));
-        setMensaje("Registro y reporte MT-RE-045 guardados. Puede imprimir desde el botón MT-RE-045.");
+        setMensaje(
+          "Registro actualizado y enviado al líder de área para firmar el MT-RE-045. El cronograma se marcará cumplido al aprobar.",
+        );
         cancelarEdicion();
       } else {
         const creado = await crearPreventivo(inputBase);
@@ -473,8 +483,11 @@ function PreventivoPage() {
           formato: formatoMtre045,
           numeroReporte: numero,
         });
+        const datosConAprobacion = datosEnviarAprobacion(
+          datosConNumeroReporte({ ...creado.datos, ...datosBase, mtre045 }, numero),
+        );
         const actualizado = await actualizarPreventivo(creado.id, {
-          datos: datosConNumeroReporte({ ...creado.datos, ...datosBase, mtre045 }, numero),
+          datos: datosConAprobacion,
         });
         let listaFinal = [actualizado, ...registros];
         const claves = clavesGrupoAfectadas(null, maquina.area, campos.fecha);
@@ -486,7 +499,7 @@ function PreventivoPage() {
         setRegistros(ordenarRegistrosPreventivo(listaFinal));
         setEditandoId(actualizado.id);
         setMensaje(
-          "Registro y reporte MT-RE-045 guardados. Use «Ver / Imprimir MT-RE-045» o el botón en la tabla.",
+          "Registro enviado al líder de área para aprobar/firmar el MT-RE-045. Hasta que lo apruebe, el cronograma lo verá pendiente.",
         );
       }
     } catch (e) {
@@ -518,9 +531,12 @@ function PreventivoPage() {
     <section className="preventivo">
       <h1>Mantenimiento preventivo</h1>
       <p className="preventivo__descripcion">
-        Registre la actividad y los datos del formato <strong>MT-RE-045</strong> en un solo
-        formulario. Al guardar queda listo para imprimir.{" "}
+        Registre la actividad y los datos del formato <strong>MT-RE-045</strong>. Al guardar se
+        envía al <strong>líder de área</strong> para firmar/aprobar; solo entonces el cronograma
+        lo cuenta como cumplido.{" "}
         <Link to="/preventivo/cronograma">Ver cronograma anual</Link>
+        {" · "}
+        <Link to="/preventivo/aprobaciones">Aprobar PM</Link>
         {" · "}
         <Link to="/personal">Gestionar personal</Link>
       </p>
@@ -608,8 +624,8 @@ function PreventivoPage() {
             />
             <span className="preventivo-form__ayuda">
               Fecha real del trabajo. Puedes cambiarla si se hizo otros días; no altera la fecha
-              base (primer PM) ni el indicador de preventivo: la cita del cronograma sigue igual y
-              solo se marca como cumplida.
+              base (primer PM). La cita del cronograma solo se marca cumplida cuando el líder
+              aprueba el MT-RE-045.
               {fechaProgramada ? ` Cita programada enlazada: ${fechaProgramada}.` : ""}
             </span>
           </label>
@@ -786,18 +802,36 @@ function PreventivoPage() {
                 <th>Área</th>
                 <th>Máquina</th>
                 <th>Técnicos</th>
+                <th>Estado</th>
                 <th>Actividad</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {registrosPagina.map((registro) => (
+              {registrosPagina.map((registro) => {
+                const estado = estadoAprobacionPm(registro);
+                return (
                 <tr key={registro.id}>
                   <td>{registro.fecha}</td>
                   <td>{numeroReporteDeRegistro(registro, mapaNumerosReporte) || "—"}</td>
                   <td>{registro.area}</td>
                   <td>{nombreMaquina(registro)}</td>
                   <td>{nombresTecnicos(registro)}</td>
+                  <td>
+                    <span className={`preventivo__chip preventivo__chip--${estado}`}>
+                      {ETIQUETAS_ESTADO_APROBACION_PM[estado]}
+                    </span>
+                    {estado === "rechazado" && registro.datos.motivoRechazo ? (
+                      <small className="preventivo__motivo-texto">
+                        {registro.datos.motivoRechazo}
+                      </small>
+                    ) : null}
+                    {estado === "aprobado" && registro.datos.aprobadoPorNombre ? (
+                      <small className="preventivo__motivo-texto">
+                        {registro.datos.aprobadoPorNombre}
+                      </small>
+                    ) : null}
+                  </td>
                   <td>{registro.descripcion}</td>
                   <td className="preventivo__acciones">
                     <SoloConPermiso permiso="ver.formatos">
@@ -807,7 +841,7 @@ function PreventivoPage() {
                     </SoloConPermiso>
                     <SoloConPermiso permiso="crear.preventivo">
                       <button className="btn" onClick={() => iniciarEdicion(registro)}>
-                        Editar
+                        {estado === "rechazado" ? "Corregir y reenviar" : "Editar"}
                       </button>
                     </SoloConPermiso>
                     <SoloConPermiso permiso="eliminar.registros">
@@ -820,7 +854,8 @@ function PreventivoPage() {
                     </SoloConPermiso>
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </div>

@@ -1,4 +1,5 @@
 import type { Mtre045Datos } from "../formatos/mtre045Types";
+import type { EstadoAprobacionPm } from "./aprobacionPm";
 
 export interface PreventivoDatos {
   equipo?: string;
@@ -24,6 +25,16 @@ export interface PreventivoDatos {
   personalId?: string;
   /** @deprecated usar personalNombres */
   personalNombre?: string;
+  /** Flujo de firma / aprobación del líder de área */
+  estadoAprobacion?: EstadoAprobacionPm;
+  enviadoAprobacionEn?: string;
+  aprobadoPorId?: string;
+  aprobadoPorNombre?: string;
+  aprobadoEn?: string;
+  rechazadoPorId?: string;
+  rechazadoPorNombre?: string;
+  rechazadoEn?: string;
+  motivoRechazo?: string;
 }
 
 export interface RegistroPreventivo {
