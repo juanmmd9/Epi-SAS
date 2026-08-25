@@ -113,7 +113,7 @@ function PreventivoPage() {
   const [fechaProgramada, setFechaProgramada] = useState<string | null>(null);
   const [filtroArea, setFiltroArea] = useState("");
   const [busquedaLista, setBusquedaLista] = useState("");
-  const [listaMes, setListaMes] = useState(() => new Date().getMonth() + 1);
+  const [listaMes, setListaMes] = useState(0);
   const [listaAnio, setListaAnio] = useState(() => new Date().getFullYear());
   const [paginaLista, setPaginaLista] = useState(1);
   const [excepciones, setExcepciones] = useState<ExcepcionCronograma[]>([]);
@@ -240,7 +240,7 @@ function PreventivoPage() {
 
   const registrosFiltrados = useMemo(() => {
     const lista = registros.filter((r) => {
-      if (filtroArea && r.area !== filtroArea) return false;
+      if (filtroArea && !coincideArea(r.area, filtroArea)) return false;
       if (!registroEnPeriodo(r.fecha, listaMes, listaAnio)) return false;
       const maquina = maquinas.find((m) => m.id === r.hoja_id);
       return coincideBusqueda(
