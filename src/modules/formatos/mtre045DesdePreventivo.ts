@@ -77,8 +77,13 @@ export function construirMtre045DesdePreventivo(
   for (const campo of CAMPOS_DESDE_PM) {
     fusionado[campo] = desdePm[campo];
   }
-  // Conservar repuestos, verificación y responsable de verificación guardados en el PM
-  return { ...fusionado, ...extraerCamposFormato(guardado) };
+  // Conservar repuestos, verificación, firmas y responsable de verificación del PM
+  return {
+    ...fusionado,
+    ...extraerCamposFormato(guardado),
+    firmaMantenimiento: guardado.firmaMantenimiento,
+    firmaVerificacion: guardado.firmaVerificacion,
+  };
 }
 
 export function nombreYCodigoPm(
@@ -100,6 +105,8 @@ export function construirMtre045AlGuardar(params: {
   personal: Persona[];
   formato: CamposFormatoMtre045;
   numeroReporte: string;
+  firmaMantenimiento?: string | null;
+  firmaVerificacion?: string | null;
 }): Mtre045Datos {
   const tecnicos = nombresPersonalEnRegistro(
     params.personalIds,
@@ -120,5 +127,11 @@ export function construirMtre045AlGuardar(params: {
     area: params.maquina.area,
     actividadRealizada: params.descripcion,
     responsableMantenimiento: tecnicos,
+    ...(params.firmaMantenimiento
+      ? { firmaMantenimiento: params.firmaMantenimiento }
+      : {}),
+    ...(params.firmaVerificacion
+      ? { firmaVerificacion: params.firmaVerificacion }
+      : {}),
   };
 }

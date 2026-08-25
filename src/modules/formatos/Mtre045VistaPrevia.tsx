@@ -183,13 +183,31 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
 
       <div className="mtre045-preview__firmas">
         <div>
-          <div className="mtre045-preview__linea-firma" />
+          <div className="mtre045-preview__zona-firma">
+            {datos.firmaMantenimiento ? (
+              <img
+                src={datos.firmaMantenimiento}
+                alt="Firma de mantenimiento"
+                className="mtre045-preview__img-firma"
+              />
+            ) : null}
+            <div className="mtre045-preview__linea-firma" />
+          </div>
           <p>Firma</p>
           <p className="mtre045-preview__nombre-firma">{datos.responsableMantenimiento || ""}</p>
           <small>Nombre del responsable del mantenimiento</small>
         </div>
         <div>
-          <div className="mtre045-preview__linea-firma" />
+          <div className="mtre045-preview__zona-firma">
+            {datos.firmaVerificacion ? (
+              <img
+                src={datos.firmaVerificacion}
+                alt="Firma de verificación"
+                className="mtre045-preview__img-firma"
+              />
+            ) : null}
+            <div className="mtre045-preview__linea-firma" />
+          </div>
           <p>Firma</p>
           <p className="mtre045-preview__nombre-firma">{datos.responsableVerificacion || ""}</p>
           <small>Nombre del responsable de la verificación</small>

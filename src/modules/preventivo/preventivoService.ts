@@ -71,6 +71,8 @@ export async function eliminarPreventivo(id: string): Promise<void> {
 type FirmaAprobacion = {
   usuarioId: string;
   nombre: string;
+  /** PNG data URL de la firma manuscrita. */
+  imagenFirma: string;
 };
 
 /** Envía / reenvía el PM al líder (pendiente de firma). */
@@ -78,8 +80,16 @@ export function datosEnviarAprobacion(
   datos: RegistroPreventivo["datos"],
 ): RegistroPreventivo["datos"] {
   const ahora = new Date().toISOString();
+  const mtre045 = datos.mtre045
+    ? {
+        ...datos.mtre045,
+        // Conserva firma del operador; limpia la del líder al reenviar.
+        firmaVerificacion: undefined,
+      }
+    : datos.mtre045;
   return {
     ...datos,
+    mtre045,
     estadoAprobacion: "pendiente_aprobacion",
     enviadoAprobacionEn: ahora,
     motivoRechazo: undefined,
@@ -89,6 +99,7 @@ export function datosEnviarAprobacion(
     aprobadoPorId: undefined,
     aprobadoPorNombre: undefined,
     aprobadoEn: undefined,
+    firmaAprobacion: undefined,
   };
 }
 
@@ -97,13 +108,23 @@ export async function aprobarPreventivo(
   firma: FirmaAprobacion,
 ): Promise<RegistroPreventivo> {
   const ahora = new Date().toISOString();
+  const mtre045 = registro.datos.mtre045
+    ? {
+        ...registro.datos.mtre045,
+        responsableVerificacion:
+          registro.datos.mtre045.responsableVerificacion?.trim() || firma.nombre,
+        firmaVerificacion: firma.imagenFirma,
+      }
+    : registro.datos.mtre045;
   return actualizarPreventivo(registro.id, {
     datos: {
       ...registro.datos,
+      mtre045,
       estadoAprobacion: "aprobado",
       aprobadoPorId: firma.usuarioId,
       aprobadoPorNombre: firma.nombre,
       aprobadoEn: ahora,
+      firmaAprobacion: firma.imagenFirma,
       motivoRechazo: undefined,
       rechazadoPorId: undefined,
       rechazadoPorNombre: undefined,

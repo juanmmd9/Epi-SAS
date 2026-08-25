@@ -166,9 +166,9 @@ function UsuariosPage() {
     setMensaje(null);
     setError(null);
 
-    if (requiereArea(usuario.rol) && !usuario.area) {
+    if (usuario.rol === "lider" && !usuario.area) {
       setError(
-        `Asigna un área a ${usuario.nombre || usuario.usuario || usuario.email} (rol líder de área).`,
+        `Para pasar a Líder de área debes elegir el Área de ${usuario.nombre || usuario.usuario || "ese usuario"} y luego Guardar.`,
       );
       return;
     }
@@ -184,7 +184,14 @@ function UsuariosPage() {
       });
       setMensaje(`Perfil de ${usuario.nombre || usuario.usuario || usuario.email} actualizado.`);
     } catch (e) {
-      setError((e as Error).message);
+      const msg = (e as Error).message;
+      if (/usuarios_portal_rol_check|violates check constraint/i.test(msg)) {
+        setError(
+          "La base de datos aún no acepta el rol «líder». Ejecuta en SQL Editor el archivo supabase/migrations/rol_lider_aprobacion_pm.sql y vuelve a Guardar.",
+        );
+      } else {
+        setError(msg);
+      }
       await recargar();
     } finally {
       setGuardando(false);

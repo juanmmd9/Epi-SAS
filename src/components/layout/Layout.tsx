@@ -27,18 +27,26 @@ function Layout() {
   const tienePermiso = !permisoRuta || puede(permisoRuta);
   if (tienePermiso) rutasPermitidas.current.add(ubicacion.pathname);
 
-  // No expulsar de una ruta ya autorizada por un fallo momentáneo de rol/sesión.
-  if (
-    permisoRuta &&
-    !puede(permisoRuta) &&
-    !rutasPermitidas.current.has(ubicacion.pathname)
-  ) {
+  // Evita pantalla en blanco por redirección infinita (p. ej. rol nuevo sin permisos en APK vieja).
+  if (permisoRuta && !puede(permisoRuta) && !rutasPermitidas.current.has(ubicacion.pathname)) {
+    const destino = rutaInicioParaRol(rol, areaUsuario(perfil));
+    if (destino !== ubicacion.pathname) {
+      return (
+        <Navigate
+          to={destino}
+          replace
+          state={{ sinPermiso: ubicacion.pathname }}
+        />
+      );
+    }
     return (
-      <Navigate
-        to={rutaInicioParaRol(rol, areaUsuario(perfil))}
-        replace
-        state={{ sinPermiso: ubicacion.pathname }}
-      />
+      <div className="layout__sin-permiso">
+        <h1>Actualiza la aplicación</h1>
+        <p>
+          Tu rol (<strong>{rol ?? "—"}</strong>) requiere una versión reciente del portal. Cierra
+          sesión, reinstala la APK o recarga la página.
+        </p>
+      </div>
     );
   }
 

@@ -29,6 +29,7 @@ import {
   ETIQUETAS_ESTADO_APROBACION_PM,
   estadoAprobacionPm,
 } from "./aprobacionPm";
+import FirmaPad from "./FirmaPad";
 import {
   construirMtre045AlGuardar,
   construirMtre045DesdePreventivo,
@@ -119,6 +120,8 @@ function PreventivoPage() {
   const [contadorAnio, setContadorAnio] = useState(() => new Date().getFullYear());
   const [contadorMes, setContadorMes] = useState(() => new Date().getMonth() + 1);
   const [faltaTablaPersonal, setFaltaTablaPersonal] = useState(false);
+  const [firmaOperador, setFirmaOperador] = useState<string | null>(null);
+  const [claveFirmaOperador, setClaveFirmaOperador] = useState(() => String(Date.now()));
 
   useEffect(() => {
     const hayContenido =
@@ -317,6 +320,8 @@ function PreventivoPage() {
     });
     setPersonalIds(idsDesdeRegistroPreventivo(registro));
     setFormatoMtre045(extraerCamposFormato(registro.datos.mtre045));
+    setFirmaOperador(registro.datos.mtre045?.firmaMantenimiento ?? null);
+    setClaveFirmaOperador(`${registro.id}-${Date.now()}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -326,6 +331,8 @@ function PreventivoPage() {
     setCampos(formularioVacio);
     setFormatoMtre045(camposFormatoMtre045Vacios());
     setPersonalIds([]);
+    setFirmaOperador(null);
+    setClaveFirmaOperador(String(Date.now()));
     borrarBorrador(CLAVE_BORRADOR_PREVENTIVO);
   }
 
@@ -348,6 +355,9 @@ function PreventivoPage() {
       personal,
       formato: formatoMtre045,
       numeroReporte: numero,
+      firmaMantenimiento: firmaOperador,
+      firmaVerificacion: registros.find((r) => r.id === preventivoId)?.datos.mtre045
+        ?.firmaVerificacion,
     });
   }
 
@@ -395,6 +405,11 @@ function PreventivoPage() {
     const idsValidos = personalIds.filter((id) => personal.some((p) => p.id === id));
     if (personalIds.length > 0 && idsValidos.length === 0) {
       setError("Los técnicos seleccionados no son válidos.");
+      return;
+    }
+
+    if (!firmaOperador) {
+      setError("Firme con el dedo en el recuadro de firma del operador antes de guardar.");
       return;
     }
 
@@ -447,6 +462,7 @@ function PreventivoPage() {
           personal,
           formato: formatoMtre045,
           numeroReporte: numero,
+          firmaMantenimiento: firmaOperador,
         });
         const datosConAprobacion = datosEnviarAprobacion(
           datosConNumeroReporte({ ...datosBase, mtre045 }, numero),
@@ -482,6 +498,7 @@ function PreventivoPage() {
           personal,
           formato: formatoMtre045,
           numeroReporte: numero,
+          firmaMantenimiento: firmaOperador,
         });
         const datosConAprobacion = datosEnviarAprobacion(
           datosConNumeroReporte({ ...creado.datos, ...datosBase, mtre045 }, numero),
@@ -498,6 +515,7 @@ function PreventivoPage() {
         );
         setRegistros(ordenarRegistrosPreventivo(listaFinal));
         setEditandoId(actualizado.id);
+        setFirmaOperador(actualizado.datos.mtre045?.firmaMantenimiento ?? firmaOperador);
         setMensaje(
           "Registro enviado al líder de área para aprobar/firmar el MT-RE-045. Hasta que lo apruebe, el cronograma lo verá pendiente.",
         );
@@ -673,6 +691,20 @@ function PreventivoPage() {
               datos={formatoMtre045}
               onChange={(cambios) => setFormatoMtre045((prev) => ({ ...prev, ...cambios }))}
             />
+          </div>
+
+          <div className="preventivo-form__firma-operador">
+            <h3>Firma del operador *</h3>
+            <p className="preventivo-form__ayuda">
+              Firme con el dedo. Quedará en el MT-RE-045 como responsable del mantenimiento.
+            </p>
+            <FirmaPad reinicioClave={claveFirmaOperador} onChange={setFirmaOperador} />
+            {firmaOperador ? (
+              <div className="preventivo-form__firma-preview">
+                <span>Firma lista</span>
+                <img src={firmaOperador} alt="Vista previa firma operador" />
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="preventivo-form__acciones">

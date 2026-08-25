@@ -31,6 +31,8 @@ export interface PreventivoDatos {
   aprobadoPorId?: string;
   aprobadoPorNombre?: string;
   aprobadoEn?: string;
+  /** Firma manuscrita del líder (PNG data URL). */
+  firmaAprobacion?: string;
   rechazadoPorId?: string;
   rechazadoPorNombre?: string;
   rechazadoEn?: string;

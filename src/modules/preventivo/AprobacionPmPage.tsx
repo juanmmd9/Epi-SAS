@@ -8,6 +8,7 @@ import {
   esPendienteAprobacionPm,
   estadoAprobacionPm,
 } from "./aprobacionPm";
+import FirmaPad from "./FirmaPad";
 import {
   aprobarPreventivo,
   listarPreventivo,
@@ -33,6 +34,8 @@ function AprobacionPmPage() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [motivoRechazo, setMotivoRechazo] = useState<Record<string, string>>({});
+  const [registroParaFirmar, setRegistroParaFirmar] = useState<RegistroPreventivo | null>(null);
+  const [imagenFirma, setImagenFirma] = useState<string | null>(null);
 
   const areaLider = areaUsuario(perfil);
   const esAdmin = rol === "admin";
@@ -54,9 +57,7 @@ function AprobacionPmPage() {
     void cargar();
   }, [cargar]);
 
-  if (!puede("aprobar.preventivo")) {
-    return <Navigate to="/preventivo" replace />;
-  }
+  const puedeAprobar = puede("aprobar.preventivo");
 
   const pendientes = useMemo(() => {
     return registros.filter((r) => {
@@ -80,25 +81,53 @@ function AprobacionPmPage() {
       .slice(0, 30);
   }, [registros, esAdmin, areaLider]);
 
-  function firmaActual() {
+  if (!puedeAprobar) {
+    return <Navigate to="/preventivo" replace />;
+  }
+
+  function firmaActual(imagenFirmaPng: string) {
     return {
       usuarioId: perfil!.id,
       nombre: perfil!.nombre || perfil!.usuario || perfil!.email,
+      imagenFirma: imagenFirmaPng,
     };
   }
 
-  async function manejarAprobar(registro: RegistroPreventivo) {
-    setProcesandoId(registro.id);
+  function abrirPanelFirma(registro: RegistroPreventivo) {
+    setError(null);
+    setMensaje(null);
+    setImagenFirma(null);
+    setRegistroParaFirmar(registro);
+  }
+
+  function cerrarPanelFirma() {
+    if (procesandoId) return;
+    setRegistroParaFirmar(null);
+    setImagenFirma(null);
+  }
+
+  async function confirmarFirmaYAprobar() {
+    if (!registroParaFirmar) return;
+    if (!imagenFirma) {
+      setError("Firme con el dedo en el recuadro antes de confirmar.");
+      return;
+    }
+    setProcesandoId(registroParaFirmar.id);
     setError(null);
     setMensaje(null);
     try {
-      const actualizado = await aprobarPreventivo(registro, firmaActual());
+      const actualizado = await aprobarPreventivo(
+        registroParaFirmar,
+        firmaActual(imagenFirma),
+      );
       setRegistros((prev) =>
         ordenarRegistrosPreventivo(prev.map((r) => (r.id === actualizado.id ? actualizado : r))),
       );
       setMensaje(
-        `PM de ${registro.datos.equipo || "máquina"} aprobado. El cronograma ya lo cuenta como cumplido.`,
+        `PM de ${registroParaFirmar.datos.equipo || "máquina"} aprobado con firma. El cronograma ya lo cuenta como cumplido.`,
       );
+      setRegistroParaFirmar(null);
+      setImagenFirma(null);
     } catch (e) {
       setError("No se pudo aprobar: " + (e as Error).message);
     } finally {
@@ -116,7 +145,15 @@ function AprobacionPmPage() {
     setError(null);
     setMensaje(null);
     try {
-      const actualizado = await rechazarPreventivo(registro, firmaActual(), motivo);
+      const actualizado = await rechazarPreventivo(
+        registro,
+        {
+          usuarioId: perfil!.id,
+          nombre: perfil!.nombre || perfil!.usuario || perfil!.email,
+          imagenFirma: "",
+        },
+        motivo,
+      );
       setRegistros((prev) =>
         ordenarRegistrosPreventivo(prev.map((r) => (r.id === actualizado.id ? actualizado : r))),
       );
@@ -141,11 +178,13 @@ function AprobacionPmPage() {
     setError("Este registro aún no tiene el formato MT-RE-045 generado.");
   }
 
+  const ocupadoFirma = Boolean(registroParaFirmar && procesandoId === registroParaFirmar.id);
+
   return (
     <section className="preventivo">
       <h1>Aprobación de mantenimiento preventivo</h1>
       <p className="preventivo__descripcion">
-        Revisa el formato <strong>MT-RE-045</strong>, fírmalo (aprueba) o recházalo con motivo.
+        Revisa el formato <strong>MT-RE-045</strong>, fírmalo con el dedo o recházalo con motivo.
         Solo al aprobar se marca la cita del cronograma como cumplida.
         {areaLider && !esAdmin ? (
           <>
@@ -218,9 +257,9 @@ function AprobacionPmPage() {
                         type="button"
                         className="btn btn--primario"
                         disabled={ocupado}
-                        onClick={() => void manejarAprobar(registro)}
+                        onClick={() => abrirPanelFirma(registro)}
                       >
-                        {ocupado ? "..." : "Aprobar / Firmar"}
+                        Aprobar / Firmar
                       </button>
                       <label className="preventivo__motivo-rechazo">
                         Motivo rechazo
@@ -273,6 +312,8 @@ function AprobacionPmPage() {
             <tbody>
               {recientes.map((registro) => {
                 const estado = estadoAprobacionPm(registro);
+                const firmaImg =
+                  registro.datos.firmaAprobacion || registro.datos.mtre045?.firmaVerificacion;
                 return (
                   <tr key={registro.id}>
                     <td>{registro.fecha}</td>
@@ -290,15 +331,84 @@ function AprobacionPmPage() {
                       ) : null}
                     </td>
                     <td>
-                      {estado === "aprobado"
-                        ? `${registro.datos.aprobadoPorNombre || "—"} · ${(registro.datos.aprobadoEn ?? "").slice(0, 10)}`
-                        : `${registro.datos.rechazadoPorNombre || "—"} · ${(registro.datos.rechazadoEn ?? "").slice(0, 10)}`}
+                      {estado === "aprobado" ? (
+                        <div className="preventivo__firma-resumen">
+                          {firmaImg ? (
+                            <img
+                              src={firmaImg}
+                              alt="Firma del líder"
+                              className="preventivo__firma-miniatura"
+                            />
+                          ) : null}
+                          <span>
+                            {registro.datos.aprobadoPorNombre || "—"} ·{" "}
+                            {(registro.datos.aprobadoEn ?? "").slice(0, 10)}
+                          </span>
+                        </div>
+                      ) : (
+                        `${registro.datos.rechazadoPorNombre || "—"} · ${(registro.datos.rechazadoEn ?? "").slice(0, 10)}`
+                      )}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {registroParaFirmar && (
+        <div
+          className="firma-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="firma-modal-titulo"
+        >
+          <button
+            type="button"
+            className="firma-modal__fondo"
+            aria-label="Cerrar"
+            onClick={cerrarPanelFirma}
+          />
+          <div className="firma-modal__panel">
+            <h2 id="firma-modal-titulo">Firmar aprobación</h2>
+            <p className="firma-modal__detalle">
+              <strong>{registroParaFirmar.datos.equipo || "Máquina"}</strong>
+              {" · "}
+              {registroParaFirmar.area}
+              {" · "}
+              {registroParaFirmar.fecha}
+              {registroParaFirmar.datos.numeroReporte
+                ? ` · Nº ${registroParaFirmar.datos.numeroReporte}`
+                : ""}
+            </p>
+            <p className="firma-modal__ayuda">
+              Dibuje su firma con el dedo. Quedará guardada en el MT-RE-045 como responsable de
+              verificación.
+            </p>
+            <FirmaPad
+              reinicioClave={registroParaFirmar.id}
+              onChange={setImagenFirma}
+            />
+            <div className="firma-modal__acciones">
+              <button
+                type="button"
+                className="btn"
+                disabled={ocupadoFirma}
+                onClick={cerrarPanelFirma}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn--primario"
+                disabled={ocupadoFirma || !imagenFirma}
+                onClick={() => void confirmarFirmaYAprobar()}
+              >
+                {ocupadoFirma ? "Guardando..." : "Confirmar firma y aprobar"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </section>

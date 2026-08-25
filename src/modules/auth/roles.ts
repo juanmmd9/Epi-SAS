@@ -118,6 +118,11 @@ export function enlacesParaRol(rol: RolPortal | null | undefined): EnlaceNav[] {
   return ENLACES_NAV.filter((enlace) => puede(rol, enlace.permiso));
 }
 
+export function etiquetaRol(rol: RolPortal | string | null | undefined): string {
+  if (!rol) return "—";
+  return ETIQUETAS_ROL[rol as RolPortal] ?? String(rol);
+}
+
 /** Ruta de inicio según rol (solicitante entra al tablero de áreas). */
 export function rutaInicioParaRol(
   rol: RolPortal | null | undefined,

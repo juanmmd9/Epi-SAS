@@ -19,6 +19,10 @@ export interface Mtre045Datos {
   noAprobo: string;
   responsableMantenimiento: string;
   responsableVerificacion: string;
+  /** Firma manuscrita del responsable de mantenimiento (PNG data URL). */
+  firmaMantenimiento?: string;
+  /** Firma manuscrita del responsable de verificación (PNG data URL). */
+  firmaVerificacion?: string;
   preventivoId?: string;
 }
 
