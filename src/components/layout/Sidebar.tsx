@@ -3,6 +3,8 @@ import { rutaPublica } from "../../lib/rutaPublica";
 import { useAuth } from "../../modules/auth/AuthContext";
 import { etiquetaRol, enlacesParaRol } from "../../modules/auth/roles";
 import { areaUsuario } from "../../lib/usuarioArea";
+import { usePendientesAprobacionPm } from "../../modules/preventivo/usePendientesAprobacionPm";
+import { useSolicitudesAbiertasBadge } from "../../modules/solicitudes/useSolicitudesAbiertasBadge";
 import "../../modules/auth/auth.css";
 import "./Layout.css";
 
@@ -15,6 +17,8 @@ function Sidebar({ abierto, onCerrar }: Props) {
   const navegar = useNavigate();
   const { perfil, salir } = useAuth();
   const enlaces = enlacesParaRol(perfil?.rol);
+  const pendientesFirma = usePendientesAprobacionPm();
+  const solicitudesAbiertas = useSolicitudesAbiertasBadge();
 
   async function manejarCerrarSesion() {
     onCerrar();
@@ -35,19 +39,44 @@ function Sidebar({ abierto, onCerrar }: Props) {
         <span className="sidebar__titulo">Portal Mantenimiento</span>
       </div>
       <nav className="sidebar__nav">
-        {enlaces.map((enlace) => (
-          <NavLink
-            key={enlace.ruta}
-            to={enlace.ruta}
-            end={enlace.ruta === "/" || enlace.ruta === "/solicitudes"}
-            className={({ isActive }) =>
-              "sidebar__enlace" + (isActive ? " sidebar__enlace--activo" : "")
-            }
-            onClick={onCerrar}
-          >
-            {enlace.texto}
-          </NavLink>
-        ))}
+        {enlaces.map((enlace) => {
+          const esAprobar = enlace.ruta === "/preventivo/aprobaciones";
+          const esSolicitudes = enlace.ruta === "/solicitudes";
+          const avisoFirma = esAprobar && pendientesFirma > 0;
+          const avisoSol = esSolicitudes && solicitudesAbiertas > 0;
+          return (
+            <NavLink
+              key={enlace.ruta}
+              to={enlace.ruta}
+              end={enlace.ruta === "/" || enlace.ruta === "/solicitudes"}
+              className={({ isActive }) =>
+                "sidebar__enlace" +
+                (isActive ? " sidebar__enlace--activo" : "") +
+                (avisoFirma || avisoSol ? " sidebar__enlace--aviso" : "") +
+                (avisoSol && !avisoFirma ? " sidebar__enlace--aviso-sol" : "")
+              }
+              onClick={onCerrar}
+            >
+              <span className="sidebar__enlace-texto">{enlace.texto}</span>
+              {avisoFirma ? (
+                <span
+                  className="nav-badge nav-badge--sidebar"
+                  aria-label={`${pendientesFirma} pendiente(s) de firmar`}
+                >
+                  {pendientesFirma > 9 ? "9+" : pendientesFirma}
+                </span>
+              ) : null}
+              {avisoSol ? (
+                <span
+                  className="nav-badge nav-badge--sidebar nav-badge--naranja"
+                  aria-label={`${solicitudesAbiertas} solicitud(es) abierta(s)`}
+                >
+                  {solicitudesAbiertas > 9 ? "9+" : solicitudesAbiertas}
+                </span>
+              ) : null}
+            </NavLink>
+          );
+        })}
       </nav>
       {perfil && (
         <div className="sidebar__usuario">

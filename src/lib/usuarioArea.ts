@@ -24,14 +24,26 @@ export function usuarioPuedeAccederArea(
 
 /**
  * Puede crear/editar solicitudes o repuestos en esa área.
- * Solicitante, admin y operador: cualquier área (un perfil puede atender todas).
+ * Solicitante, líder, admin y operador: cualquier área (un perfil puede atender todas).
  */
 export function usuarioPuedeEscribirEnArea(
   perfil: UsuarioPortal | null | undefined,
   _area: string,
 ): boolean {
   if (!perfil) return false;
-  return perfil.rol === "admin" || perfil.rol === "operador" || perfil.rol === "solicitante";
+  return (
+    perfil.rol === "admin" ||
+    perfil.rol === "operador" ||
+    perfil.rol === "solicitante" ||
+    perfil.rol === "lider"
+  );
+}
+
+/** Roles de planta que reportan fallas (avisos locales en solicitudes). */
+export function esRolReportaSolicitudes(
+  perfil: UsuarioPortal | null | undefined,
+): boolean {
+  return perfil?.rol === "solicitante" || perfil?.rol === "lider";
 }
 
 export function rutaSolicitudesArea(area: string): string {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AREAS_SISTEMA, normalizarArea } from "../../lib/areas";
+import { esRolReportaSolicitudes } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import { NOMBRES_MESES } from "../../lib/fechas";
 import { listarCorrectivo, ordenarRegistrosCorrectivo } from "../correctivo/correctivoService";
@@ -43,7 +44,7 @@ function rutaArea(area: string): string {
 function SolicitudesPage() {
   const { perfil, puede } = useAuth();
   const mesActual = NOMBRES_MESES[new Date().getMonth()];
-  const esSolicitante = perfil?.rol === "solicitante";
+  const esReporta = esRolReportaSolicitudes(perfil);
   const puedeVerCorrectivo = puede("ver.correctivo");
   const [correctivos, setCorrectivos] = useState<RegistroCorrectivo[]>([]);
   const [repuestos, setRepuestos] = useState<RepuestoSolicitud[]>([]);
@@ -108,15 +109,13 @@ function SolicitudesPage() {
     descartarAlerta,
     enLinea,
     sondeoActivo,
-    sonidoActivo,
-    setSonidoActivo,
     areasConNueva,
     limpiarAreaNueva,
   } = useSolicitudesRealtime({
     correctivos,
     onNuevaSolicitud: alNuevaSolicitud,
     habilitado: !cargando,
-    modo: esSolicitante ? "completo" : "solo-lista",
+    modo: esReporta ? "completo" : "solo-lista",
   });
 
   const totales = useMemo(
@@ -179,7 +178,7 @@ function SolicitudesPage() {
         <div>
           <h1>Solicitudes</h1>
           <p className="solicitudes__descripcion">
-            {esSolicitante ? (
+            {esReporta ? (
               <>
                 Vista de todas las áreas. Entra a cualquiera para crear o consultar solicitudes.
                 Haz clic en Abiertas, Espera, Cerradas o Rep. pendientes para ver el listado.
@@ -192,34 +191,19 @@ function SolicitudesPage() {
                 detalle.
               </>
             )}{" "}
-            {esSolicitante
+            {esReporta
               ? "Deja esta pantalla abierta para recibir avisos al instante."
               : "Los avisos de nuevas solicitudes llegan en toda la app (toast + notificación)."}
           </p>
         </div>
-        {esSolicitante ? (
+        {esReporta ? (
           <PanelAlertasSolicitudes
             enLinea={enLinea}
             sondeoActivo={sondeoActivo}
-            sonidoActivo={sonidoActivo}
-            onToggleSonido={() => setSonidoActivo((v) => !v)}
             alertas={alertas}
             onDescartar={descartarAlerta}
           />
-        ) : (
-          <div className="solicitudes-alerta__barra">
-            <span
-              className={
-                "solicitudes-alerta__estado" +
-                (enLinea || sondeoActivo
-                  ? " solicitudes-alerta__estado--en-linea"
-                  : " solicitudes-alerta__estado--off")
-              }
-            >
-              {enLinea ? "Lista en vivo" : sondeoActivo ? "Lista auto" : "Sin auto"}
-            </span>
-          </div>
-        )}
+        ) : null}
       </div>
 
       {error && <p className="solicitudes__error">{error}</p>}

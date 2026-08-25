@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthContext";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { AREAS_SISTEMA, coincideArea, esAreaValida, normalizarArea } from "../../lib/areas";
 import {
+  esRolReportaSolicitudes,
   rutaSolicitudesArea,
   usuarioPuedeAccederArea,
   usuarioPuedeEscribirEnArea,
@@ -203,7 +204,7 @@ function SolicitudesAreaPage() {
     [correctivosDelAreaSinFiltro, contadorAnio, contadorMes, criterioContador],
   );
 
-  const esSolicitanteArea = perfil?.rol === "solicitante";
+  const esReportaArea = esRolReportaSolicitudes(perfil);
   const puedeVerCorrectivo = puede("ver.correctivo");
 
   const alNuevaSolicitudRealtime = useCallback((registro: RegistroCorrectivo) => {
@@ -220,8 +221,6 @@ function SolicitudesAreaPage() {
     descartarAlerta,
     enLinea,
     sondeoActivo,
-    sonidoActivo,
-    setSonidoActivo,
     idsDestacados,
     marcarConocido,
   } = useSolicitudesRealtime({
@@ -229,8 +228,8 @@ function SolicitudesAreaPage() {
     correctivos,
     onNuevaSolicitud: alNuevaSolicitudRealtime,
     habilitado: areaValida && !cargando,
-    // Mantenimiento usa avisos globales; solicitante recibe avisos aquí.
-    modo: esSolicitanteArea ? "completo" : "solo-lista",
+    // Mantenimiento usa avisos globales; solicitante/líder reciben avisos aquí.
+    modo: esReportaArea ? "completo" : "solo-lista",
   });
 
   const alCrearSolicitud = useCallback(
@@ -394,7 +393,7 @@ function SolicitudesAreaPage() {
       <h1>Solicitudes — {area}</h1>
       <div className="solicitudes__cabecera">
         <p className="solicitudes__descripcion">
-          {esSolicitanteArea
+          {esReportaArea
             ? "Reporta fallas o consulta el estado de las solicitudes de esta área. Usa el botón de arriba para volver al tablero."
             : "Solicitudes correctivas y pedidos de repuestos del área."}
           {puedeVerCorrectivo && (
@@ -403,34 +402,19 @@ function SolicitudesAreaPage() {
               <Link to="/correctivo">Ir a mantenimiento correctivo</Link>
             </>
           )}
-          {esSolicitanteArea
+          {esReportaArea
             ? " Deja esta pantalla abierta para avisos al instante."
             : " Los avisos llegan en toda la app (toast + notificación del celular)."}
         </p>
-        {esSolicitanteArea ? (
+        {esReportaArea ? (
           <PanelAlertasSolicitudes
             enLinea={enLinea}
             sondeoActivo={sondeoActivo}
-            sonidoActivo={sonidoActivo}
-            onToggleSonido={() => setSonidoActivo((v) => !v)}
             alertas={alertas}
             onDescartar={descartarAlerta}
             areaActual={area}
           />
-        ) : (
-          <div className="solicitudes-alerta__barra">
-            <span
-              className={
-                "solicitudes-alerta__estado" +
-                (enLinea || sondeoActivo
-                  ? " solicitudes-alerta__estado--en-linea"
-                  : " solicitudes-alerta__estado--off")
-              }
-            >
-              {enLinea ? "Lista en vivo" : sondeoActivo ? "Lista auto" : "Sin auto"}
-            </span>
-          </div>
-        )}
+        ) : null}
       </div>
 
       {puedeEscribirArea ? (

@@ -5,8 +5,6 @@ import type { AlertaSolicitud } from "./solicitudesRealtime";
 interface Props {
   enLinea: boolean;
   sondeoActivo?: boolean;
-  sonidoActivo: boolean;
-  onToggleSonido: () => void;
   alertas: AlertaSolicitud[];
   onDescartar: (clave: string) => void;
   areaActual?: string;
@@ -15,47 +13,16 @@ interface Props {
 }
 
 function PanelAlertasSolicitudes({
-  enLinea,
-  sondeoActivo = false,
-  sonidoActivo,
-  onToggleSonido,
   alertas,
   onDescartar,
   areaActual,
   soloToasts = false,
 }: Props) {
-  const actualizando = enLinea || sondeoActivo;
   return (
     <>
-      {!soloToasts && (
+      {!soloToasts && alertas.length > 0 && (
         <div className="solicitudes-alerta__barra">
-          <span
-            className={
-              "solicitudes-alerta__estado" +
-              (actualizando
-                ? " solicitudes-alerta__estado--en-linea"
-                : " solicitudes-alerta__estado--off")
-            }
-            title={
-              enLinea
-                ? "Escuchando nuevas solicitudes en tiempo real"
-                : sondeoActivo
-                  ? "Actualizando la lista cada pocos segundos (respaldo). Para avisos instantáneos ejecuta correctivo_realtime.sql en Supabase."
-                  : "Sin actualización automática. Recarga o activa Realtime en Supabase."
-            }
-          >
-            {enLinea ? "En vivo" : sondeoActivo ? "Auto" : "Sin en vivo"}
-          </span>
-          <button
-            type="button"
-            className={"btn solicitudes-alerta__sonido" + (sonidoActivo ? " btn--primario" : "")}
-            onClick={onToggleSonido}
-          >
-            {sonidoActivo ? "Sonido ON" : "Sonido OFF"}
-          </button>
-          {alertas.length > 0 && (
-            <span className="solicitudes-alerta__badge">{alertas.length} nueva(s)</span>
-          )}
+          <span className="solicitudes-alerta__badge">{alertas.length} nueva(s)</span>
         </div>
       )}
 

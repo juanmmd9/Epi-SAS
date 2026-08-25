@@ -6,7 +6,6 @@ import {
   crearAlertaDesdeRegistro,
   esSolicitudNuevaNotificable,
   guardarPreferenciaSonido,
-  leerPreferenciaSonido,
   mostrarNotificacionSistema,
   registroDesdeRealtime,
   reproducirSonidoNuevaSolicitud,
@@ -40,7 +39,7 @@ export function useSolicitudesRealtime({
 }: OpcionesRealtime) {
   const conocidos = useRef(new Set<string>());
   const onNuevaRef = useRef(onNuevaSolicitud);
-  const sonidoRef = useRef(leerPreferenciaSonido());
+  const sonidoRef = useRef(true);
   const areaFiltroRef = useRef(areaFiltro);
   const sondeoEnCurso = useRef(false);
   const listoParaAlertar = useRef(modo !== "solo-alertas");
@@ -48,12 +47,11 @@ export function useSolicitudesRealtime({
   const [alertas, setAlertas] = useState<AlertaSolicitud[]>([]);
   const [enLinea, setEnLinea] = useState(false);
   const [sondeoActivo, setSondeoActivo] = useState(false);
-  const [sonidoActivo, setSonidoActivo] = useState(() => leerPreferenciaSonido());
   const [areasConNueva, setAreasConNueva] = useState<Set<string>>(() => new Set());
   const [idsDestacados, setIdsDestacados] = useState<Set<string>>(() => new Set());
 
   onNuevaRef.current = onNuevaSolicitud;
-  sonidoRef.current = sonidoActivo;
+  sonidoRef.current = true;
   areaFiltroRef.current = areaFiltro;
 
   useEffect(() => {
@@ -83,8 +81,8 @@ export function useSolicitudesRealtime({
   }, [habilitado, modo]);
 
   useEffect(() => {
-    guardarPreferenciaSonido(sonidoActivo);
-  }, [sonidoActivo]);
+    guardarPreferenciaSonido(true);
+  }, []);
 
   const marcarConocido = useCallback((id: string) => {
     conocidos.current.add(id);
@@ -220,8 +218,6 @@ export function useSolicitudesRealtime({
     descartarAlerta,
     enLinea,
     sondeoActivo,
-    sonidoActivo,
-    setSonidoActivo,
     areasConNueva,
     idsDestacados,
     marcarConocido,

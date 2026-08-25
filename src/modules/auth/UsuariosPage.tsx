@@ -236,8 +236,9 @@ function UsuariosPage() {
             el tablero de solicitudes y Hojas de vida.
           </li>
           <li>
-            Para jefes de área que firman el PM: rol <strong>líder de área</strong> (elige el área).
-            Verán la bandeja <strong>Aprobar PM</strong> con los MT-RE-045 pendientes.
+            Para jefes de área: rol <strong>líder de área</strong> (elige el área). Podrán
+            crear solicitudes, ver Hojas de vida / Formatos y firmar PM en{" "}
+            <strong>Aprobar PM</strong>.
           </li>
           <li>
             Si es operador de mantenimiento, vincula su fila de <strong>personal</strong> (para la
