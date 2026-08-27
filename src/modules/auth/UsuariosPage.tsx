@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { AREAS_SISTEMA } from "../../lib/areas";
 import { listarPersonal } from "../personal/personalService";
@@ -42,6 +42,19 @@ function badgeRol(rol: RolPortal) {
   return `usuarios__badge usuarios__badge--${rol}`;
 }
 
+/** Sugiere login a partir del nombre (ej. César Taibel → cesartaibel). */
+function sugerirUsuarioDesdeNombre(nombre: string): string {
+  const sinAcentos = nombre
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase();
+  const limpio = sinAcentos.replace(/[^a-z0-9\s._-]/g, " ").trim();
+  const partes = limpio.split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "";
+  if (partes.length === 1) return partes[0].slice(0, 63);
+  return `${partes[0]}${partes[partes.length - 1]}`.slice(0, 63);
+}
+
 function UsuariosPage() {
   const { puede, perfil: yo } = useAuth();
   const [usuarios, setUsuarios] = useState<UsuarioPortal[]>([]);
@@ -70,6 +83,43 @@ function UsuariosPage() {
   useEffect(() => {
     void recargar();
   }, [recargar]);
+
+  const idsPersonalConUsuario = useMemo(() => {
+    const ids = new Set<string>();
+    for (const u of usuarios) {
+      if (u.personal_id) ids.add(u.personal_id);
+    }
+    return ids;
+  }, [usuarios]);
+
+  const personalSinUsuario = useMemo(
+    () => personal.filter((p) => !idsPersonalConUsuario.has(p.id)),
+    [personal, idsPersonalConUsuario],
+  );
+
+  const operadoresVinculados = useMemo(
+    () => usuarios.filter((u) => u.rol === "operador" && u.personal_id),
+    [usuarios],
+  );
+
+  const operadoresSinPersonal = useMemo(
+    () => usuarios.filter((u) => u.rol === "operador" && !u.personal_id),
+    [usuarios],
+  );
+
+  function prepararAltaDesdePersonal(persona: Persona) {
+    setCampos({
+      usuario: sugerirUsuarioDesdeNombre(persona.nombre),
+      password: "",
+      nombre: persona.nombre,
+      rol: "operador",
+      personal_id: persona.id,
+      area: persona.area ?? "",
+    });
+    setMensaje(`Formulario listo para ${persona.nombre}. Define la contraseña y Guarda.`);
+    setError(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   if (!puede("gestionar.usuarios")) {
     return <Navigate to="/" replace />;
@@ -253,6 +303,55 @@ function UsuariosPage() {
         </p>
       </aside>
 
+      {!cargando && (
+        <section className="usuarios__checklist" aria-label="Checklist de altas">
+          <div className="usuarios__checklist-cabecera">
+            <h2>Checklist — personal sin cuenta de portal</h2>
+            <p>
+              Operadores vinculados: <strong>{operadoresVinculados.length}</strong>
+              {operadoresSinPersonal.length > 0
+                ? ` · ${operadoresSinPersonal.length} operador(es) sin fila de Personal`
+                : ""}
+              {" · "}
+              Pendientes de alta: <strong>{personalSinUsuario.length}</strong>
+            </p>
+          </div>
+
+          {personalSinUsuario.length === 0 ? (
+            <p className="usuarios__checklist-ok">
+              Todo el personal activo ya tiene usuario vinculado (o no hay personal cargado).
+            </p>
+          ) : (
+            <ul className="usuarios__checklist-lista">
+              {personalSinUsuario.map((persona) => (
+                <li key={persona.id}>
+                  <div>
+                    <strong>{persona.nombre}</strong>
+                    <small>
+                      {[persona.cargo, persona.area].filter(Boolean).join(" · ") || "Sin cargo/área"}
+                    </small>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn--primario"
+                    onClick={() => prepararAltaDesdePersonal(persona)}
+                  >
+                    Crear usuario
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {operadoresSinPersonal.length > 0 && (
+            <p className="usuarios__checklist-aviso">
+              Revisar vínculo Personal en la tabla de abajo:{" "}
+              {operadoresSinPersonal.map((u) => u.usuario || u.nombre).join(", ")}.
+            </p>
+          )}
+        </section>
+      )}
+
       {mensaje && <p className="usuarios__mensaje usuarios__mensaje--ok">{mensaje}</p>}
       {error && <p className="usuarios__mensaje usuarios__mensaje--error">{error}</p>}
 
@@ -331,6 +430,10 @@ function UsuariosPage() {
                 setCampos({
                   ...campos,
                   personal_id: personalId,
+                  nombre: persona?.nombre || campos.nombre,
+                  usuario:
+                    campos.usuario ||
+                    (persona ? sugerirUsuarioDesdeNombre(persona.nombre) : ""),
                   area: persona?.area && !campos.area ? persona.area : campos.area,
                 });
               }}

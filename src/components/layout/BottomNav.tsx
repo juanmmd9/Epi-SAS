@@ -4,6 +4,7 @@ import { useAuth } from "../../modules/auth/AuthContext";
 import { etiquetaRol } from "../../modules/auth/roles";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { usePendientesAprobacionPm } from "../../modules/preventivo/usePendientesAprobacionPm";
+import { usePermisosPendientesBadge } from "../../modules/permisos/usePermisosPendientesBadge";
 import { useSolicitudesAbiertasBadge } from "../../modules/solicitudes/useSolicitudesAbiertasBadge";
 import IconoNavSvg from "./IconoNav";
 import {
@@ -13,6 +14,8 @@ import {
   type ItemNav,
 } from "./navConfig";
 
+type TonoBadge = "verde" | "naranja" | "azul";
+
 function BadgeNav({
   cantidad,
   etiqueta,
@@ -20,14 +23,17 @@ function BadgeNav({
 }: {
   cantidad: number;
   etiqueta: string;
-  tono?: "verde" | "naranja";
+  tono?: TonoBadge;
 }) {
   if (cantidad <= 0) return null;
+  const clase =
+    tono === "naranja"
+      ? " nav-badge--naranja"
+      : tono === "azul"
+        ? " nav-badge--azul"
+        : "";
   return (
-    <span
-      className={"nav-badge" + (tono === "naranja" ? " nav-badge--naranja" : "")}
-      aria-label={etiqueta}
-    >
+    <span className={"nav-badge" + clase} aria-label={etiqueta}>
       {cantidad > 9 ? "9+" : cantidad}
     </span>
   );
@@ -40,15 +46,23 @@ function BottomNav() {
   const [masAbierto, setMasAbierto] = useState(false);
   const pendientesFirma = usePendientesAprobacionPm();
   const solicitudesAbiertas = useSolicitudesAbiertasBadge();
+  const permisosPendientes = usePermisosPendientesBadge();
 
   const { tabs, mas } = useMemo(() => itemsNavParaRol(rol), [rol]);
   const masActivo = algunMasActivo(ubicacion.pathname, mas);
   const aprobarEnMas = mas.some((i) => i.ruta === "/preventivo/aprobaciones");
   const solicitudesEnMas = mas.some((i) => i.ruta === "/solicitudes");
+  const permisosEnMas = mas.some((i) => i.ruta === "/personal/permisos");
   const badgeMasCantidad =
-    (aprobarEnMas ? pendientesFirma : 0) + (solicitudesEnMas ? solicitudesAbiertas : 0);
-  const badgeMasTono: "verde" | "naranja" =
-    aprobarEnMas && pendientesFirma > 0 ? "verde" : "naranja";
+    (aprobarEnMas ? pendientesFirma : 0) +
+    (solicitudesEnMas ? solicitudesAbiertas : 0) +
+    (permisosEnMas ? permisosPendientes : 0);
+  const badgeMasTono: TonoBadge =
+    aprobarEnMas && pendientesFirma > 0
+      ? "verde"
+      : permisosEnMas && permisosPendientes > 0
+        ? "azul"
+        : "naranja";
 
   useEffect(() => {
     setMasAbierto(false);
@@ -86,6 +100,15 @@ function BottomNav() {
           cantidad={solicitudesAbiertas}
           etiqueta={`${solicitudesAbiertas} solicitud(es) abierta(s)`}
           tono="naranja"
+        />
+      );
+    }
+    if (item.ruta === "/personal/permisos") {
+      return (
+        <BadgeNav
+          cantidad={permisosPendientes}
+          etiqueta={`${permisosPendientes} permiso(s) por aprobar`}
+          tono="azul"
         />
       );
     }
@@ -160,9 +183,11 @@ function BottomNav() {
                   const activo = rutaActiva(ubicacion.pathname, item.ruta);
                   const esAprobar = item.ruta === "/preventivo/aprobaciones";
                   const esSolicitudes = item.ruta === "/solicitudes";
+                  const esPermisos = item.ruta === "/personal/permisos";
                   const aviso =
                     (esAprobar && pendientesFirma > 0) ||
-                    (esSolicitudes && solicitudesAbiertas > 0);
+                    (esSolicitudes && solicitudesAbiertas > 0) ||
+                    (esPermisos && permisosPendientes > 0);
                   return (
                     <button
                       key={item.ruta}
@@ -185,6 +210,11 @@ function BottomNav() {
                       {esSolicitudes && solicitudesAbiertas > 0 ? (
                         <span className="mas-sheet__tile-hint mas-sheet__tile-hint--naranja">
                           Abiertas
+                        </span>
+                      ) : null}
+                      {esPermisos && permisosPendientes > 0 ? (
+                        <span className="mas-sheet__tile-hint mas-sheet__tile-hint--azul">
+                          Por aprobar
                         </span>
                       ) : null}
                     </button>

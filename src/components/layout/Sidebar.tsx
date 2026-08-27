@@ -4,6 +4,7 @@ import { useAuth } from "../../modules/auth/AuthContext";
 import { etiquetaRol, enlacesParaRol } from "../../modules/auth/roles";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { usePendientesAprobacionPm } from "../../modules/preventivo/usePendientesAprobacionPm";
+import { usePermisosPendientesBadge } from "../../modules/permisos/usePermisosPendientesBadge";
 import { useSolicitudesAbiertasBadge } from "../../modules/solicitudes/useSolicitudesAbiertasBadge";
 import "../../modules/auth/auth.css";
 import "./Layout.css";
@@ -19,6 +20,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
   const enlaces = enlacesParaRol(perfil?.rol);
   const pendientesFirma = usePendientesAprobacionPm();
   const solicitudesAbiertas = useSolicitudesAbiertasBadge();
+  const permisosPendientes = usePermisosPendientesBadge();
 
   async function manejarCerrarSesion() {
     onCerrar();
@@ -42,8 +44,10 @@ function Sidebar({ abierto, onCerrar }: Props) {
         {enlaces.map((enlace) => {
           const esAprobar = enlace.ruta === "/preventivo/aprobaciones";
           const esSolicitudes = enlace.ruta === "/solicitudes";
+          const esPermisos = enlace.ruta === "/personal/permisos";
           const avisoFirma = esAprobar && pendientesFirma > 0;
           const avisoSol = esSolicitudes && solicitudesAbiertas > 0;
+          const avisoPerm = esPermisos && permisosPendientes > 0;
           return (
             <NavLink
               key={enlace.ruta}
@@ -52,8 +56,9 @@ function Sidebar({ abierto, onCerrar }: Props) {
               className={({ isActive }) =>
                 "sidebar__enlace" +
                 (isActive ? " sidebar__enlace--activo" : "") +
-                (avisoFirma || avisoSol ? " sidebar__enlace--aviso" : "") +
-                (avisoSol && !avisoFirma ? " sidebar__enlace--aviso-sol" : "")
+                (avisoFirma || avisoSol || avisoPerm ? " sidebar__enlace--aviso" : "") +
+                (avisoSol && !avisoFirma && !avisoPerm ? " sidebar__enlace--aviso-sol" : "") +
+                (avisoPerm && !avisoFirma ? " sidebar__enlace--aviso-perm" : "")
               }
               onClick={onCerrar}
             >
@@ -72,6 +77,14 @@ function Sidebar({ abierto, onCerrar }: Props) {
                   aria-label={`${solicitudesAbiertas} solicitud(es) abierta(s)`}
                 >
                   {solicitudesAbiertas > 9 ? "9+" : solicitudesAbiertas}
+                </span>
+              ) : null}
+              {avisoPerm ? (
+                <span
+                  className="nav-badge nav-badge--sidebar nav-badge--azul"
+                  aria-label={`${permisosPendientes} permiso(s) por aprobar`}
+                >
+                  {permisosPendientes > 9 ? "9+" : permisosPendientes}
                 </span>
               ) : null}
             </NavLink>
