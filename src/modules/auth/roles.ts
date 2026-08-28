@@ -14,6 +14,15 @@ export interface UsuarioPortal {
   activo: boolean;
 }
 
+/** Roles que reciben avisos push y en app por nuevas solicitudes de mantenimiento. */
+export const ROLES_NOTIFICACION_SOLICITUDES: readonly RolPortal[] = ["admin", "operador"];
+
+export function usuarioRecibeNotificacionSolicitudes(
+  perfil: Pick<UsuarioPortal, "rol"> | null | undefined,
+): boolean {
+  return Boolean(perfil && ROLES_NOTIFICACION_SOLICITUDES.includes(perfil.rol));
+}
+
 export const ETIQUETAS_ROL: Record<RolPortal, string> = {
   admin: "Administrador",
   operador: "Operador",

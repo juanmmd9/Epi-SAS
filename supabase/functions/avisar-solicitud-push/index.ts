@@ -126,6 +126,8 @@ async function enviarFcm(
           notification: {
             channelId: "solicitudes",
             sound: "default",
+            icon: "ic_notification",
+            color: "#0B3D5C",
           },
         },
       },
@@ -185,7 +187,7 @@ Deno.serve(async (req) => {
       .from("usuarios_portal")
       .select("id")
       .eq("activo", true)
-      .in("rol", ["admin", "operador", "consulta"]);
+      .in("rol", ["admin", "operador"]);
 
     if (errUsers) throw new Error(errUsers.message);
     const userIds = (destinatarios ?? []).map((u) => u.id);

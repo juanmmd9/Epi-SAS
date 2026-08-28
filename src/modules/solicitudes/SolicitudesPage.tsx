@@ -18,7 +18,6 @@ import {
   solicitudCerradaEnMes,
   solicitudEsperaRepuesto,
 } from "./solicitudesCalculo";
-import PanelAlertasSolicitudes from "./PanelAlertasSolicitudes";
 import { useSolicitudesRealtime } from "./useSolicitudesRealtime";
 import { ETIQUETAS_ESTADO_REPUESTO, type RepuestoSolicitud } from "./types";
 import "./solicitudes.css";
@@ -103,19 +102,12 @@ function SolicitudesPage() {
     });
   }, []);
 
-  // Mantenimiento: avisos globales en Layout. Solicitante: avisos en esta página.
-  const {
-    alertas,
-    descartarAlerta,
-    enLinea,
-    sondeoActivo,
-    areasConNueva,
-    limpiarAreaNueva,
-  } = useSolicitudesRealtime({
+  // Solo admin/operador reciben avisos (globales en Layout). Aquí solo actualiza listas.
+  const { areasConNueva, limpiarAreaNueva } = useSolicitudesRealtime({
     correctivos,
     onNuevaSolicitud: alNuevaSolicitud,
     habilitado: !cargando,
-    modo: esReporta ? "completo" : "solo-lista",
+    modo: "solo-lista",
   });
 
   const totales = useMemo(
@@ -192,18 +184,10 @@ function SolicitudesPage() {
               </>
             )}{" "}
             {esReporta
-              ? "Deja esta pantalla abierta para recibir avisos al instante."
+              ? "La lista se actualiza sola al crear solicitudes en cualquier área."
               : "Los avisos de nuevas solicitudes llegan en toda la app (toast + notificación)."}
           </p>
         </div>
-        {esReporta ? (
-          <PanelAlertasSolicitudes
-            enLinea={enLinea}
-            sondeoActivo={sondeoActivo}
-            alertas={alertas}
-            onDescartar={descartarAlerta}
-          />
-        ) : null}
       </div>
 
       {error && <p className="solicitudes__error">{error}</p>}

@@ -1,7 +1,7 @@
 PUSH FIREBASE — Portal Mantenimiento EPI
 ========================================
 
-Objetivo: que admin/operador/consulta reciban notificación
+Objetivo: que admin y operador reciban notificación
 aunque la app esté CERRADA, cuando alguien cree una solicitud.
 
 Package Android: com.epi.portalmantenimiento
@@ -45,7 +45,14 @@ Con Supabase CLI (o Dashboard → Edge Functions):
 ------------------------------------------------
 PASO 4 — Webhook al crear solicitud
 ------------------------------------------------
-Supabase → Database → Webhooks → Create
+Opción A — SQL (recomendada, un solo archivo):
+
+En Supabase → SQL Editor → New query → pega y ejecuta:
+  supabase/migrations/webhook_avisar_solicitud_push.sql
+
+Debe mostrar: "Webhook push: trigger trg_avisar_solicitud_push en correctivo."
+
+Opción B — Dashboard → Database → Webhooks → Create
 
 - Name: avisar-solicitud-push
 - Table: correctivo
@@ -55,6 +62,8 @@ Supabase → Database → Webhooks → Create
   (o URL HTTP:
    https://TU_PROJECT.supabase.co/functions/v1/avisar-solicitud-push
    Header Authorization: Bearer SERVICE_ROLE_KEY)
+
+Si usas la opción B, NO ejecutes también el SQL (evita duplicar avisos).
 
 ------------------------------------------------
 PASO 5 — Recompilar e instalar APK

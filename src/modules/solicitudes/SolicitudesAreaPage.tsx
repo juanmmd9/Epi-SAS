@@ -21,7 +21,6 @@ import type { RegistroCorrectivo } from "../correctivo/types";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
 import NuevaSolicitudAreaForm from "./NuevaSolicitudAreaForm";
-import PanelAlertasSolicitudes from "./PanelAlertasSolicitudes";
 import { useSolicitudesRealtime } from "./useSolicitudesRealtime";
 import {
   actualizarRepuesto,
@@ -217,10 +216,6 @@ function SolicitudesAreaPage() {
   }, []);
 
   const {
-    alertas,
-    descartarAlerta,
-    enLinea,
-    sondeoActivo,
     idsDestacados,
     marcarConocido,
   } = useSolicitudesRealtime({
@@ -228,8 +223,7 @@ function SolicitudesAreaPage() {
     correctivos,
     onNuevaSolicitud: alNuevaSolicitudRealtime,
     habilitado: areaValida && !cargando,
-    // Mantenimiento usa avisos globales; solicitante/líder reciben avisos aquí.
-    modo: esReportaArea ? "completo" : "solo-lista",
+    modo: "solo-lista",
   });
 
   const alCrearSolicitud = useCallback(
@@ -403,18 +397,9 @@ function SolicitudesAreaPage() {
             </>
           )}
           {esReportaArea
-            ? " Deja esta pantalla abierta para avisos al instante."
+            ? " La lista se actualiza sola cuando llega una solicitud nueva."
             : " Los avisos llegan en toda la app (toast + notificación del celular)."}
         </p>
-        {esReportaArea ? (
-          <PanelAlertasSolicitudes
-            enLinea={enLinea}
-            sondeoActivo={sondeoActivo}
-            alertas={alertas}
-            onDescartar={descartarAlerta}
-            areaActual={area}
-          />
-        ) : null}
       </div>
 
       {puedeEscribirArea ? (

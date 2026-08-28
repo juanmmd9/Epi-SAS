@@ -1,11 +1,11 @@
 import { useAuth } from "../auth/AuthContext";
+import { ROLES_NOTIFICACION_SOLICITUDES } from "../auth/roles";
 import PanelAlertasSolicitudes from "./PanelAlertasSolicitudes";
 import { usePushNotificaciones } from "./usePushNotificaciones";
 import { useSolicitudesRealtime } from "./useSolicitudesRealtime";
 import "./solicitudes.css";
 
-/** Roles de mantenimiento que deben enterarse de nuevas solicitudes. */
-const ROLES_AVISO = new Set(["admin", "operador", "consulta"]);
+const ROLES_AVISO = new Set<string>(ROLES_NOTIFICACION_SOLICITUDES);
 
 /**
  * Escucha nuevas solicitudes en toda la app (no solo en /solicitudes)

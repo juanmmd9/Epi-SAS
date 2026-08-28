@@ -13,6 +13,11 @@ import {
   esUuidValido,
   listarUsuariosPortal,
 } from "./usuariosService";
+import {
+  descargarBlobExcel,
+  generarExcelUsuariosPortal,
+  nombreArchivoUsuariosPortal,
+} from "./usuariosExcel";
 import "./usuarios.css";
 
 const formularioVacio = {
@@ -254,6 +259,18 @@ function UsuariosPage() {
     );
   }
 
+  async function exportarExcelUsuarios() {
+    setError(null);
+    setMensaje(null);
+    try {
+      const blob = await generarExcelUsuariosPortal(usuarios, personal);
+      descargarBlobExcel(blob, nombreArchivoUsuariosPortal());
+      setMensaje(`Excel exportado (${usuarios.length} usuarios).`);
+    } catch (e) {
+      setError("No se pudo generar el Excel: " + (e as Error).message);
+    }
+  }
+
   return (
     <div className="usuarios">
       <div className="usuarios__encabezado">
@@ -264,9 +281,19 @@ function UsuariosPage() {
             entrando con su Gmail o correo.
           </p>
         </div>
-        <Link className="btn" to="/personal">
-          ← Volver a personal
-        </Link>
+        <div className="usuarios__encabezado-acciones">
+          <button
+            type="button"
+            className="btn"
+            disabled={cargando || usuarios.length === 0}
+            onClick={() => void exportarExcelUsuarios()}
+          >
+            Exportar Excel
+          </button>
+          <Link className="btn" to="/personal">
+            ← Volver a personal
+          </Link>
+        </div>
       </div>
 
       <aside className="usuarios__pasos">

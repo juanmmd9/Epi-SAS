@@ -6,6 +6,13 @@
   margin-bottom: 0.5rem;
 }
 
+.usuarios__encabezado-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .usuarios__descripcion {
   color: var(--color-texto-suave);
   margin-top: 0;

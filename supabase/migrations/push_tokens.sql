@@ -39,6 +39,6 @@ create policy "push_tokens_delete_propio" on public.push_tokens
   using (user_id = auth.uid() or public.usuario_es_admin());
 
 -- Lectura de tokens de mantenimiento para la Edge Function (service role bypassa RLS).
--- Los destinatarios son usuarios con rol admin / operador / consulta activos.
+-- Los destinatarios son usuarios con rol admin u operador activos.
 
 select 'Tabla push_tokens lista.' as resultado;
