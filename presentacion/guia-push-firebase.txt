@@ -4,7 +4,8 @@ PUSH FIREBASE — Portal Mantenimiento EPI
 Objetivo: que admin y operador reciban notificación
 aunque la app esté CERRADA:
   - cuando alguien cree una solicitud (correctivo)
-  - cuando al admin asigne un PM a un operario (preventivo_asignaciones)
+  - cuando el admin asigne un PM a un operario (preventivo_asignaciones)
+  - cuando el admin asigne una solicitud a un operario (correctivo_asignaciones)
 
 Package Android: com.epi.portalmantenimiento
 
@@ -66,6 +67,18 @@ Opción B — Dashboard → Database → Webhooks → Create
    Header Authorization: Bearer SERVICE_ROLE_KEY)
 
 Si usas la opción B, NO ejecutes también el SQL (evita duplicar avisos).
+
+------------------------------------------------
+PASO 4b — Push al asignar solicitud (admin → operario)
+------------------------------------------------
+1. Deploy:
+   supabase functions deploy avisar-asignacion-correctivo-push --no-verify-jwt
+
+2. SQL Editor ejecuta:
+   supabase/migrations/webhook_avisar_asignacion_correctivo_push.sql
+
+Eso avisa al operario cuando el admin lo asigna desde la lista
+(no cuando el operario pulsa TOMAR).
 
 ------------------------------------------------
 PASO 5 — Recompilar e instalar APK

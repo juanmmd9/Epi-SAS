@@ -6,6 +6,7 @@ import { rutaInicioParaRol } from "../../modules/auth/roles";
 import { permisoParaRuta } from "../../lib/guardRutas";
 import { areaUsuario } from "../../lib/usuarioArea";
 import AvisosSolicitudesGlobales from "../../modules/solicitudes/AvisosSolicitudesGlobales";
+import AvisosAsignacionCorrectivoGlobales from "../../modules/solicitudes/AvisosAsignacionCorrectivoGlobales";
 import AvisosPmAsignadosGlobales from "../../modules/preventivo/AvisosPmAsignadosGlobales";
 import BottomNav from "./BottomNav";
 import Sidebar from "./Sidebar";
@@ -55,8 +56,9 @@ function Layout() {
         </main>
         <BottomNav />
       </div>
-      <DeferredMount delay={3000}>
+      <DeferredMount delay={1200}>
         <AvisosSolicitudesGlobales />
+        <AvisosAsignacionCorrectivoGlobales />
         <AvisosPmAsignadosGlobales />
       </DeferredMount>
     </div>

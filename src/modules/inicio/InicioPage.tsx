@@ -31,6 +31,7 @@ import {
 import MisSolicitudesPanel from "../solicitudes/MisSolicitudesPanel";
 import BandejaTomarPanel from "../solicitudes/BandejaTomarPanel";
 import { solicitudAbierta } from "../solicitudes/solicitudesCalculo";
+import { supabase } from "../../services/supabase";
 import CitaPmItem from "./CitaPmItem";
 import { construirDatosArea } from "./inicioDatosArea";
 import MisPmPanel from "./MisPmPanel";
@@ -146,6 +147,53 @@ function InicioPage() {
     if (cargandoAuth || !perfil) return;
     recargarDatos();
   }, [cargandoAuth, perfil, ubicacion.key, recargarDatos]);
+
+  // Mis solicitudes: refresco en vivo cuando el admin asigna (sin cerrar la app).
+  const refrescarMisSolicitudesSilencioso = useCallback(async () => {
+    if (!perfil?.personal_id) return;
+    try {
+      const sols = await cargarMisSolicitudes(perfil.personal_id);
+      setMisSolicitudes(sols);
+    } catch {
+      // Fallo puntual: el siguiente ciclo reintenta.
+    }
+  }, [cargarMisSolicitudes, perfil?.personal_id]);
+
+  useEffect(() => {
+    const personalId = perfil?.personal_id;
+    if (!personalId) return;
+
+    const canal = supabase
+      .channel(`inicio-mis-asig-${personalId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "correctivo_asignaciones" },
+        (payload) => {
+          const n = payload.new as Record<string, unknown> | null;
+          const o = payload.old as Record<string, unknown> | null;
+          const pid = (n?.personal_id ?? o?.personal_id) as string | undefined;
+          if (pid !== personalId) return;
+          void refrescarMisSolicitudesSilencioso();
+        },
+      )
+      .subscribe();
+
+    function alVolver() {
+      if (document.visibilityState === "visible") {
+        void refrescarMisSolicitudesSilencioso();
+      }
+    }
+    document.addEventListener("visibilitychange", alVolver);
+    const poll = window.setInterval(() => {
+      void refrescarMisSolicitudesSilencioso();
+    }, 12_000);
+
+    return () => {
+      void supabase.removeChannel(canal);
+      document.removeEventListener("visibilitychange", alVolver);
+      window.clearInterval(poll);
+    };
+  }, [perfil?.personal_id, refrescarMisSolicitudesSilencioso]);
 
   const datosPorArea = useMemo(() => {
     if (esOperario) return [];
