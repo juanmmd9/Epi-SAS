@@ -1,0 +1,132 @@
+/* Encabezados de página: título + botones en columna en móvil */
+@media (max-width: 768px) {
+  .personal__encabezado,
+  .matriz__encabezado,
+  .usuarios__encabezado,
+  .permisos__encabezado,
+  .hoja-detalle__encabezado {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .personal__enlaces-cabecera,
+  .permisos__enlaces-cabecera {
+    flex-direction: column;
+  }
+
+  .personal__enlaces-cabecera .btn,
+  .permisos__enlaces-cabecera .btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .matriz__barra {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .matriz__barra label,
+  .matriz__barra select,
+  .matriz__barra .btn {
+    width: 100%;
+  }
+
+  .matriz__tabla-scroll {
+    max-height: calc(100dvh - 11rem);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .inicio__areas {
+    grid-template-columns: 1fr;
+  }
+
+  .hojas__lista {
+    grid-template-columns: 1fr;
+  }
+
+  .preventivo__tabla-contenedor,
+  .correctivo__tabla-contenedor,
+  .permisos__tabla-scroll,
+  .usuarios-tabla-wrap {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .inicio__cabecera {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cronograma__controles {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cronograma__controles label,
+  .cronograma__controles select,
+  .cronograma__controles input,
+  .cronograma__controles .btn {
+    width: 100%;
+  }
+
+  .preventivo__acciones,
+  .correctivo__acciones {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 5.5rem;
+  }
+
+  .preventivo__acciones .btn,
+  .correctivo__acciones .btn {
+    width: 100%;
+    font-size: 0.78rem;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .usuarios-form__acciones,
+  .personal-form__acciones {
+    flex-direction: column;
+  }
+
+  .usuarios-form__acciones .btn,
+  .personal-form__acciones .btn {
+    width: 100%;
+  }
+
+  .auth-login {
+    padding: 1rem;
+    align-content: start;
+  }
+
+  .auth-login__tarjeta {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .aviso-setup-personal__acciones {
+    flex-direction: column;
+  }
+
+  .aviso-setup-personal__acciones .btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.35rem;
+  }
+
+  .btn {
+    min-height: 2.5rem;
+  }
+
+  .matriz__col-desc {
+    min-width: 14rem;
+    max-width: 16rem;
+  }
+
+  .matriz__col-meta {
+    left: calc(2.5rem + 14rem);
+  }
+}

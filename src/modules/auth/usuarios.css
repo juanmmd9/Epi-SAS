@@ -1,0 +1,257 @@
+.usuarios__encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.usuarios__encabezado-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.usuarios__descripcion {
+  color: var(--color-texto-suave);
+  margin-top: 0;
+}
+
+.usuarios__pasos {
+  background: #f0f7ff;
+  border: 1px solid #c5daf5;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.usuarios__pasos ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.usuarios__pasos li {
+  margin-bottom: 0.35rem;
+}
+
+.usuarios__nota-migracion {
+  margin: 0.85rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+  line-height: 1.45;
+}
+
+.usuarios__nota-migracion code {
+  font-size: 0.8em;
+}
+
+.usuarios-form {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.usuarios-form h2 {
+  margin-top: 0;
+  font-size: 1.05rem;
+}
+
+.usuarios-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.9rem;
+}
+
+.usuarios-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+}
+
+.usuarios-form input,
+.usuarios-form select {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-texto);
+}
+
+.usuarios-form__uuid {
+  grid-column: 1 / -1;
+}
+
+.usuarios-form__acciones {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.usuarios__mensaje {
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.usuarios__mensaje--ok {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.usuarios__mensaje--error {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+.usuarios-tabla-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  background: var(--color-superficie);
+}
+
+.usuarios-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.usuarios-tabla th,
+.usuarios-tabla td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--color-borde);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.usuarios-tabla th {
+  background: #f5f7fa;
+  font-weight: 700;
+}
+
+.usuarios-tabla tr:last-child td {
+  border-bottom: none;
+}
+
+.usuarios-tabla__uuid {
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  word-break: break-all;
+}
+
+.usuarios-tabla select {
+  font: inherit;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 6px;
+  max-width: 10rem;
+}
+
+.usuarios-tabla__inactivo {
+  opacity: 0.55;
+}
+
+.usuarios-tabla__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.usuarios__badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.usuarios__badge--admin {
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
+.usuarios__badge--operador {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.usuarios__badge--consulta {
+  background: #f3e5f5;
+  color: #4a148c;
+}
+
+.usuarios__badge--solicitante {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.usuarios__badge--lider {
+  background: #e0f2f1;
+  color: #00695c;
+}
+
+.usuarios__checklist {
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.usuarios__checklist-cabecera h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.usuarios__checklist-cabecera p {
+  margin: 0 0 0.75rem;
+  color: var(--color-texto-suave);
+  font-size: 0.9rem;
+}
+
+.usuarios__checklist-ok {
+  margin: 0;
+  color: #166534;
+  font-weight: 600;
+}
+
+.usuarios__checklist-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.usuarios__checklist-lista li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  background: #fff;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+}
+
+.usuarios__checklist-lista strong {
+  display: block;
+}
+
+.usuarios__checklist-lista small {
+  color: var(--color-texto-suave);
+}
+
+.usuarios__checklist-aviso {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: #92400e;
+}

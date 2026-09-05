@@ -1,0 +1,76 @@
+@import "./styles/responsive.css";
+
+:root {
+  --color-primario: #2563eb;
+  --color-primario-oscuro: #1d4ed8;
+  --color-fondo: #f1f5f9;
+  --color-superficie: #ffffff;
+  --color-texto: #0f172a;
+  --color-texto-suave: #64748b;
+  --color-borde: #e2e8f0;
+  --sidebar-ancho: 240px;
+
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--color-texto);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-fondo);
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.5rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ----- Botones compartidos ----- */
+
+.btn {
+  border: 1px solid var(--color-borde);
+  background: #fff;
+  color: var(--color-texto);
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.btn:hover {
+  background: var(--color-fondo);
+}
+
+.btn--primario {
+  background: var(--color-primario);
+  border-color: var(--color-primario);
+  color: #fff;
+}
+
+.btn--primario:hover {
+  background: var(--color-primario-oscuro);
+}
+
+.btn--primario:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.btn--advertencia {
+  border-color: #d97706;
+  color: #b45309;
+}
+
+.btn--peligro {
+  border-color: #dc2626;
+  color: #b91c1c;
+}
