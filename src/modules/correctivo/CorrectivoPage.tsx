@@ -14,6 +14,18 @@ import {
   nombresPersonalEnRegistro,
 } from "../personal/personalVinculo";
 import type { Persona } from "../personal/types";
+import CronometroSolicitudBadge from "../solicitudes/CronometroSolicitudBadge";
+import {
+  marcarEsperaYPausarCronometro,
+  quitarEsperaYReanudarCronometro,
+  iniciarCronometroAlAtender,
+} from "../solicitudes/cronometroAcciones";
+import { detenerCronometroLaboral, pausarCronometroLaboral } from "../solicitudes/cronometroLaboral";
+import {
+  iniciarCronometro,
+  leerCronometro,
+  reanudarCronometro,
+} from "../solicitudes/cronometroSolicitud";
 import {
   actualizarCorrectivo,
   calcularTiempoRespuesta,
@@ -148,8 +160,21 @@ function CorrectivoPage() {
       setFiltroArea(stateNavegacion.filtroArea);
     }
     if (stateNavegacion.editarCorrectivoId) {
-      const registro = registros.find((r) => r.id === stateNavegacion.editarCorrectivoId);
-      if (registro) iniciarEdicion(registro);
+      const id = stateNavegacion.editarCorrectivoId;
+      void (async () => {
+        try {
+          const actualizado = await iniciarCronometroAlAtender(id);
+          setRegistros((prev) =>
+            ordenarRegistrosCorrectivo(
+              prev.map((r) => (r.id === actualizado.id ? actualizado : r)),
+            ),
+          );
+          iniciarEdicion(actualizado);
+        } catch {
+          const registro = registros.find((r) => r.id === id);
+          if (registro) iniciarEdicion(registro);
+        }
+      })();
     }
   }, [cargando, registros, stateNavegacion]);
 
@@ -325,6 +350,36 @@ function CorrectivoPage() {
       const datosPersonal = construirDatosPersonal(idsValidos, personal);
       const nombresTecnicosTexto = datosPersonal.personalNombres.join(", ");
 
+      const registroPrevio = editandoId
+        ? registros.find((r) => r.id === editandoId)
+        : undefined;
+      const cronPrev = leerCronometro(registroPrevio?.datos);
+      const cerrada = Boolean(campos.fechaCierre?.trim());
+      const espera = Boolean(campos.fechaCierre ? false : esperaRepuesto);
+      const habiaAsignado = Boolean(
+        (registroPrevio?.datos.cronometro?.estado &&
+          registroPrevio.datos.cronometro.estado !== "idle") ||
+          personalIds.length > 0,
+      );
+
+      let cronometro = cronPrev;
+      if (cerrada) {
+        cronometro = await detenerCronometroLaboral(cronPrev);
+      } else if (espera) {
+        cronometro =
+          cronPrev.estado === "running"
+            ? await pausarCronometroLaboral(cronPrev)
+            : {
+                estado: "paused",
+                segmentoInicio: null,
+                acumuladoSeg: cronPrev.acumuladoSeg,
+              };
+      } else if (cronPrev.estado === "paused") {
+        cronometro = reanudarCronometro(cronPrev);
+      } else if (cronPrev.estado === "idle" && habiaAsignado) {
+        cronometro = iniciarCronometro(cronPrev);
+      }
+
       const input = {
         ...(datosPersonal.personalId ? { personal_id: datosPersonal.personalId } : {}),
         area: campos.area,
@@ -350,6 +405,7 @@ function CorrectivoPage() {
           fechaCierre: campos.fechaCierre,
           horaCierre: campos.horaCierre,
           esperaRepuesto: campos.fechaCierre ? false : esperaRepuesto,
+          cronometro,
           quienRevisa: campos.quienRevisa.trim() || nombresTecnicosTexto,
           ...datosPersonal,
         },
@@ -530,10 +586,34 @@ function CorrectivoPage() {
             <input
               type="checkbox"
               checked={esperaRepuesto}
-              disabled={Boolean(campos.fechaCierre)}
-              onChange={(e) => setEsperaRepuesto(e.target.checked)}
+              disabled={Boolean(campos.fechaCierre) || !editandoId}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setEsperaRepuesto(checked);
+                if (!editandoId) return;
+                void (async () => {
+                  try {
+                    const actualizado = checked
+                      ? await marcarEsperaYPausarCronometro(editandoId)
+                      : await quitarEsperaYReanudarCronometro(editandoId);
+                    setRegistros((previos) =>
+                      ordenarRegistrosCorrectivo(
+                        previos.map((r) => (r.id === actualizado.id ? actualizado : r)),
+                      ),
+                    );
+                    setMensaje(
+                      checked
+                        ? "Espera de repuesto: cronómetro pausado."
+                        : "Cronómetro reanudado.",
+                    );
+                  } catch (err) {
+                    setEsperaRepuesto(!checked);
+                    setError((err as Error).message);
+                  }
+                })();
+              }}
             />{" "}
-            En espera de repuesto (solo solicitudes abiertas)
+            En espera de repuesto (pausa el cronómetro al instante)
           </label>
           <label>
             Quién revisa
@@ -543,6 +623,15 @@ function CorrectivoPage() {
             />
           </label>
         </div>
+
+        {editandoId && !campos.fechaCierre && (
+          <div className="correctivo-cronometro-bloque">
+            {(() => {
+              const regEdicion = registros.find((r) => r.id === editandoId);
+              return regEdicion ? <CronometroSolicitudBadge datos={regEdicion.datos} /> : null;
+            })()}
+          </div>
+        )}
 
         <div className="correctivo-form__acciones">
           <button type="submit" className="btn btn--primario" disabled={guardando}>

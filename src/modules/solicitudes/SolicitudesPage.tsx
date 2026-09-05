@@ -6,9 +6,10 @@ import { useAuth } from "../auth/AuthContext";
 import { NOMBRES_MESES } from "../../lib/fechas";
 import { listarCorrectivo, ordenarRegistrosCorrectivo } from "../correctivo/correctivoService";
 import type { RegistroCorrectivo } from "../correctivo/types";
-import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
+import BandejaTomarPanel from "./BandejaTomarPanel";
 import { existeTablaRepuestos, listarRepuestos } from "./repuestosService";
+import SolicitudesAreaPage from "./SolicitudesAreaPage";
 import {
   diasAbierta,
   quienCerroSolicitud,
@@ -41,8 +42,9 @@ function rutaArea(area: string): string {
 }
 
 function SolicitudesPage() {
-  const { perfil, puede } = useAuth();
+  const { perfil, puede, cargando: cargandoAuth } = useAuth();
   const mesActual = NOMBRES_MESES[new Date().getMonth()];
+  const esAdmin = perfil?.rol === "admin";
   const esReporta = esRolReportaSolicitudes(perfil);
   const puedeVerCorrectivo = puede("ver.correctivo");
   const [correctivos, setCorrectivos] = useState<RegistroCorrectivo[]>([]);
@@ -51,15 +53,21 @@ function SolicitudesPage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [vistaMetrica, setVistaMetrica] = useState<VistaMetrica | null>(null);
+  const [areaActiva, setAreaActiva] = useState<string>(AREAS_SISTEMA[0]);
 
   useEffect(() => {
+    if (cargandoAuth) return;
+
     async function cargar() {
       setCargando(true);
       setError(null);
       try {
-        const [regs, hojas] = await Promise.all([listarCorrectivo(), listarHojas()]);
+        const regs = await listarCorrectivo();
         setCorrectivos(regs);
-        setMaquinas(hojas);
+        if (!esAdmin) {
+          const { listarHojas } = await import("../hojas/hojasService");
+          setMaquinas(await listarHojas());
+        }
         const hayTabla = await existeTablaRepuestos();
         if (hayTabla) {
           setRepuestos(await listarRepuestos());
@@ -73,7 +81,7 @@ function SolicitudesPage() {
       }
     }
     void cargar();
-  }, []);
+  }, [cargandoAuth, esAdmin]);
 
   const mapaMaquinas = useMemo(() => {
     const mapa = new Map<string, HojaVida>();
@@ -100,15 +108,28 @@ function SolicitudesPage() {
       if (prev.some((r) => r.id === registro.id)) return prev;
       return ordenarRegistrosCorrectivo([registro, ...prev]);
     });
-  }, []);
+    const areaNorm = normalizarArea(registro.area);
+    if (areaNorm && esAdmin) setAreaActiva(areaNorm);
+  }, [esAdmin]);
 
-  // Solo admin/operador reciben avisos (globales en Layout). Aquí solo actualiza listas.
   const { areasConNueva, limpiarAreaNueva } = useSolicitudesRealtime({
     correctivos,
     onNuevaSolicitud: alNuevaSolicitud,
     habilitado: !cargando,
     modo: "solo-lista",
   });
+
+  useEffect(() => {
+    if (!esAdmin || resumenes.length === 0) return;
+    const conActividad = resumenes.find((r) => r.abiertas > 0 || r.esperaRepuesto > 0);
+    if (conActividad) {
+      setAreaActiva((prev) => {
+        const actual = resumenes.find((r) => r.area === prev);
+        if (actual && (actual.abiertas > 0 || actual.esperaRepuesto > 0)) return prev;
+        return conActividad.area;
+      });
+    }
+  }, [esAdmin, resumenes]);
 
   const totales = useMemo(
     () =>
@@ -122,6 +143,11 @@ function SolicitudesPage() {
         { abiertas: 0, esperaRepuesto: 0, cerradasMes: 0, repuestosPendientes: 0 },
       ),
     [resumenes],
+  );
+
+  const resumenActivo = useMemo(
+    () => resumenes.find((r) => r.area === areaActiva),
+    [resumenes, areaActiva],
   );
 
   const anioRef = new Date().getFullYear();
@@ -155,11 +181,87 @@ function SolicitudesPage() {
     setVistaMetrica({ area, metrica });
   }
 
-  if (cargando) {
+  if (cargandoAuth || cargando) {
     return (
       <section className="solicitudes">
         <h1>Solicitudes</h1>
-        <p className="solicitudes__descripcion">Cargando tablero...</p>
+        <p className="solicitudes__descripcion">Cargando...</p>
+      </section>
+    );
+  }
+
+  if (esAdmin) {
+    return (
+      <section className="solicitudes solicitudes--gestion">
+        <header className="sol-tablero-header">
+          <div>
+            <h1>Centro de control · Solicitudes</h1>
+            <p className="solicitudes__descripcion">
+              Elige un área arriba. Gestiona tiempos, asignaciones, edición y repuestos por
+              sección. Cerradas en {mesActual}: <strong>{totales.cerradasMes}</strong>.
+            </p>
+          </div>
+          <div className="sol-tablero-totales">
+            <span className="sol-tablero-totales__item sol-tablero-totales__item--alerta">
+              <strong>{totales.abiertas}</strong> abiertas
+            </span>
+            <span className="sol-tablero-totales__item sol-tablero-totales__item--espera">
+              <strong>{totales.esperaRepuesto}</strong> espera
+            </span>
+            <span className="sol-tablero-totales__item">
+              <strong>{totales.repuestosPendientes}</strong> repuestos
+            </span>
+          </div>
+        </header>
+
+        {error && <p className="solicitudes__error">{error}</p>}
+
+        <nav className="sol-tablero-areas" aria-label="Áreas de planta">
+          {resumenes.map((resumen) => (
+            <button
+              key={resumen.area}
+              type="button"
+              className={
+                "sol-tablero-areas__item" +
+                (areaActiva === resumen.area ? " sol-tablero-areas__item--activa" : "") +
+                (areasConNueva.has(resumen.area) ? " sol-tablero-areas__item--nueva" : "") +
+                (resumen.abiertas > 0 ? " sol-tablero-areas__item--alerta" : "")
+              }
+              onClick={() => {
+                setAreaActiva(resumen.area);
+                limpiarAreaNueva(resumen.area);
+              }}
+            >
+              <span className="sol-tablero-areas__nombre">{resumen.area}</span>
+              <span className="sol-tablero-areas__nums">
+                {resumen.abiertas > 0 && (
+                  <em className="sol-tablero-areas__abiertas">{resumen.abiertas} abiertas</em>
+                )}
+                {resumen.esperaRepuesto > 0 && (
+                  <em className="sol-tablero-areas__espera">{resumen.esperaRepuesto} espera</em>
+                )}
+                {resumen.abiertas === 0 && resumen.esperaRepuesto === 0 && (
+                  <em className="sol-tablero-areas__ok">al día</em>
+                )}
+              </span>
+            </button>
+          ))}
+        </nav>
+
+        {resumenActivo && (
+          <p className="sol-tablero-resumen-activo">
+            <strong>{areaActiva}</strong>
+            {" · "}
+            {resumenActivo.abiertas} abierta(s), {resumenActivo.esperaRepuesto} en espera de
+            repuesto, {resumenActivo.cerradasMes} cerradas este mes.
+          </p>
+        )}
+
+        <SolicitudesAreaPage
+          key={areaActiva}
+          areaIncrustada={areaActiva}
+          modoIncrustado
+        />
       </section>
     );
   }
@@ -191,6 +293,12 @@ function SolicitudesPage() {
       </div>
 
       {error && <p className="solicitudes__error">{error}</p>}
+
+      <BandejaTomarPanel
+        onTomada={() => {
+          void listarCorrectivo().then(setCorrectivos).catch(() => undefined);
+        }}
+      />
 
       <div className="solicitudes__grid">
         {resumenes.map((resumen) => (

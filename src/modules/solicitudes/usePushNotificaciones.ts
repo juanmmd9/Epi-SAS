@@ -33,6 +33,13 @@ export function usePushNotificaciones(
           importance: 5,
           visibility: 1,
         });
+        await LocalNotifications.createChannel({
+          id: "preventivo",
+          name: "PM asignados",
+          description: "Avisos cuando te asignan un mantenimiento preventivo",
+          importance: 5,
+          visibility: 1,
+        });
       } catch {
         // Canal opcional; FCM puede usar el canal por defecto.
       }

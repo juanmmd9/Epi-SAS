@@ -1,10 +1,12 @@
 import { useRef } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import DeferredMount from "../DeferredMount";
 import { useAuth } from "../../modules/auth/AuthContext";
 import { rutaInicioParaRol } from "../../modules/auth/roles";
 import { permisoParaRuta } from "../../lib/guardRutas";
 import { areaUsuario } from "../../lib/usuarioArea";
 import AvisosSolicitudesGlobales from "../../modules/solicitudes/AvisosSolicitudesGlobales";
+import AvisosPmAsignadosGlobales from "../../modules/preventivo/AvisosPmAsignadosGlobales";
 import BottomNav from "./BottomNav";
 import Sidebar from "./Sidebar";
 import "./Layout.css";
@@ -53,7 +55,10 @@ function Layout() {
         </main>
         <BottomNav />
       </div>
-      <AvisosSolicitudesGlobales />
+      <DeferredMount delay={3000}>
+        <AvisosSolicitudesGlobales />
+        <AvisosPmAsignadosGlobales />
+      </DeferredMount>
     </div>
   );
 }

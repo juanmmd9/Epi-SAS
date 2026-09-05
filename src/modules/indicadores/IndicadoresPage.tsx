@@ -12,7 +12,7 @@ import type { RegistroPreventivo } from "../preventivo/types";
 import { horasLaborablesMes, resolverHorariosAnio } from "../permisos/horasLaborables";
 import { listarFestivosAnio, listarHorarioAnio } from "../permisos/horarioService";
 import type { Festivo, HorarioLaboral } from "../permisos/types";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
   calcularResumenCorrectivo,
   calcularTiemposCorrectivo,
@@ -574,6 +574,15 @@ function IndicadoresPage() {
 
       <h2>Preventivo — cumplimiento del cronograma</h2>
 
+      {preventivoPorArea.some(({ datos }) => datos.enAprobacion.length > 0) && (
+        <p className="indicadores__aviso-aprobacion">
+          Hay PM registrados que aún no cuentan en el % porque están{" "}
+          <strong>pendientes de aprobación</strong>. Apruébalos en{" "}
+          <Link to="/preventivo/aprobaciones">Preventivo → Aprobaciones</Link> y vuelve a
+          esta pantalla para ver el cambio (p. ej. abrasión / Laboratorio).
+        </p>
+      )}
+
       <div className="indicadores__preventivo">
         {preventivoPorArea.map(({ area: a, datos }) => (
           <section key={a} className="bloque-preventivo">
@@ -599,6 +608,13 @@ function IndicadoresPage() {
                 <span>Pendientes</span>
                 <strong>{datos.pendientes.length}</strong>
               </article>
+              {datos.enAprobacion.length > 0 && (
+                <article className="tarjeta-indicador tarjeta-indicador--aviso">
+                  <span>En aprobación</span>
+                  <strong>{datos.enAprobacion.length}</strong>
+                  <small>Registrados; aún no suman al %</small>
+                </article>
+              )}
             </div>
             <div className="bloque-preventivo__listas">
               <div>
@@ -625,6 +641,16 @@ function IndicadoresPage() {
                   vacio="Sin pendientes."
                 />
               </div>
+              {datos.enAprobacion.length > 0 && (
+                <div>
+                  <h5>Registrados · en aprobación ({datos.enAprobacion.length})</h5>
+                  <ListaCitas
+                    items={datos.enAprobacion}
+                    clase="cita-en-aprobacion"
+                    vacio="Ninguno."
+                  />
+                </div>
+              )}
             </div>
           </section>
         ))}

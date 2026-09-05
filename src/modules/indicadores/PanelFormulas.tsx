@@ -116,7 +116,8 @@ function PanelFormulas({
         formula="(Cumplidas ÷ (Cumplidas + Pendientes)) × 100"
         periodoLabel={periodo}
         notas={[
-          "Cumplida: hay registro PM de la máquina en ese mes (misma lógica que el cronograma en verde).",
+          "Cumplida: hay registro PM APROBADO de la máquina en ese mes (misma lógica que el cronograma en verde).",
+          "Al guardar un PM queda pendiente de firma del líder; hasta aprobarlo no sube el % (Preventivo → Aprobaciones).",
           "No cuentan máquinas fuera de circulación ni citas solo reprogramadas.",
           "El % global de la tabla anual suma todas las áreas con preventivo.",
           "Meses futuros muestran celda vacía hasta que llegue el periodo.",

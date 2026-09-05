@@ -2,7 +2,9 @@ PUSH FIREBASE — Portal Mantenimiento EPI
 ========================================
 
 Objetivo: que admin y operador reciban notificación
-aunque la app esté CERRADA, cuando alguien cree una solicitud.
+aunque la app esté CERRADA:
+  - cuando alguien cree una solicitud (correctivo)
+  - cuando al admin asigne un PM a un operario (preventivo_asignaciones)
 
 Package Android: com.epi.portalmantenimiento
 
@@ -85,6 +87,19 @@ Sin Firebase todavía:
   cd android; .\gradlew.bat assembleDebug
 
 APK: presentacion\Portal-Mantenimiento-EPI.apk
+
+------------------------------------------------
+PASO 5 — PM asignados (operario recibe push)
+------------------------------------------------
+1. SQL Editor:
+   - supabase/migrations/preventivo_asignaciones.sql
+   - supabase/migrations/webhook_avisar_asignacion_pm_push.sql
+
+2. Deploy Edge Function:
+   supabase functions deploy avisar-asignacion-pm-push --no-verify-jwt
+
+3. En Inicio (admin) asigna operario en cada cita PM.
+   El operario ve "Lo mío — PM pendientes" y badge en Inicio.
 
 
 ------------------------------------------------

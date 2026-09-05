@@ -3,9 +3,9 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { ContadorListaMensual, etiquetaPeriodoContador } from "../../components/ContadorListaMensual";
 import { useAuth } from "../auth/AuthContext";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
+import { listarUsuariosPortal } from "../auth/usuariosService";
 import { AREAS_SISTEMA, coincideArea, esAreaValida, normalizarArea } from "../../lib/areas";
 import {
-  esRolReportaSolicitudes,
   rutaSolicitudesArea,
   usuarioPuedeAccederArea,
   usuarioPuedeEscribirEnArea,
@@ -20,7 +20,21 @@ import { listarCorrectivo, ordenarRegistrosCorrectivo } from "../correctivo/corr
 import type { RegistroCorrectivo } from "../correctivo/types";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
+import { listarPersonalActivo } from "../personal/personalService";
+import {
+  existeTablaAsignacionesCorrectivo,
+  listarAsignacionesCorrectivo,
+  mapaAsignacionesPorCorrectivo,
+  operariosParaAsignarSolicitud,
+  tomarSolicitud,
+} from "./asignacionCorrectivoService";
+import type { AsignacionCorrectivo } from "./asignacionCorrectivoTypes";
+import BandejaTomarPanel from "./BandejaTomarPanel";
+import SolicitudEditarModal from "./SolicitudEditarModal";
+import SolicitudGestionCard from "./SolicitudGestionCard";
+import { marcarEsperaYPausarCronometro } from "./cronometroAcciones";
 import NuevaSolicitudAreaForm from "./NuevaSolicitudAreaForm";
+import SelectorAsignacionSolicitud from "./SelectorAsignacionSolicitud";
 import { useSolicitudesRealtime } from "./useSolicitudesRealtime";
 import {
   actualizarRepuesto,
@@ -30,10 +44,9 @@ import {
   listarRepuestos,
 } from "./repuestosService";
 import {
-  diasAbierta,
   repuestoPendiente,
-  quienCerroSolicitud,
   solicitudAbierta,
+  solicitudCerradaEnMes,
   solicitudEsperaRepuesto,
 } from "./solicitudesCalculo";
 import { SQL_MIGRACION_REPUESTOS } from "./solicitudesSetup";
@@ -46,7 +59,7 @@ import {
 } from "./types";
 import "./solicitudes.css";
 
-type TabActiva = "correctivas" | "repuestos";
+type VistaArea = "bandeja" | "curso" | "espera" | "cerradas" | "historial" | "repuestos";
 
 const formularioRepuestoVacio = {
   hoja_id: "",
@@ -85,17 +98,31 @@ function AvisoSetupRepuestos() {
   );
 }
 
-function SolicitudesAreaPage() {
+function SolicitudesAreaPage({
+  areaIncrustada,
+  modoIncrustado = false,
+}: {
+  areaIncrustada?: string;
+  modoIncrustado?: boolean;
+} = {}) {
   const { area: areaParam } = useParams<{ area: string }>();
-  const area = areaParam ? decodeURIComponent(areaParam) : "";
+  const area = areaIncrustada ?? (areaParam ? decodeURIComponent(areaParam) : "");
   const areaValida = esAreaValida(area);
   const navegar = useNavigate();
-  const { perfil, puede } = useAuth();
+  const { perfil, puede, esAdmin } = useAuth();
 
-  const [tab, setTab] = useState<TabActiva>("correctivas");
+  const [vistaActiva, setVistaActiva] = useState<VistaArea>(() =>
+    modoIncrustado || perfil?.rol === "admin" ? "curso" : "bandeja",
+  );
+  const [mostrarNueva, setMostrarNueva] = useState(false);
+  const [editandoSolicitudId, setEditandoSolicitudId] = useState<string | null>(null);
   const [correctivos, setCorrectivos] = useState<RegistroCorrectivo[]>([]);
   const [repuestos, setRepuestos] = useState<RepuestoSolicitud[]>([]);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
+  const [asignaciones, setAsignaciones] = useState<AsignacionCorrectivo[]>([]);
+  const [asignacionesOk, setAsignacionesOk] = useState(false);
+  const [usuarios, setUsuarios] = useState<Awaited<ReturnType<typeof listarUsuariosPortal>>>([]);
+  const [personal, setPersonal] = useState<Awaited<ReturnType<typeof listarPersonalActivo>>>([]);
   const [cargando, setCargando] = useState(true);
   const [faltaTablaRepuestos, setFaltaTablaRepuestos] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +130,7 @@ function SolicitudesAreaPage() {
   const [guardando, setGuardando] = useState(false);
   const [editandoRepuestoId, setEditandoRepuestoId] = useState<string | null>(null);
   const [camposRepuesto, setCamposRepuesto] = useState(formularioRepuestoVacio);
-  const [soloAbiertas, setSoloAbiertas] = useState(true);
+  const [accionId, setAccionId] = useState<string | null>(null);
   const [contadorMes, setContadorMes] = useState(() => new Date().getMonth() + 1);
   const [contadorAnio, setContadorAnio] = useState(() => new Date().getFullYear());
   const [criterioContador, setCriterioContador] =
@@ -114,25 +141,35 @@ function SolicitudesAreaPage() {
     setCargando(true);
     setError(null);
     try {
-      const [regs, hojas, hayTabla] = await Promise.all([
+      const [regs, hojas, hayTabla, hayAsig] = await Promise.all([
         listarCorrectivo(),
         listarHojas(),
         existeTablaRepuestos(),
+        existeTablaAsignacionesCorrectivo().catch(() => false),
       ]);
       setCorrectivos(regs);
       setMaquinas(hojas);
       setFaltaTablaRepuestos(!hayTabla);
+      setAsignacionesOk(hayAsig);
       if (hayTabla) {
         setRepuestos(await listarRepuestos());
       } else {
         setRepuestos([]);
       }
+      const [pers, usrs, asigs] = await Promise.all([
+        listarPersonalActivo(),
+        esAdmin ? listarUsuariosPortal() : Promise.resolve([]),
+        hayAsig ? listarAsignacionesCorrectivo() : Promise.resolve([] as AsignacionCorrectivo[]),
+      ]);
+      setPersonal(pers);
+      setUsuarios(usrs);
+      setAsignaciones(asigs);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al cargar");
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [esAdmin]);
 
   useEffect(() => {
     void recargar();
@@ -153,6 +190,11 @@ function SolicitudesAreaPage() {
     [correctivos, area],
   );
 
+  const mapaAsignaciones = useMemo(
+    () => mapaAsignacionesPorCorrectivo(asignaciones),
+    [asignaciones],
+  );
+
   const correctivosArea = useMemo(() => {
     if (filtroContador) {
       return ordenarRegistrosCorrectivo(
@@ -165,18 +207,52 @@ function SolicitudesAreaPage() {
         ),
       );
     }
-    let lista = correctivosDelAreaSinFiltro;
-    if (soloAbiertas) {
-      lista = lista.filter(solicitudAbierta);
-    }
-    return ordenarRegistrosCorrectivo(lista);
+    return ordenarRegistrosCorrectivo(correctivosDelAreaSinFiltro);
   }, [
     correctivosDelAreaSinFiltro,
-    soloAbiertas,
     filtroContador,
     contadorAnio,
     contadorMes,
     criterioContador,
+  ]);
+
+  const listaVista = useMemo(() => {
+    const abiertas = correctivosDelAreaSinFiltro.filter(solicitudAbierta);
+    switch (vistaActiva) {
+      case "bandeja":
+        return ordenarRegistrosCorrectivo(
+          abiertas.filter((r) => !(mapaAsignaciones.get(r.id)?.length)),
+        );
+      case "curso":
+        return ordenarRegistrosCorrectivo(
+          abiertas.filter(
+            (r) =>
+              (mapaAsignaciones.get(r.id)?.length ?? 0) > 0 &&
+              !solicitudEsperaRepuesto(r),
+          ),
+        );
+      case "espera":
+        return ordenarRegistrosCorrectivo(abiertas.filter(solicitudEsperaRepuesto));
+      case "cerradas": {
+        const anio = new Date().getFullYear();
+        const mes = new Date().getMonth() + 1;
+        return ordenarRegistrosCorrectivo(
+          correctivosDelAreaSinFiltro.filter((r) =>
+            Boolean(r.datos.fechaCierre?.trim()) &&
+            solicitudCerradaEnMes(r, anio, mes),
+          ),
+        );
+      }
+      case "historial":
+        return correctivosArea;
+      default:
+        return [];
+    }
+  }, [
+    vistaActiva,
+    correctivosDelAreaSinFiltro,
+    mapaAsignaciones,
+    correctivosArea,
   ]);
 
   const repuestosArea = useMemo(
@@ -203,17 +279,78 @@ function SolicitudesAreaPage() {
     [correctivosDelAreaSinFiltro, contadorAnio, contadorMes, criterioContador],
   );
 
-  const esReportaArea = esRolReportaSolicitudes(perfil);
   const puedeVerCorrectivo = puede("ver.correctivo");
+  const esOperario = perfil?.rol === "operador";
+
+  const mapaNombresPersonal = useMemo(
+    () => new Map(personal.map((p) => [p.id, p.nombre])),
+    [personal],
+  );
+
+  const operariosAsignables = useMemo(
+    () => operariosParaAsignarSolicitud(usuarios, personal),
+    [usuarios, personal],
+  );
+
+  const conteosVista = useMemo(() => {
+    const abiertas = correctivosDelAreaSinFiltro.filter(solicitudAbierta);
+    const anio = new Date().getFullYear();
+    const mes = new Date().getMonth() + 1;
+    return {
+      bandeja: abiertas.filter((r) => !(mapaAsignaciones.get(r.id)?.length)).length,
+      curso: abiertas.filter(
+        (r) =>
+          (mapaAsignaciones.get(r.id)?.length ?? 0) > 0 && !solicitudEsperaRepuesto(r),
+      ).length,
+      espera: abiertas.filter(solicitudEsperaRepuesto).length,
+      cerradas: correctivosDelAreaSinFiltro.filter((r) =>
+        solicitudCerradaEnMes(r, anio, mes),
+      ).length,
+      repuestos: repuestosArea.filter(repuestoPendiente).length,
+    };
+  }, [correctivosDelAreaSinFiltro, mapaAsignaciones, repuestosArea]);
+
+  function alActualizarAsignacion(correctivoId: string, filas: AsignacionCorrectivo[]) {
+    setAsignaciones((prev) => {
+      const resto = prev.filter((a) => a.correctivo_id !== correctivoId);
+      return [...resto, ...filas];
+    });
+    void listarCorrectivo()
+      .then(setCorrectivos)
+      .catch(() => undefined);
+  }
+
+  async function manejarTomar(correctivoId: string) {
+    if (!perfil?.personal_id) {
+      setError("Tu usuario no está vinculado a un técnico.");
+      return;
+    }
+    setAccionId(correctivoId);
+    setError(null);
+    try {
+      const { asignaciones: filas } = await tomarSolicitud(correctivoId, perfil.personal_id);
+      alActualizarAsignacion(correctivoId, filas);
+      setMensaje("Solicitud tomada. El cronómetro ya corre.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setAccionId(null);
+    }
+  }
 
   const alNuevaSolicitudRealtime = useCallback((registro: RegistroCorrectivo) => {
     setCorrectivos((prev) => {
       if (prev.some((r) => r.id === registro.id)) return prev;
       return ordenarRegistrosCorrectivo([registro, ...prev]);
     });
-    setTab("correctivas");
+    setVistaActiva("bandeja");
     setMensaje(`Nueva solicitud #${registro.datos.numeroSolicitud} recibida.`);
-  }, []);
+    if (asignacionesOk) {
+      void listarAsignacionesCorrectivo()
+        .then(setAsignaciones)
+        .catch(() => undefined);
+    }
+  }, [asignacionesOk]);
 
   const {
     idsDestacados,
@@ -230,9 +367,16 @@ function SolicitudesAreaPage() {
     (registro: RegistroCorrectivo) => {
       marcarConocido(registro.id);
       setCorrectivos((prev) => ordenarRegistrosCorrectivo([registro, ...prev]));
-      setTab("correctivas");
+      setVistaActiva("bandeja");
+      if (asignacionesOk) {
+        window.setTimeout(() => {
+          void listarAsignacionesCorrectivo()
+            .then(setAsignaciones)
+            .catch(() => undefined);
+        }, 500);
+      }
     },
-    [marcarConocido],
+    [marcarConocido, asignacionesOk],
   );
 
   const etiquetaFiltroContador =
@@ -274,7 +418,7 @@ function SolicitudesAreaPage() {
       fecha_necesaria: repuesto.fecha_necesaria ?? "",
       notas: repuesto.notas,
     });
-    setTab("repuestos");
+    setVistaActiva("repuestos");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -316,7 +460,30 @@ function SolicitudesAreaPage() {
       } else {
         const creado = await crearRepuesto(input);
         setRepuestos((prev) => [creado, ...prev]);
-        setMensaje("Repuesto registrado.");
+        if (input.correctivo_id && repuestoPendiente(creado)) {
+          await marcarEsperaYPausarCronometro(input.correctivo_id);
+          setCorrectivos((prev) =>
+            prev.map((r) =>
+              r.id === input.correctivo_id
+                ? {
+                    ...r,
+                    datos: {
+                      ...r.datos,
+                      esperaRepuesto: true,
+                      cronometro: {
+                        estado: "paused",
+                        segmentoInicio: null,
+                        acumuladoSeg: r.datos.cronometro?.acumuladoSeg ?? 0,
+                      },
+                    },
+                  }
+                : r,
+            ),
+          );
+          setMensaje("Repuesto registrado. Cronómetro de la solicitud pausado.");
+        } else {
+          setMensaje("Repuesto registrado.");
+        }
       }
       cancelarEdicionRepuesto();
     } catch (e) {
@@ -365,8 +532,116 @@ function SolicitudesAreaPage() {
   }
 
   const puedeEscribirArea = usuarioPuedeEscribirEnArea(perfil, area);
+  const puedeEliminar = puede("eliminar.registros");
+  const solicitudEditando = editandoSolicitudId
+    ? correctivos.find((r) => r.id === editandoSolicitudId) ?? null
+    : null;
+
+  const VISTAS_NAV: Array<{ key: VistaArea; etiqueta: string; conteo: number }> = [
+    { key: "bandeja", etiqueta: "Bandeja", conteo: conteosVista.bandeja },
+    { key: "curso", etiqueta: "En curso", conteo: conteosVista.curso },
+    { key: "espera", etiqueta: "Espera repuesto", conteo: conteosVista.espera },
+    { key: "cerradas", etiqueta: "Cerradas mes", conteo: conteosVista.cerradas },
+    { key: "historial", etiqueta: "Historial", conteo: correctivosDelAreaSinFiltro.length },
+    { key: "repuestos", etiqueta: "Repuestos", conteo: conteosVista.repuestos },
+  ];
+
+  function actualizarSolicitudLocal(actualizado: RegistroCorrectivo) {
+    setCorrectivos((prev) =>
+      ordenarRegistrosCorrectivo(
+        prev.map((r) => (r.id === actualizado.id ? actualizado : r)),
+      ),
+    );
+    setMensaje(`Solicitud #${actualizado.datos.numeroSolicitud} actualizada.`);
+  }
+
+  function eliminarSolicitudLocal(id: string) {
+    setCorrectivos((prev) => prev.filter((r) => r.id !== id));
+    setMensaje("Solicitud eliminada.");
+  }
+
+  function renderTarjetas(lista: RegistroCorrectivo[]) {
+    if (lista.length === 0) {
+      return <p className="solicitudes__vacio">No hay solicitudes en esta sección.</p>;
+    }
+    return (
+      <div className="sol-gestion-grid">
+        {lista.map((registro) => {
+          const asigs = mapaAsignaciones.get(registro.id) ?? [];
+          const nombresAsig = asigs.map(
+            (a) => mapaNombresPersonal.get(a.personal_id) ?? "Técnico",
+          );
+          const cerrada = Boolean(registro.datos.fechaCierre?.trim());
+          const libre = asigs.length === 0;
+          const puedeTomar =
+            asignacionesOk &&
+            !cerrada &&
+            libre &&
+            Boolean(perfil?.personal_id) &&
+            (esOperario || esAdmin);
+
+          return (
+            <SolicitudGestionCard
+              key={registro.id}
+              registro={registro}
+              asignados={nombresAsig}
+              destacada={idsDestacados.has(registro.id)}
+              acciones={
+                <>
+                  {puedeTomar && (
+                    <button
+                      type="button"
+                      className="btn bandeja-tomar__btn"
+                      disabled={accionId === registro.id}
+                      onClick={() => void manejarTomar(registro.id)}
+                    >
+                      {accionId === registro.id ? "Tomando…" : "TOMAR"}
+                    </button>
+                  )}
+                  {asignacionesOk && (
+                    <SelectorAsignacionSolicitud
+                      correctivoId={registro.id}
+                      area={registro.area}
+                      asignaciones={asigs}
+                      operarios={operariosAsignables}
+                      mapaNombres={mapaNombresPersonal}
+                      puedeEditar={esAdmin && !cerrada}
+                      onActualizado={alActualizarAsignacion}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setEditandoSolicitudId(registro.id)}
+                  >
+                    Editar
+                  </button>
+                  {puedeVerCorrectivo && (
+                    <button
+                      type="button"
+                      className="btn btn--primario"
+                      onClick={() => irACorrectivo(registro)}
+                    >
+                      Correctivo
+                    </button>
+                  )}
+                </>
+              }
+            />
+          );
+        })}
+      </div>
+    );
+  }
 
   if (cargando) {
+    if (modoIncrustado) {
+      return (
+        <div className="solicitudes-area solicitudes-area--incrustada">
+          <p className="solicitudes__descripcion">Cargando {area}…</p>
+        </div>
+      );
+    }
     return (
       <section className="solicitudes">
         <Link to="/solicitudes" className="solicitudes-area__volver">
@@ -379,208 +654,199 @@ function SolicitudesAreaPage() {
   }
 
   return (
-    <section className="solicitudes">
-      <Link to="/solicitudes" className="solicitudes-area__volver">
-        ← Volver al tablero de áreas
-      </Link>
+    <section className={"solicitudes solicitudes-area" + (modoIncrustado ? " solicitudes-area--incrustada" : "")}>
+      {!modoIncrustado && (
+        <Link to="/solicitudes" className="solicitudes-area__volver">
+          ← Volver al tablero de áreas
+        </Link>
+      )}
 
-      <h1>Solicitudes — {area}</h1>
-      <div className="solicitudes__cabecera">
-        <p className="solicitudes__descripcion">
-          {esReportaArea
-            ? "Reporta fallas o consulta el estado de las solicitudes de esta área. Usa el botón de arriba para volver al tablero."
-            : "Solicitudes correctivas y pedidos de repuestos del área."}
-          {puedeVerCorrectivo && (
-            <>
-              {" "}
-              <Link to="/correctivo">Ir a mantenimiento correctivo</Link>
-            </>
-          )}
-          {esReportaArea
-            ? " La lista se actualiza sola cuando llega una solicitud nueva."
-            : " Los avisos llegan en toda la app (toast + notificación del celular)."}
-        </p>
-      </div>
+      <header className="sol-area-header">
+        <div>
+          <h1>{area}</h1>
+          <p className="solicitudes__descripcion">
+            Control de solicitudes, tiempos y repuestos del área.
+            {puedeVerCorrectivo && (
+              <>
+                {" "}
+                <Link to="/correctivo">Mantenimiento correctivo</Link>
+              </>
+            )}
+          </p>
+        </div>
+        {puedeEscribirArea && (
+          <button
+            type="button"
+            className="btn btn--primario"
+            onClick={() => setMostrarNueva((v) => !v)}
+          >
+            {mostrarNueva ? "Ocultar formulario" : "+ Nueva solicitud"}
+          </button>
+        )}
+      </header>
 
-      {puedeEscribirArea ? (
-        <NuevaSolicitudAreaForm
-          area={normalizarArea(area)}
-          nombreSolicitante={perfil?.nombre || perfil?.email || ""}
-          maquinas={maquinas}
-          correctivos={correctivos}
-          onCreada={alCrearSolicitud}
-        />
-      ) : (
+      {mostrarNueva && puedeEscribirArea && (
+        <div className="sol-area-panel">
+          <NuevaSolicitudAreaForm
+            area={normalizarArea(area)}
+            nombreSolicitante={perfil?.nombre || perfil?.email || ""}
+            maquinas={maquinas}
+            correctivos={correctivos}
+            onCreada={(r) => {
+              alCrearSolicitud(r);
+              setMostrarNueva(false);
+            }}
+          />
+        </div>
+      )}
+
+      {!puedeEscribirArea && (
         <p className="solicitudes__mensaje">
-          Tu perfil es de solo consulta: no puedes crear solicitudes en esta área.
+          Tu perfil es de solo consulta en esta área.
         </p>
       )}
 
       {error && <p className="solicitudes__error">{error}</p>}
       {mensaje && <p className="solicitudes__mensaje solicitudes__mensaje--ok">{mensaje}</p>}
 
-      <div className="solicitudes-area__tabs">
-        <button
-          type="button"
-          className={
-            "solicitudes-area__tab" + (tab === "correctivas" ? " solicitudes-area__tab--activa" : "")
-          }
-          onClick={() => setTab("correctivas")}
-        >
-          Correctivas (
-          {filtroContador ? correctivosArea.length : correctivosAbiertosArea.length}
-          {!filtroContador && soloAbiertas ? " abiertas" : ""})
-        </button>
-        <button
-          type="button"
-          className={
-            "solicitudes-area__tab" + (tab === "repuestos" ? " solicitudes-area__tab--activa" : "")
-          }
-          onClick={() => setTab("repuestos")}
-        >
-          Repuestos ({repuestosArea.filter(repuestoPendiente).length} pendientes)
-        </button>
-      </div>
-
-      {tab === "correctivas" && (
-        <>
-          <ContadorListaMensual
-            titulo="Contador del mes"
-            mes={contadorMes}
-            anio={contadorAnio}
-            onMes={setContadorMes}
-            onAnio={setContadorAnio}
-            total={conteoMes.total}
-            totalEtiqueta={
-              contadorMes === 0
-                ? criterioContador === "cierre"
-                  ? "todas las cerradas"
-                  : "todas las solicitudes"
-                : criterioContador === "cierre"
-                  ? "cerradas por fecha de cierre"
-                  : "registradas por fecha de solicitud"
+      <nav className="sol-area-nav" aria-label="Secciones del área">
+        {VISTAS_NAV.map(({ key, etiqueta, conteo }) => (
+          <button
+            key={key}
+            type="button"
+            className={
+              "sol-area-nav__item" +
+              (vistaActiva === key ? " sol-area-nav__item--activa" : "") +
+              (key === "bandeja" && conteo > 0 ? " sol-area-nav__item--alerta" : "") +
+              (key === "espera" && conteo > 0 ? " sol-area-nav__item--espera" : "")
             }
-            chipArea={normalizarArea(area)}
-            criterio={{
-              valor: criterioContador,
-              onChange: (v) => setCriterioContador(v as CriterioFechaCorrectivo),
-              opciones: [
-                { valor: "solicitud", etiqueta: "Fecha de solicitud" },
-                { valor: "cierre", etiqueta: "Fecha de cierre" },
-              ],
+            onClick={() => {
+              setVistaActiva(key);
+              if (key !== "historial") setFiltroContador(null);
             }}
-            seleccion={filtroContador}
-            onSeleccionar={seleccionarFiltroContador}
-            tarjetas={[
-              {
-                key: "abiertas",
-                etiqueta: "Abiertas",
-                valor: conteoMes.abiertas,
-                tono: "alerta",
-              },
-              {
-                key: "cerradas",
-                etiqueta: "Cerradas",
-                valor: conteoMes.cerradas,
-                tono: "ok",
-              },
-              {
-                key: "espera",
-                etiqueta: "Espera repuesto",
-                valor: conteoMes.enEsperaRepuesto,
-                tono: "espera",
-              },
-            ]}
-          />
+          >
+            <span>{etiqueta}</span>
+            <strong>{conteo}</strong>
+          </button>
+        ))}
+      </nav>
 
-          {filtroContador ? (
-            <div className="solicitudes-filtro-mes">
-              <p>
-                Mostrando solicitudes <strong>{etiquetaFiltroContador}</strong> de{" "}
-                <strong>{etiquetaPeriodoContador(contadorMes, contadorAnio)}</strong>{" "}
-                ({correctivosArea.length})
-              </p>
-              <button type="button" className="btn" onClick={() => setFiltroContador(null)}>
-                Quitar filtro
-              </button>
-            </div>
-          ) : (
-            <label className="check-tipo">
-              <input
-                type="checkbox"
-                checked={soloAbiertas}
-                onChange={(e) => setSoloAbiertas(e.target.checked)}
-              />{" "}
-              Solo solicitudes abiertas
-            </label>
-          )}
+      <div className="sol-area-contenido">
+        {vistaActiva === "bandeja" && (
+          <>
+            {esAdmin && !asignacionesOk && (
+              <aside className="aviso-setup-solicitudes">
+                <h3>Bandeja y asignación</h3>
+                <p>
+                  Ejecuta <code>correctivo_asignaciones.sql</code> y{" "}
+                  <code>correctivo_bandeja_claim.sql</code> en Supabase.
+                </p>
+              </aside>
+            )}
+            {(esOperario || esAdmin) && (
+              <BandejaTomarPanel
+                areaFiltro={area}
+                onTomada={() => void recargar()}
+              />
+            )}
+            {listaVista.length > 0 && (
+              <section className="sol-area-seccion">
+                <h2 className="sol-area-seccion__titulo">Libres en lista</h2>
+                {renderTarjetas(listaVista)}
+              </section>
+            )}
+          </>
+        )}
 
-          {correctivosArea.length === 0 ? (
-            <p className="solicitudes__vacio">
-              {filtroContador
-                ? `No hay solicitudes ${etiquetaFiltroContador} en ${etiquetaPeriodoContador(contadorMes, contadorAnio)}.`
-                : soloAbiertas
-                  ? "No hay solicitudes correctivas abiertas en esta área."
-                  : "No hay solicitudes correctivas en esta área."}
+        {vistaActiva === "curso" && (
+          <section className="sol-area-seccion">
+            <h2 className="sol-area-seccion__titulo">Asignadas y en atención</h2>
+            <p className="sol-area-seccion__hint">
+              Cronómetro activo según horario laboral. Usa Editar para cerrar o pausar.
             </p>
-          ) : (
-            <div className="solicitudes-lista">
-              {correctivosArea.map((registro) => {
-                const dias = diasAbierta(registro);
-                const enEspera = solicitudEsperaRepuesto(registro);
-                const cerrada = Boolean(registro.datos.fechaCierre?.trim());
-                const quienCerro = cerrada ? quienCerroSolicitud(registro) : null;
-                return (
-                  <article
-                    key={registro.id}
-                    className={
-                      "solicitud-item" +
-                      (enEspera ? " solicitud-item--espera" : "") +
-                      (idsDestacados.has(registro.id) ? " solicitud-item--nueva" : "")
-                    }
-                  >
-                    <div>
-                      <strong>
-                        Solicitud #{registro.datos.numeroSolicitud}
-                        {enEspera && " · En espera de repuesto"}
-                        {cerrada &&
-                          ` · Cerrada ${registro.datos.fechaCierre.slice(0, 10)}`}
-                      </strong>
-                      <p className="solicitud-item__meta">
-                        {registro.fecha.slice(0, 10)}
-                        {registro.datos.codigoMaquina && ` · ${registro.datos.codigoMaquina}`}
-                        {registro.datos.maquinaEquipoLocacion &&
-                          ` · ${registro.datos.maquinaEquipoLocacion}`}
-                        {dias !== null && ` · ${dias} día(s) abierta`}
-                      </p>
-                      {quienCerro && (
-                        <p className="solicitud-item__cierre">
-                          Cerrada por: <strong>{quienCerro}</strong>
-                        </p>
-                      )}
-                      <p className="solicitud-item__desc">
-                        {registro.datos.descripcionSolicitud || "Sin descripción"}
-                      </p>
-                    </div>
-                    {puedeVerCorrectivo && (
-                      <button
-                        type="button"
-                        className="btn btn--primario"
-                        onClick={() => irACorrectivo(registro)}
-                      >
-                        Abrir en correctivo
-                      </button>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </>
-      )}
+            {renderTarjetas(listaVista)}
+          </section>
+        )}
 
-      {tab === "repuestos" && (
-        <>
+        {vistaActiva === "espera" && (
+          <section className="sol-area-seccion">
+            <h2 className="sol-area-seccion__titulo">En espera de repuesto</h2>
+            <p className="sol-area-seccion__hint">El tiempo está pausado hasta que llegue el repuesto.</p>
+            {renderTarjetas(listaVista)}
+          </section>
+        )}
+
+        {vistaActiva === "cerradas" && (
+          <section className="sol-area-seccion">
+            <h2 className="sol-area-seccion__titulo">Cerradas este mes</h2>
+            {renderTarjetas(listaVista)}
+          </section>
+        )}
+
+        {vistaActiva === "historial" && (
+          <section className="sol-area-seccion">
+            <h2 className="sol-area-seccion__titulo">Historial por mes</h2>
+            <ContadorListaMensual
+              titulo="Filtrar por periodo"
+              mes={contadorMes}
+              anio={contadorAnio}
+              onMes={setContadorMes}
+              onAnio={setContadorAnio}
+              total={conteoMes.total}
+              totalEtiqueta={
+                contadorMes === 0
+                  ? criterioContador === "cierre"
+                    ? "todas las cerradas"
+                    : "todas las solicitudes"
+                  : criterioContador === "cierre"
+                    ? "cerradas por fecha de cierre"
+                    : "registradas por fecha de solicitud"
+              }
+              chipArea={normalizarArea(area)}
+              criterio={{
+                valor: criterioContador,
+                onChange: (v) => setCriterioContador(v as CriterioFechaCorrectivo),
+                opciones: [
+                  { valor: "solicitud", etiqueta: "Fecha de solicitud" },
+                  { valor: "cierre", etiqueta: "Fecha de cierre" },
+                ],
+              }}
+              seleccion={filtroContador}
+              onSeleccionar={seleccionarFiltroContador}
+              tarjetas={[
+                { key: "abiertas", etiqueta: "Abiertas", valor: conteoMes.abiertas, tono: "alerta" },
+                { key: "cerradas", etiqueta: "Cerradas", valor: conteoMes.cerradas, tono: "ok" },
+                {
+                  key: "espera",
+                  etiqueta: "Espera repuesto",
+                  valor: conteoMes.enEsperaRepuesto,
+                  tono: "espera",
+                },
+              ]}
+            />
+            {filtroContador && (
+              <div className="solicitudes-filtro-mes">
+                <p>
+                  <strong>{etiquetaFiltroContador}</strong> ·{" "}
+                  {etiquetaPeriodoContador(contadorMes, contadorAnio)} ({listaVista.length})
+                </p>
+                <button type="button" className="btn" onClick={() => setFiltroContador(null)}>
+                  Quitar filtro
+                </button>
+              </div>
+            )}
+            {renderTarjetas(filtroContador ? listaVista : correctivosArea.slice(0, 30))}
+            {!filtroContador && correctivosArea.length > 30 && (
+              <p className="sol-area-seccion__hint">
+                Mostrando las 30 más recientes. Usa el contador del mes para filtrar.
+              </p>
+            )}
+          </section>
+        )}
+
+        {vistaActiva === "repuestos" && (
+          <section className="sol-area-seccion">
+            <h2 className="sol-area-seccion__titulo">Repuestos del área</h2>
           {faltaTablaRepuestos && <AvisoSetupRepuestos />}
 
           <SoloConPermiso permiso="crear.repuestos">
@@ -778,7 +1044,18 @@ function SolicitudesAreaPage() {
               </table>
             </div>
           )}
-        </>
+          </section>
+        )}
+      </div>
+
+      {solicitudEditando && (
+        <SolicitudEditarModal
+          registro={solicitudEditando}
+          puedeEliminar={puedeEliminar}
+          onCerrar={() => setEditandoSolicitudId(null)}
+          onActualizado={actualizarSolicitudLocal}
+          onEliminado={eliminarSolicitudLocal}
+        />
       )}
     </section>
   );

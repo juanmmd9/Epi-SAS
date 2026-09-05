@@ -1,16 +1,10 @@
 /**
- * Edge Function: avisa por FCM cuando se crea una solicitud correctiva.
- *
- * Secretos (Supabase → Edge Functions → Secrets):
- *   FIREBASE_SERVICE_ACCOUNT_JSON  = JSON completo de la cuenta de servicio Firebase
+ * Edge Function: avisa por FCM al operario cuando le asignan un PM.
  *
  * Despliegue:
- *   supabase functions deploy avisar-solicitud-push --no-verify-jwt
+ *   supabase functions deploy avisar-asignacion-pm-push --no-verify-jwt
  *
- * Webhook (Dashboard → Database → Webhooks):
- *   Table: correctivo  Event: INSERT
- *   URL: https://<PROJECT>.supabase.co/functions/v1/avisar-solicitud-push
- *   Headers: Authorization: Bearer <SERVICE_ROLE_KEY>
+ * Webhook: supabase/migrations/webhook_avisar_asignacion_pm_push.sql
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -20,24 +14,19 @@ type ServiceAccount = {
   private_key: string;
 };
 
-type CorrectivoPayload = {
+type AsignacionPayload = {
   type?: string;
   table?: string;
   record?: {
     id?: string;
+    hoja_id?: string;
     area?: string;
-    datos?: {
-      numeroSolicitud?: number;
-      maquinaEquipoLocacion?: string;
-      nombreSolicitante?: string;
-      fechaCierre?: string;
-    };
+    fecha_programada?: string;
+    personal_id?: string;
   };
-  // Llamada directa de prueba
-  area?: string;
-  numero?: number;
-  maquina?: string;
-  solicitante?: string;
+  old_record?: {
+    personal_id?: string;
+  };
 };
 
 function bytesToBase64Url(bytes: Uint8Array): string {
@@ -108,7 +97,7 @@ async function enviarFcm(
   titulo: string,
   cuerpo: string,
   data: Record<string, string>,
-): Promise<{ ok: boolean; stale?: boolean; detail?: string }> {
+): Promise<{ ok: boolean; stale?: boolean }> {
   const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
   const res = await fetch(url, {
     method: "POST",
@@ -124,7 +113,7 @@ async function enviarFcm(
         android: {
           priority: "HIGH",
           notification: {
-            channelId: "solicitudes",
+            channelId: "preventivo",
             sound: "default",
             icon: "ic_notification",
             color: "#0B3D5C",
@@ -136,7 +125,7 @@ async function enviarFcm(
   if (res.ok) return { ok: true };
   const detail = await res.text();
   const stale = /UNREGISTERED|NOT_FOUND|INVALID_ARGUMENT/i.test(detail);
-  return { ok: false, stale, detail };
+  return { ok: false, stale };
 }
 
 Deno.serve(async (req) => {
@@ -154,70 +143,61 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!saRaw || !supabaseUrl || !serviceKey) {
-      return new Response(
-        JSON.stringify({
-          error: "Faltan secretos FIREBASE_SERVICE_ACCOUNT_JSON / SUPABASE_*",
-        }),
-        { status: 500, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    const sa = JSON.parse(saRaw) as ServiceAccount;
-    const body = (await req.json()) as CorrectivoPayload;
-    const record = body.record;
-
-    if (record?.datos?.fechaCierre) {
-      return new Response(JSON.stringify({ skipped: "cerrada" }), {
+      return new Response(JSON.stringify({ error: "Faltan secretos" }), {
+        status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    const area = record?.area || body.area || "Área";
-    const numero = record?.datos?.numeroSolicitud ?? body.numero ?? 0;
-    const maquina =
-      record?.datos?.maquinaEquipoLocacion || body.maquina || "Sin máquina";
-    const solicitante =
-      record?.datos?.nombreSolicitante || body.solicitante || "Solicitante";
+    const sa = JSON.parse(saRaw) as ServiceAccount;
+    const body = (await req.json()) as AsignacionPayload;
+    const record = body.record;
+    const personalId = record?.personal_id;
+    if (!personalId) {
+      return new Response(JSON.stringify({ skipped: "sin personal_id" }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
-    const titulo = `Nueva en bandeja #${numero || "—"}`;
-    const cuerpo = `${area} · ${maquina} — ${solicitante}`;
+    if (
+      body.type === "UPDATE" &&
+      body.old_record?.personal_id === personalId
+    ) {
+      return new Response(JSON.stringify({ skipped: "mismo operario" }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     const supabase = createClient(supabaseUrl, serviceKey);
-    const registroId = record?.id || "";
+    const area = record?.area || "Área";
+    const fecha = record?.fecha_programada || "";
 
-    // Admins + operarios del área (modelo bandeja).
-    const { data: admins, error: errAdmins } = await supabase
+    let maquina = "Equipo";
+    let codigo = "";
+    if (record?.hoja_id) {
+      const { data: hoja } = await supabase
+        .from("hojas_vida")
+        .select("nombre, codigo")
+        .eq("id", record.hoja_id)
+        .maybeSingle();
+      maquina = hoja?.nombre || maquina;
+      codigo = hoja?.codigo || "";
+    }
+
+    const titulo = "PM asignado";
+    const cuerpo = `${area} · ${maquina}${codigo ? ` (${codigo})` : ""} — ${fecha}`;
+
+    const { data: usuarios, error: errUsers } = await supabase
       .from("usuarios_portal")
       .select("id")
       .eq("activo", true)
-      .eq("rol", "admin");
-    if (errAdmins) throw new Error(errAdmins.message);
+      .eq("personal_id", personalId)
+      .in("rol", ["admin", "operador"]);
 
-    const userIds = new Set<string>((admins ?? []).map((u) => u.id as string));
-
-    const { data: personalArea, error: errArea } = await supabase.rpc(
-      "operarios_por_area",
-      { p_area: area },
-    );
-    if (errArea && !/does not exist|function/i.test(errArea.message)) {
-      throw new Error(errArea.message);
-    }
-    const personalIds = ((personalArea ?? []) as { personal_id: string }[]).map(
-      (row) => row.personal_id,
-    );
-    if (personalIds.length) {
-      const { data: ops, error: errOps } = await supabase
-        .from("usuarios_portal")
-        .select("id")
-        .eq("activo", true)
-        .eq("rol", "operador")
-        .in("personal_id", personalIds);
-      if (errOps) throw new Error(errOps.message);
-      for (const u of ops ?? []) userIds.add(u.id as string);
-    }
-
-    if (userIds.size === 0) {
-      return new Response(JSON.stringify({ sent: 0, reason: "sin usuarios" }), {
+    if (errUsers) throw new Error(errUsers.message);
+    const userIds = (usuarios ?? []).map((u) => u.id);
+    if (userIds.length === 0) {
+      return new Response(JSON.stringify({ sent: 0, reason: "sin usuario portal" }), {
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -226,7 +206,7 @@ Deno.serve(async (req) => {
       .from("push_tokens")
       .select("id, token")
       .eq("activo", true)
-      .in("user_id", [...userIds]);
+      .in("user_id", userIds);
 
     if (errTokens) throw new Error(errTokens.message);
     const lista = tokens ?? [];
@@ -243,8 +223,9 @@ Deno.serve(async (req) => {
     for (const row of lista) {
       const result = await enviarFcm(accessToken, sa.project_id, row.token, titulo, cuerpo, {
         area,
-        registroId,
-        tipo: "nueva_solicitud",
+        hojaId: record?.hoja_id || "",
+        fechaProgramada: fecha,
+        tipo: "pm_asignado",
       });
       if (result.ok) sent += 1;
       else if (result.stale) staleIds.push(row.id);
@@ -254,10 +235,9 @@ Deno.serve(async (req) => {
       await supabase.from("push_tokens").update({ activo: false }).in("id", staleIds);
     }
 
-    return new Response(
-      JSON.stringify({ sent, tokens: lista.length, destinatarios: userIds.size }),
-      { headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ sent, tokens: lista.length }), {
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500,

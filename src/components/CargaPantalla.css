@@ -1,0 +1,36 @@
+.carga-pantalla {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  padding: 2rem 1rem;
+  color: var(--color-texto-suave);
+}
+
+.carga-pantalla--completa {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-fondo);
+}
+
+.carga-pantalla__spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid #cbd5e1;
+  border-top-color: var(--color-primario);
+  border-radius: 50%;
+  animation: carga-pantalla-girar 0.75s linear infinite;
+}
+
+.carga-pantalla__texto {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+@keyframes carga-pantalla-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}

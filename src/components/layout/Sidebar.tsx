@@ -3,6 +3,7 @@ import { rutaPublica } from "../../lib/rutaPublica";
 import { useAuth } from "../../modules/auth/AuthContext";
 import { etiquetaRol, enlacesParaRol } from "../../modules/auth/roles";
 import { areaUsuario } from "../../lib/usuarioArea";
+import { usePmAsignadosBadge } from "../../modules/preventivo/usePmAsignadosBadge";
 import { usePendientesAprobacionPm } from "../../modules/preventivo/usePendientesAprobacionPm";
 import { usePermisosPendientesBadge } from "../../modules/permisos/usePermisosPendientesBadge";
 import { useSolicitudesAbiertasBadge } from "../../modules/solicitudes/useSolicitudesAbiertasBadge";
@@ -19,6 +20,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
   const { perfil, salir } = useAuth();
   const enlaces = enlacesParaRol(perfil?.rol);
   const pendientesFirma = usePendientesAprobacionPm();
+  const pmAsignados = usePmAsignadosBadge();
   const solicitudesAbiertas = useSolicitudesAbiertasBadge();
   const permisosPendientes = usePermisosPendientesBadge();
 
@@ -42,9 +44,11 @@ function Sidebar({ abierto, onCerrar }: Props) {
       </div>
       <nav className="sidebar__nav">
         {enlaces.map((enlace) => {
+          const esInicio = enlace.ruta === "/";
           const esAprobar = enlace.ruta === "/preventivo/aprobaciones";
           const esSolicitudes = enlace.ruta === "/solicitudes";
           const esPermisos = enlace.ruta === "/personal/permisos";
+          const avisoPm = esInicio && pmAsignados > 0;
           const avisoFirma = esAprobar && pendientesFirma > 0;
           const avisoSol = esSolicitudes && solicitudesAbiertas > 0;
           const avisoPerm = esPermisos && permisosPendientes > 0;
@@ -56,13 +60,21 @@ function Sidebar({ abierto, onCerrar }: Props) {
               className={({ isActive }) =>
                 "sidebar__enlace" +
                 (isActive ? " sidebar__enlace--activo" : "") +
-                (avisoFirma || avisoSol || avisoPerm ? " sidebar__enlace--aviso" : "") +
-                (avisoSol && !avisoFirma && !avisoPerm ? " sidebar__enlace--aviso-sol" : "") +
-                (avisoPerm && !avisoFirma ? " sidebar__enlace--aviso-perm" : "")
+                (avisoFirma || avisoSol || avisoPerm || avisoPm ? " sidebar__enlace--aviso" : "") +
+                (avisoSol && !avisoFirma && !avisoPerm && !avisoPm ? " sidebar__enlace--aviso-sol" : "") +
+                (avisoPerm && !avisoFirma && !avisoPm ? " sidebar__enlace--aviso-perm" : "")
               }
               onClick={onCerrar}
             >
               <span className="sidebar__enlace-texto">{enlace.texto}</span>
+              {avisoPm ? (
+                <span
+                  className="nav-badge nav-badge--sidebar nav-badge--ambar"
+                  aria-label={`${pmAsignados} PM pendiente(s)`}
+                >
+                  {pmAsignados > 9 ? "9+" : pmAsignados}
+                </span>
+              ) : null}
               {avisoFirma ? (
                 <span
                   className="nav-badge nav-badge--sidebar"

@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useRef } from "react";
+import CargaPantalla from "../../components/CargaPantalla";
 import { useAuth } from "./AuthContext";
 import "./auth.css";
 
@@ -23,11 +24,7 @@ function RequireAuth() {
   }
 
   if (cargando) {
-    return (
-      <div className="auth-carga">
-        <p>Verificando sesión...</p>
-      </div>
-    );
+    return <CargaPantalla mensaje="Verificando sesión..." pantallaCompleta />;
   }
 
   if (!session) {

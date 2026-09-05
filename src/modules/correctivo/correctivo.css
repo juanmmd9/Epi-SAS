@@ -249,6 +249,18 @@
   margin-top: 1rem;
 }
 
+.correctivo-cronometro-bloque {
+  margin-top: 0.85rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  background: var(--color-fondo);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
 .correctivo__mensaje {
   padding: 0.6rem 0.9rem;
   border-radius: 8px;

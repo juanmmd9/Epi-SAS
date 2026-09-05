@@ -13,6 +13,7 @@ import {
   resolverFechaProgramadaCercana,
   vincularPreventivoConHojas,
 } from "../preventivo/pmCompletado";
+import { esPendienteAprobacionPm } from "../preventivo/aprobacionPm";
 import type { RegistroPreventivo } from "../preventivo/types";
 import type { RegistroCorrectivo } from "../correctivo/types";
 import {
@@ -230,6 +231,8 @@ export interface ClasificacionPreventivo {
   cumplidas: CitaClasificada[];
   reprogramadas: CitaClasificada[];
   pendientes: CitaClasificada[];
+  /** PM ya registrado pero aún no aprobado (sigue contando como pendiente en el %). */
+  enAprobacion: CitaClasificada[];
   total: number;
   porcentaje: number;
 }
@@ -374,7 +377,21 @@ export function clasificarCitasPreventivas(
   const total = cumplidas.length + pendientes.length;
   const porcentaje = total > 0 ? Math.round((cumplidas.length / total) * 100) : 0;
 
-  return { cumplidas, reprogramadas, pendientes, total, porcentaje };
+  const mesClave = `${anio}-${String(mes).padStart(2, "0")}`;
+  const enAprobacion: CitaClasificada[] = [];
+  for (const cita of pendientes) {
+    const pmPend = preventivoVinculado.find((r) => {
+      if (r.hoja_id !== cita.maquinaId || !esPendienteAprobacionPm(r)) return false;
+      if (registroEnMes(r.fecha, anio, mes)) return true;
+      const programada = (r.datos.fechaProgramada ?? "").slice(0, 10);
+      return programada.startsWith(mesClave);
+    });
+    if (pmPend) {
+      enAprobacion.push({ ...cita, fechaPm: pmPend.fecha });
+    }
+  }
+
+  return { cumplidas, reprogramadas, pendientes, enAprobacion, total, porcentaje };
 }
 
 export function formatearNumero(valor: number | null | undefined, decimales = 2): string {

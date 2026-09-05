@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../modules/auth/AuthContext";
 import { etiquetaRol } from "../../modules/auth/roles";
 import { areaUsuario } from "../../lib/usuarioArea";
+import { usePmAsignadosBadge } from "../../modules/preventivo/usePmAsignadosBadge";
 import { usePendientesAprobacionPm } from "../../modules/preventivo/usePendientesAprobacionPm";
 import { usePermisosPendientesBadge } from "../../modules/permisos/usePermisosPendientesBadge";
 import { useSolicitudesAbiertasBadge } from "../../modules/solicitudes/useSolicitudesAbiertasBadge";
@@ -14,7 +15,7 @@ import {
   type ItemNav,
 } from "./navConfig";
 
-type TonoBadge = "verde" | "naranja" | "azul";
+type TonoBadge = "verde" | "naranja" | "azul" | "ambar";
 
 function BadgeNav({
   cantidad,
@@ -31,7 +32,9 @@ function BadgeNav({
       ? " nav-badge--naranja"
       : tono === "azul"
         ? " nav-badge--azul"
-        : "";
+        : tono === "ambar"
+          ? " nav-badge--ambar"
+          : "";
   return (
     <span className={"nav-badge" + clase} aria-label={etiqueta}>
       {cantidad > 9 ? "9+" : cantidad}
@@ -45,6 +48,7 @@ function BottomNav() {
   const navegar = useNavigate();
   const [masAbierto, setMasAbierto] = useState(false);
   const pendientesFirma = usePendientesAprobacionPm();
+  const pmAsignados = usePmAsignadosBadge();
   const solicitudesAbiertas = useSolicitudesAbiertasBadge();
   const permisosPendientes = usePermisosPendientesBadge();
 
@@ -85,6 +89,15 @@ function BottomNav() {
   }
 
   function badgePara(item: ItemNav) {
+    if (item.ruta === "/") {
+      return (
+        <BadgeNav
+          cantidad={pmAsignados}
+          etiqueta={`${pmAsignados} PM asignado(s) pendiente(s)`}
+          tono="ambar"
+        />
+      );
+    }
     if (item.ruta === "/preventivo/aprobaciones") {
       return (
         <BadgeNav

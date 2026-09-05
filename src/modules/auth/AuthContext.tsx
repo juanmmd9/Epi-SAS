@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../services/supabase";
+import { withTimeout } from "../../lib/withTimeout";
 import { cerrarSesion, obtenerPerfilUsuario } from "./authService";
 import { type Permiso, type RolPortal, type UsuarioPortal, puede } from "./roles";
 
@@ -26,6 +27,9 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+const TIMEOUT_SESION_MS = 12_000;
+const TIMEOUT_PERFIL_MS = 10_000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -50,7 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const cargarPerfil = useCallback(async (userId: string) => {
     try {
-      const datos = await obtenerPerfilUsuario(userId);
+      const datos = await withTimeout(
+        obtenerPerfilUsuario(userId),
+        TIMEOUT_PERFIL_MS,
+        "No se pudo cargar el perfil a tiempo",
+      );
       if (datos) {
         perfilRef.current = datos;
         setPerfil(datos);
@@ -92,22 +100,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let activo = true;
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!activo) return;
-      sessionRef.current = data.session;
-      setSession(data.session);
-      if (data.session?.user.id) {
-        void cargarPerfil(data.session.user.id).finally(() => {
-          if (activo) {
-            inicioListo.current = true;
-            setCargando(false);
-          }
-        });
-      } else {
+    void withTimeout(supabase.auth.getSession(), TIMEOUT_SESION_MS, "Sesión no respondió a tiempo")
+      .then(({ data }) => {
+        if (!activo) return;
+        sessionRef.current = data.session;
+        setSession(data.session);
+        if (data.session?.user.id) {
+          void cargarPerfil(data.session.user.id).finally(() => {
+            if (activo) {
+              inicioListo.current = true;
+              setCargando(false);
+            }
+          });
+        } else {
+          inicioListo.current = true;
+          setCargando(false);
+        }
+      })
+      .catch(() => {
+        if (!activo) return;
         inicioListo.current = true;
         setCargando(false);
-      }
-    });
+        setErrorPerfil(
+          "La conexión tardó demasiado. Recarga la página o revisa tu red.",
+        );
+      });
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, nuevaSession) => {
       if (event === "SIGNED_OUT") {

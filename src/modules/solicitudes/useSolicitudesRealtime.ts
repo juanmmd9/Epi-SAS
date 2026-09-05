@@ -12,6 +12,7 @@ import {
   solicitarPermisoNotificaciones,
   type AlertaSolicitud,
 } from "./solicitudesRealtime";
+import { listarAsignacionesDeCorrectivo } from "./asignacionCorrectivoService";
 
 export type ModoRealtimeSolicitudes = "completo" | "solo-lista" | "solo-alertas";
 
@@ -26,6 +27,8 @@ interface OpcionesRealtime {
    * solo-alertas: toasts + notificación en toda la app (Layout).
    */
   modo?: ModoRealtimeSolicitudes;
+  /** Si se define, solo alerta cuando esa persona está asignada a la solicitud. */
+  soloPersonalId?: string | null;
 }
 
 const INTERVALO_SONDEO_MS = 8_000;
@@ -36,6 +39,7 @@ export function useSolicitudesRealtime({
   onNuevaSolicitud,
   habilitado = true,
   modo = "completo",
+  soloPersonalId = null,
 }: OpcionesRealtime) {
   const conocidos = useRef(new Set<string>());
   const onNuevaRef = useRef(onNuevaSolicitud);
@@ -115,8 +119,11 @@ export function useSolicitudesRealtime({
     [destacarRegistro],
   );
 
+  const soloPersonalRef = useRef(soloPersonalId);
+  soloPersonalRef.current = soloPersonalId;
+
   const procesarNueva = useCallback(
-    (registro: RegistroCorrectivo) => {
+    async (registro: RegistroCorrectivo) => {
       if (conocidos.current.has(registro.id)) return false;
       if (!listoParaAlertar.current) {
         conocidos.current.add(registro.id);
@@ -124,6 +131,19 @@ export function useSolicitudesRealtime({
       }
       conocidos.current.add(registro.id);
       if (!esSolicitudNuevaNotificable(registro, areaFiltroRef.current)) return false;
+
+      const filtroPersonal = soloPersonalRef.current;
+      if (filtroPersonal) {
+        try {
+          // Pequeña espera: el trigger de auto-asignación corre en el mismo INSERT.
+          await new Promise((r) => window.setTimeout(r, 400));
+          const asignados = await listarAsignacionesDeCorrectivo(registro.id);
+          if (!asignados.some((a) => a.personal_id === filtroPersonal)) return false;
+        } catch {
+          return false;
+        }
+      }
+
       if (modoRef.current !== "solo-alertas") {
         onNuevaRef.current?.(registro);
       }
@@ -139,7 +159,7 @@ export function useSolicitudesRealtime({
     try {
       const regs = await listarCorrectivo();
       for (const registro of regs) {
-        procesarNueva(registro);
+        await procesarNueva(registro);
       }
     } catch {
       // Fallo de red puntual: el siguiente ciclo reintenta.
@@ -166,7 +186,7 @@ export function useSolicitudesRealtime({
         (payload) => {
           const registro = registroDesdeRealtime(payload.new as Record<string, unknown>);
           if (!registro) return;
-          procesarNueva(registro);
+          void procesarNueva(registro);
         },
       )
       .subscribe((estado) => {

@@ -299,6 +299,17 @@ body.layout-mas-abierto {
     animation: nav-badge-pulso-azul 1.6s ease-in-out infinite;
   }
 
+  .nav-badge--ambar {
+    background: #fbbf24;
+    color: #78350f;
+    animation: nav-badge-pulso-ambar 1.6s ease-in-out infinite;
+  }
+
+  .sidebar__enlace .nav-badge--ambar {
+    background: #fbbf24;
+    color: #78350f;
+  }
+
   .nav-badge--sidebar {
     position: static;
     margin-left: auto;
@@ -342,6 +353,18 @@ body.layout-mas-abierto {
     50% {
       transform: scale(1.08);
       box-shadow: 0 0 0 2px #0f172a, 0 0 0 5px rgba(56, 189, 248, 0);
+    }
+  }
+
+  @keyframes nav-badge-pulso-ambar {
+    0%,
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 2px #0f172a, 0 0 0 0 rgba(251, 191, 36, 0.5);
+    }
+    50% {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 2px #0f172a, 0 0 0 5px rgba(251, 191, 36, 0);
     }
   }
 

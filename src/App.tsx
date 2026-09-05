@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/layout/Layout";
 import { AuthProvider } from "./modules/auth/AuthContext";
 import LoginPage from "./modules/auth/LoginPage";
@@ -29,8 +30,9 @@ import HorarioLaboralPage from "./modules/permisos/HorarioLaboralPage";
 
 function App() {
   return (
-    <AuthProvider>
-      <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<RequireAuth />}>
           <Route element={<Layout />}>
@@ -61,6 +63,7 @@ function App() {
         </Route>
       </Routes>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

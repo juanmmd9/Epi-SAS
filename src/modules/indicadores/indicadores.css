@@ -397,6 +397,27 @@
   border-left-color: #dc2626 !important;
 }
 
+.cita-en-aprobacion {
+  border-left-color: #ca8a04 !important;
+  background: #fef9c3;
+}
+
+.indicadores__aviso-aprobacion {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.tarjeta-indicador--aviso {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
 /* ----- Panel fórmulas ----- */
 
 .indicadores__filtro--oculto {

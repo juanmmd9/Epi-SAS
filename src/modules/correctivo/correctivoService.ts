@@ -60,6 +60,30 @@ export async function eliminarCorrectivo(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+export async function obtenerCorrectivo(id: string): Promise<RegistroCorrectivo | null> {
+  const { data, error } = await supabase.from(TABLA).select("*").eq("id", id).maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as RegistroCorrectivo | null) ?? null;
+}
+
+/** Fusiona campos en datos jsonb sin tocar el resto del registro. */
+export async function actualizarDatosCorrectivo(
+  id: string,
+  patch: Partial<RegistroCorrectivo["datos"]>,
+): Promise<RegistroCorrectivo> {
+  const actual = await obtenerCorrectivo(id);
+  if (!actual) throw new Error("Solicitud no encontrada.");
+  const datos = { ...actual.datos, ...patch };
+  const { data, error } = await supabase
+    .from(TABLA)
+    .update({ datos })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as RegistroCorrectivo;
+}
+
 function minutosDesdeMedianoche(hora: string | undefined): number | null {
   if (!hora || !/^\d{2}:\d{2}/.test(hora)) return null;
   const [h, m] = hora.split(":").map(Number);

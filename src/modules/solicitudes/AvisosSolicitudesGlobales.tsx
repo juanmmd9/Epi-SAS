@@ -8,14 +8,14 @@ import "./solicitudes.css";
 const ROLES_AVISO = new Set<string>(ROLES_NOTIFICACION_SOLICITUDES);
 
 /**
- * Escucha nuevas solicitudes en toda la app (no solo en /solicitudes)
- * y muestra toast + notificación del sistema/celular.
- * Los avisos quedan siempre activos (sin botón ON/OFF).
+ * Escucha nuevas solicitudes en toda la app.
+ * Admin: todas. Operador: las de su área (bandeja).
  */
 function AvisosSolicitudesGlobales() {
   const { perfil, puede } = useAuth();
   const rol = perfil?.rol;
   const habilitado = Boolean(rol && ROLES_AVISO.has(rol) && puede("ver.solicitudes"));
+  const areaFiltro = rol === "operador" && perfil?.area ? perfil.area : undefined;
 
   usePushNotificaciones(perfil?.id, rol);
 
@@ -23,6 +23,7 @@ function AvisosSolicitudesGlobales() {
     correctivos: [],
     habilitado,
     modo: "solo-alertas",
+    areaFiltro,
   });
 
   if (!habilitado) return null;

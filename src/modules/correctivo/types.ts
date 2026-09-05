@@ -35,6 +35,12 @@ export interface CorrectivoDatos {
   horaCierre: string;
   /** Solicitud abierta detenida por falta de repuesto */
   esperaRepuesto?: boolean;
+  /** Tiempo activo de atención (se pausa con espera de repuesto). */
+  cronometro?: {
+    estado: "idle" | "running" | "paused" | "stopped";
+    segmentoInicio: string | null;
+    acumuladoSeg: number;
+  };
   quienRevisa: string;
   personalIds?: string[];
   personalNombres?: string[];

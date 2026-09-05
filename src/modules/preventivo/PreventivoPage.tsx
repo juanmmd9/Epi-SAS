@@ -82,7 +82,12 @@ type BorradorPreventivo = {
 };
 
 interface EstadoNavegacion {
-  registrarPm?: { maquinaId: string; area: string; fecha: string };
+  registrarPm?: {
+    maquinaId: string;
+    area: string;
+    fecha: string;
+    personalIds?: string[];
+  };
 }
 
 function PreventivoPage() {
@@ -181,12 +186,12 @@ function PreventivoPage() {
   useEffect(() => {
     const estado = ubicacion.state as EstadoNavegacion | null;
     if (!estado?.registrarPm) return;
-    const { maquinaId, area, fecha } = estado.registrarPm;
+    const { maquinaId, area, fecha, personalIds } = estado.registrarPm;
     setEditandoId(null);
     setFechaProgramada(fecha);
     setCampos({ area, maquinaId, fecha, descripcion: "" });
     setFormatoMtre045(camposFormatoMtre045Vacios());
-    setPersonalIds([]);
+    setPersonalIds(personalIds?.length ? personalIds : []);
     setMensaje(
       "Datos cargados desde el panel. Puedes ajustar la fecha real del trabajo; la cita programada se mantiene enlazada (sin cambiar la fecha base de la máquina).",
     );
