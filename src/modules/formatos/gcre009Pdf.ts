@@ -3,6 +3,7 @@
  * Coordenadas calibradas sobre public/templates/GC-RE-009-v2.pdf (A4, 596 x 842 pt).
  */
 import { PDFDocument, StandardFonts, type PDFFont, type PDFPage } from "pdf-lib";
+import { textoCompatibleWinAnsi } from "../../lib/pdfTextoWinAnsi";
 import { rutaPublica } from "../../lib/rutaPublica";
 import type { RegistroNc, RegistroNcDatos } from "./types";
 
@@ -52,7 +53,7 @@ async function cargarPlantilla(): Promise<ArrayBuffer> {
 }
 
 function partirTexto(texto: string, font: PDFFont, fontSize: number, anchoMax: number): string[] {
-  const palabras = String(texto || "")
+  const palabras = textoCompatibleWinAnsi(texto)
     .replace(/\s+/g, " ")
     .trim()
     .split(" ");

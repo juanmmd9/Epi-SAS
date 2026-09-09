@@ -54,16 +54,16 @@ const actualizaciones: Record<
   },
   5: {
     contexto:
-      "Indicador % horas perdidas Confección = 2.92% (meta ≤ 1%) en agosto 2026.",
+      "Indicador % horas perdidas Confección = 2.92% (meta ≤ 1%) en agosto 2026. Ranking: K-04 23.8%, G-17 13.8%, lote máquinas 12.8%, K-08/K-14/K-09 traslados; ~62.7 h / 2152 h prog.",
     porques: [
-      "El % de horas perdidas de Confección superó la meta (2.92% > 1%).",
-      "Hubo muchas horas de máquina fuera de producción / correctivo asociadas al traslado de equipos.",
-      "Se bajó preventivamente cerca de la mitad de las máquinas al primer piso.",
-      "Se tomó esa medida por seguridad ante el riesgo de otro sismo después del temblor de agosto.",
-      "No existía un protocolo ágil de reubicación que minimizara tiempo de parada y reinstalación controlada.",
+      "El % de horas perdidas de Confección quedó en 2,92% (> 1%).",
+      "Se acumularon ~62,7 h de parada/correctivo válidas, concentradas en K-04, G-17 y traslados de K/ lote confección.",
+      "Esas horas corresponden sobre todo a bajar/subir e instalar máquinas tras el temblor, no a una falla crónica única.",
+      "Se bajó preventivamente cerca de la mitad de las máquinas al primer piso por seguridad ante otro sismo.",
+      "No había un protocolo de reubicación que limitara el tiempo de parada y la reinstalación controlada.",
     ],
     conclusion:
-      "Evento sísmico + decisión preventiva de bajar máquinas sin un procedimiento de reubicación que limite el impacto en horas perdidas.",
+      "Evento sísmico + reubicación masiva de máquinas de Confección sin procedimiento que contenga el impacto en horas perdidas (corroborado por ranking K-04 / traslados / sol. 299).",
   },
   6: {
     contexto:
@@ -80,16 +80,16 @@ const actualizaciones: Record<
   },
   7: {
     contexto:
-      "Indicador % horas perdidas Plásticos = 1.31% (meta ≤ 1%, alerta) en agosto 2026. Misma línea causal que el tiempo de respuesta.",
+      "Indicador % horas perdidas Plásticos = 1.31% (meta ≤ 1%, alerta) en agosto 2026. I-05 aporta ~58% (2 ints.); CH 03 ~22%; molde minero ~15%.",
     porques: [
-      "El % de horas perdidas en Plásticos quedó en 1.31% (sobre la meta del 1%).",
-      "Las máquinas acumularon más tiempo paradas de lo esperado por correctivo.",
-      "La atención y el cierre se demoraron (respuesta lenta y/o espera de piezas).",
-      "Faltó personal disponible y hubo demora en repuestos fabricados a pedido, además de afectación por el temblor.",
-      "No había stock/acuerdo de lead time para críticos ni cobertura mínima de personal para Plásticos en contingencia.",
+      "El % de horas perdidas en Plásticos quedó en 1,31% (sobre 1%).",
+      "I-05 concentró ~58% de las horas (sols. 276 y 317); CH 03 y molde minero suman el resto relevante.",
+      "La sol. 317 alargó mucho el tiempo de reparación (H alto; tope de jornada en el indicador).",
+      "La atención/cierre se demoró por disponibilidad de personal y/o piezas no stock.",
+      "Repuestos a fabricar + contingencia del temblor + cobertura insuficiente de personal para Plásticos.",
     ],
     conclusion:
-      "Mismas causas del indicador de respuesta: personal insuficiente + temblor + repuestos a fabricar, que alargan la parada y suben el % de horas perdidas.",
+      "Pocas intervenciones pero de alto impacto (sobre todo I-05 molde/resistencia), agravadas por lead time de piezas y menor capacidad de respuesta en agosto.",
   },
   8: {
     contexto:
@@ -106,16 +106,16 @@ const actualizaciones: Record<
   },
   9: {
     contexto:
-      "Indicador % horas perdidas Tejidos = 7.42% (meta ≤ 1%) en agosto 2026. Mayor impacto en trenzadoras de alma A-06 y A-07.",
+      "Indicador % horas perdidas Tejidos = 7.42% (meta ≤ 1%) en agosto 2026. Desglose: C-07 39% + T-03 31% de las horas; A-06/A-07 NO figuran; A-01 solo ~7%.",
     porques: [
       "El % de horas perdidas de Tejidos llegó a 7.42% (muy por encima de 1%).",
-      "Hubo paradas prolongadas que concentraron gran parte de las horas.",
-      "Las máquinas que más afectaron fueron las de alma A-06 y A-07.",
-      "Esas fallas no se resolvieron con rapidez (demora de atención y/o de la reparación).",
-      "El personal de mantenimiento estaba en labores del temblor y no había plan preventivo/repuestos críticos suficientes para A-06/A-07.",
+      "Casi 30 h de indicador se concentran en C-07 (guía de cuerda) y T-03 (soporte/peine), no en A-06/A-07.",
+      "Esas dos reparaciones tuvieron H muy altos (709 y 554 min laborales) con una sola intervención cada una.",
+      "La reparación se alargó (diagnóstico, piezas, o personal ocupado en otras labores de planta/temblor).",
+      "No había anticipación (repuesto/ajuste preventivo) para guías/soportes críticos de C-07 y T-03, y la baja base de horas programadas (408 h) amplifica el %.",
     ],
     conclusion:
-      "Paradas largas en trenzadoras de alma A-06 y A-07, agravadas por menor disponibilidad de mantenimiento tras el temblor y falta de anticipación de fallas/repuestos en esas máquinas.",
+      "Paradas unitarias pero prolongadas en C-07 y T-03 (~70% del indicador); A-01 aporta poco; A-06/A-07 no figuran en agosto. Causa raíz: fallas mecánicas de alta duración de reparación + base horaria programada baja del área.",
   },
 };
 
