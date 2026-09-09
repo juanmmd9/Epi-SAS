@@ -13,7 +13,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const DOMINIO = "epi.local";
 const RE_USUARIO = /^[a-z0-9][a-z0-9._-]{1,62}$/;
-const ROLES = new Set(["admin", "operador", "consulta", "solicitante", "lider"]);
+const ROLES = new Set(["admin", "operador", "consulta", "solicitante", "lider", "gerencia"]);
 
 type Body = {
   usuario?: string;

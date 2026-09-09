@@ -1,4 +1,4 @@
-export type RolPortal = "admin" | "operador" | "consulta" | "solicitante" | "lider";
+export type RolPortal = "admin" | "operador" | "consulta" | "solicitante" | "lider" | "gerencia";
 
 export interface UsuarioPortal {
   id: string;
@@ -29,10 +29,12 @@ export const ETIQUETAS_ROL: Record<RolPortal, string> = {
   consulta: "Consulta",
   solicitante: "Solicitante de área",
   lider: "Líder de área",
+  gerencia: "Gerencia",
 };
 
 export type Permiso =
   | "ver.inicio"
+  | "ver.gerencia"
   | "ver.preventivo"
   | "ver.correctivo"
   | "ver.solicitudes"
@@ -63,6 +65,7 @@ export type Permiso =
 
 const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
   "ver.inicio": ["admin", "operador", "consulta", "solicitante", "lider"],
+  "ver.gerencia": ["gerencia"],
   "ver.preventivo": ["admin", "operador", "consulta", "lider"],
   "ver.correctivo": ["admin", "operador", "consulta"],
   "ver.solicitudes": ["admin", "operador", "consulta", "solicitante", "lider"],
@@ -105,6 +108,7 @@ export interface EnlaceNav {
 
 export const ENLACES_NAV: EnlaceNav[] = [
   { ruta: "/", texto: "Inicio", permiso: "ver.inicio" },
+  { ruta: "/gerencia", texto: "Gerencia", permiso: "ver.gerencia" },
   { ruta: "/preventivo", texto: "Mant. preventivo", permiso: "ver.preventivo" },
   {
     ruta: "/preventivo/aprobaciones",
@@ -139,5 +143,6 @@ export function rutaInicioParaRol(
 ): string {
   if (rol === "solicitante") return "/solicitudes";
   if (rol === "lider") return "/preventivo/aprobaciones";
+  if (rol === "gerencia") return "/gerencia";
   return "/";
 }

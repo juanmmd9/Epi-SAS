@@ -25,6 +25,7 @@ export interface ItemNav extends EnlaceNav {
 
 const ICONOS_POR_RUTA: Record<string, IconoNav> = {
   "/": "inicio",
+  "/gerencia": "mas",
   "/preventivo": "preventivo",
   "/preventivo/aprobaciones": "aprobar",
   "/correctivo": "correctivo",
@@ -41,6 +42,7 @@ const ICONOS_POR_RUTA: Record<string, IconoNav> = {
 
 const ETIQUETA_CORTA: Record<string, string> = {
   "/": "Inicio",
+  "/gerencia": "Gerencia",
   "/preventivo": "Preventivo",
   "/preventivo/aprobaciones": "Aprobar",
   "/correctivo": "Correctivo",

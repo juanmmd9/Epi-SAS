@@ -40,7 +40,7 @@ const vincularVacio = {
 };
 
 function requiereArea(rol: RolPortal): boolean {
-  return rol === "lider";
+  return rol === "lider" || rol === "gerencia";
 }
 
 function badgeRol(rol: RolPortal) {
@@ -147,7 +147,11 @@ function UsuariosPage() {
       return;
     }
     if (requiereArea(campos.rol) && !campos.area) {
-      setError("El rol Líder de área requiere elegir el área de planta.");
+      setError(
+        campos.rol === "gerencia"
+          ? "El rol Gerencia requiere elegir el área de planta."
+          : "El rol Líder de área requiere elegir el área de planta.",
+      );
       return;
     }
 
@@ -190,7 +194,11 @@ function UsuariosPage() {
       return;
     }
     if (requiereArea(vincular.rol) && !vincular.area) {
-      setError("El rol Líder de área requiere elegir el área de planta.");
+      setError(
+        vincular.rol === "gerencia"
+          ? "El rol Gerencia requiere elegir el área de planta."
+          : "El rol Líder de área requiere elegir el área de planta.",
+      );
       return;
     }
 
@@ -221,9 +229,11 @@ function UsuariosPage() {
     setMensaje(null);
     setError(null);
 
-    if (usuario.rol === "lider" && !usuario.area) {
+    if (requiereArea(usuario.rol) && !usuario.area) {
       setError(
-        `Para pasar a Líder de área debes elegir el Área de ${usuario.nombre || usuario.usuario || "ese usuario"} y luego Guardar.`,
+        usuario.rol === "gerencia"
+          ? `Para el rol Gerencia debes elegir el Área de ${usuario.nombre || usuario.usuario || "ese usuario"} y luego Guardar.`
+          : `Para pasar a Líder de área debes elegir el Área de ${usuario.nombre || usuario.usuario || "ese usuario"} y luego Guardar.`,
       );
       return;
     }
@@ -242,7 +252,7 @@ function UsuariosPage() {
       const msg = (e as Error).message;
       if (/usuarios_portal_rol_check|violates check constraint/i.test(msg)) {
         setError(
-          "La base de datos aún no acepta el rol «líder». Ejecuta en SQL Editor el archivo supabase/migrations/rol_lider_aprobacion_pm.sql y vuelve a Guardar.",
+          "La base de datos aún no acepta ese rol. Ejecuta en SQL Editor supabase/migrations/rol_gerencia.sql (o rol_lider_aprobacion_pm.sql) y vuelve a Guardar.",
         );
       } else {
         setError(msg);
@@ -430,6 +440,7 @@ function UsuariosPage() {
               <option value="consulta">Consulta</option>
               <option value="solicitante">Solicitante de área</option>
               <option value="lider">Líder de área</option>
+              <option value="gerencia">Gerencia</option>
             </select>
           </label>
           <label>
@@ -541,6 +552,7 @@ function UsuariosPage() {
               <option value="consulta">Consulta</option>
               <option value="solicitante">Solicitante de área</option>
               <option value="lider">Líder de área</option>
+              <option value="gerencia">Gerencia</option>
             </select>
           </label>
           <label>
@@ -609,6 +621,7 @@ function UsuariosPage() {
                       <option value="consulta">Consulta</option>
                       <option value="solicitante">Solicitante de área</option>
                       <option value="lider">Líder de área</option>
+                      <option value="gerencia">Gerencia</option>
                     </select>
                   </td>
                   <td>

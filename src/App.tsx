@@ -5,6 +5,7 @@ import { AuthProvider } from "./modules/auth/AuthContext";
 import LoginPage from "./modules/auth/LoginPage";
 import RequireAuth from "./modules/auth/RequireAuth";
 import InicioPage from "./modules/inicio/InicioPage";
+import GerenciaPage from "./modules/gerencia/GerenciaPage";
 import PreventivoPage from "./modules/preventivo/PreventivoPage";
 import AprobacionPmPage from "./modules/preventivo/AprobacionPmPage";
 import CronogramaPage from "./modules/cronograma/CronogramaPage";
@@ -37,6 +38,7 @@ function App() {
         <Route element={<RequireAuth />}>
           <Route element={<Layout />}>
             <Route index element={<InicioPage />} />
+            <Route path="gerencia" element={<GerenciaPage />} />
             <Route path="preventivo" element={<PreventivoPage />} />
             <Route path="preventivo/aprobaciones" element={<AprobacionPmPage />} />
             <Route path="preventivo/cronograma" element={<CronogramaPage />} />

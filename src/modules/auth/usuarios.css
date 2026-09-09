@@ -197,6 +197,11 @@
   color: #00695c;
 }
 
+.usuarios__badge--gerencia {
+  background: #fce4ec;
+  color: #880e4f;
+}
+
 .usuarios__checklist {
   background: #fffbeb;
   border: 1px solid #f59e0b;
