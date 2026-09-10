@@ -27,7 +27,8 @@
 .mtre045-preview__logo-celda {
   width: 28%;
   text-align: center;
-  padding: 0.4rem 0.5rem !important;
+  padding: 0.35rem 0.4rem !important;
+  background: #fff !important;
 }
 
 .mtre045-preview__logo {
@@ -38,6 +39,7 @@
   height: auto;
   margin: 0 auto;
   object-fit: contain;
+  background: #fff;
 }
 
 .mtre045-preview__proceso {

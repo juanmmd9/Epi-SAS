@@ -74,7 +74,7 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
             <td className="mtre045-preview__logo-celda" rowSpan={2}>
               <img
                 className="mtre045-preview__logo"
-                src={rutaPublica("/Image/EPI-Logo.png")}
+                src={rutaPublica("/Image/EPI-Logo-documento.png")}
                 alt="E.P.I. Equipos de Protección Individual"
               />
             </td>
