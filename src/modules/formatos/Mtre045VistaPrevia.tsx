@@ -1,3 +1,4 @@
+import { rutaPublica } from "../../lib/rutaPublica";
 import { fechaPartes, type Mtre045Datos } from "./mtre045Types";
 import "./mtre045.css";
 
@@ -18,13 +19,24 @@ function CeldaAn({ valor }: { valor: string }) {
 function FechaCajas({ dia, mes, anio }: { dia: string; mes: string; anio: string }) {
   return (
     <span className="mtre045-preview__fecha-cajas">
-      <span className="mtre045-preview__fecha-caja">{dia || " "}</span>
+      <span className="mtre045-preview__fecha-caja">{dia || "____"}</span>
       <span>/</span>
-      <span className="mtre045-preview__fecha-caja">{mes || " "}</span>
+      <span className="mtre045-preview__fecha-caja">{mes || "____"}</span>
       <span>/</span>
       <span className="mtre045-preview__fecha-caja mtre045-preview__fecha-caja--anio">
-        {anio || " "}
+        {anio || "________"}
       </span>
+    </span>
+  );
+}
+
+function Casilla({ marcada, etiqueta }: { marcada: boolean; etiqueta: string }) {
+  return (
+    <span className="mtre045-preview__casilla">
+      <span className="mtre045-preview__check" aria-hidden>
+        {marcada ? "X" : ""}
+      </span>
+      <span>{etiqueta}</span>
     </span>
   );
 }
@@ -42,24 +54,53 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
   const { dia, mes, anio } = fechaPartes(datos.fecha);
   const repuestosPm = lineasRepuestos(datos.cambioRepuestos);
   const repuestosCorr = lineasRepuestos(datos.cambioRepuestosCorrectivo);
+  const marcaCorrectivo = Boolean(
+    (datos.actividadCorrectivo || "").trim() ||
+      (datos.cambioRepuestosCorrectivo || "").trim() ||
+      (datos.verificacionCorrectivo || "").trim(),
+  );
+  const marcaVerificacion = Boolean(
+    datos.inspeccionVisual ||
+      datos.pruebasFuncionamiento ||
+      (datos.verificacionEquipoPm || "").trim() ||
+      (datos.responsableVerificacion || "").trim(),
+  );
 
   return (
     <article id={id} className="mtre045-preview">
-      <table className="mtre045-preview__meta">
+      <table className="mtre045-preview__cabecera-oficial">
         <tbody>
           <tr>
-            <td>
-              <strong>PROCESO CODIGO:</strong> MT-RE-045 &nbsp;&nbsp; <strong>VERSION:</strong> 1
+            <td className="mtre045-preview__logo-celda" rowSpan={2}>
+              <img
+                className="mtre045-preview__logo"
+                src={rutaPublica("/Image/EPI-Logo.png")}
+                alt="E.P.I. Equipos de Protección Individual"
+              />
             </td>
-            <td className="mtre045-preview__meta-derecha">
-              <strong>MANTENIMIENTO</strong> &nbsp; FECHA DE ELABORACIÓN: ABR 2025
+            <td className="mtre045-preview__proceso">PROCESO</td>
+            <td className="mtre045-preview__codigo-celda">
+              <div>
+                <strong>CODIGO:</strong> MT-RE-045
+              </div>
+              <div>
+                <strong>VERSION:</strong> 1
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td className="mtre045-preview__proceso">MANTENIMIENTO</td>
+            <td className="mtre045-preview__fecha-elab">
+              <strong>FECHA DE ELABORACIÓN:</strong> ABRIL 2025
+            </td>
+          </tr>
+          <tr>
+            <td className="mtre045-preview__titulo-oficial" colSpan={3}>
+              REPORTE DE MANTENIMIENTO PREVENTIVO
             </td>
           </tr>
         </tbody>
       </table>
-
-      <p className="mtre045-preview__procedimiento">PROCEDIMIENTO</p>
-      <h2 className="mtre045-preview__titulo-principal">MANTENIMIENTO PREVENTIVO</h2>
 
       <table className="mtre045-preview__tabla mtre045-preview__tabla--encabezado">
         <tbody>
@@ -102,16 +143,28 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
         </tbody>
       </table>
 
-      <h3 className="mtre045-preview__subtitulo">DIAGNÓSTICO DE MANTENIMIENTO PREVENTIVO</h3>
-
-      <table className="mtre045-preview__tabla mtre045-preview__tabla--cols3">
+      <table className="mtre045-preview__tabla mtre045-preview__tabla--diagnostico-tipo">
         <thead>
           <tr>
-            <th>MANTENIMIENTO PREVENTIVO</th>
-            <th>MANTENIMIENTO CORRECTIVO</th>
-            <th>VERIFICACIÓN</th>
+            <th colSpan={3}>DIAGNÓSTICO DE MANTENIMIENTO PREVENTIVO</th>
           </tr>
         </thead>
+        <tbody>
+          <tr>
+            <td>
+              <Casilla marcada etiqueta="MANTENIMIENTO PREVENTIVO" />
+            </td>
+            <td>
+              <Casilla marcada={marcaCorrectivo} etiqueta="MANTENIMIENTO CORRECTIVO" />
+            </td>
+            <td>
+              <Casilla marcada={marcaVerificacion} etiqueta="VERIFICACIÓN" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table className="mtre045-preview__tabla mtre045-preview__tabla--cols3">
         <tbody>
           <tr>
             <td colSpan={3} className="mtre045-preview__fila-titulo">

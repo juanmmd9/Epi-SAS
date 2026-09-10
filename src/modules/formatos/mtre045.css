@@ -9,6 +9,103 @@
   line-height: 1.35;
 }
 
+/* Encabezado oficial (logo + proceso + código), alineado al MT-RE-045 real */
+.mtre045-preview__cabecera-oficial {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.65rem;
+  table-layout: fixed;
+}
+
+.mtre045-preview__cabecera-oficial td {
+  border: 1px solid #111;
+  padding: 0.35rem 0.45rem;
+  vertical-align: middle;
+  background: #fff;
+}
+
+.mtre045-preview__logo-celda {
+  width: 28%;
+  text-align: center;
+  padding: 0.4rem 0.5rem !important;
+}
+
+.mtre045-preview__logo {
+  display: block;
+  max-width: 100%;
+  max-height: 4.25rem;
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.mtre045-preview__proceso {
+  width: 36%;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.mtre045-preview__codigo-celda {
+  width: 36%;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.mtre045-preview__fecha-elab {
+  font-size: 0.72rem;
+  text-align: left;
+}
+
+.mtre045-preview__titulo-oficial {
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.4rem !important;
+  background: #fff !important;
+}
+
+.mtre045-preview__tabla--diagnostico-tipo th {
+  width: auto;
+  text-align: center;
+  background: #f3f4f6;
+  font-size: 0.82rem;
+}
+
+.mtre045-preview__tabla--diagnostico-tipo td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 0.55rem 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.mtre045-preview__casilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.mtre045-preview__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 1.5px solid #111;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .mtre045-preview__meta {
   width: 100%;
   border-collapse: collapse;
@@ -468,7 +565,14 @@
   }
 
   body.imprimiendo-formato .mtre045-preview__tabla th,
-  body.imprimiendo-formato .mtre045-preview__tabla td {
+  body.imprimiendo-formato .mtre045-preview__tabla td,
+  body.imprimiendo-formato .mtre045-preview__cabecera-oficial td {
     border-color: #000;
+  }
+
+  body.imprimiendo-formato .mtre045-preview__logo {
+    max-height: 3.6rem;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

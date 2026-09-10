@@ -38,6 +38,68 @@ function textoSiNo(valor: string): string {
   return "";
 }
 
+function drawTextSafe(
+  page: PDFPage,
+  text: string,
+  opts: { x: number; y: number; size: number; font: PDFFont },
+) {
+  const limpio = textoCompatibleWinAnsi(text);
+  if (!limpio) return;
+  page.drawText(limpio, opts);
+}
+
+function anchoSeguro(font: PDFFont, text: string, fontSize: number): number {
+  return font.widthOfTextAtSize(textoCompatibleWinAnsi(text), fontSize);
+}
+
+function sanitizarDatosNc(datos: RegistroNcDatos): RegistroNcDatos {
+  const t = (v: string | undefined | null) => textoCompatibleWinAnsi(v ?? "");
+  return {
+    ...datos,
+    area: t(datos.area),
+    fechaDeteccion: t(datos.fechaDeteccion),
+    origen: datos.origen,
+    origenIndicador: datos.origenIndicador
+      ? {
+          ...datos.origenIndicador,
+          area: t(datos.origenIndicador.area),
+          indicador: t(datos.origenIndicador.indicador),
+          meta: t(datos.origenIndicador.meta),
+          valor: t(datos.origenIndicador.valor),
+        }
+      : null,
+    descripcion: t(datos.descripcion),
+    detectadaPorNombre: t(datos.detectadaPorNombre),
+    detectadaPorCargo: t(datos.detectadaPorCargo),
+    tratamientoInmediato: t(datos.tratamientoInmediato),
+    tratamientoInmediatoPor: t(datos.tratamientoInmediatoPor),
+    tratamientoInmediatoFecha: t(datos.tratamientoInmediatoFecha),
+    herramientaCausa: t(datos.herramientaCausa),
+    resumenCausa: t(datos.resumenCausa),
+    analisisPor: t(datos.analisisPor),
+    analisisFecha: t(datos.analisisFecha),
+    requiereAccionFormal: datos.requiereAccionFormal,
+    planAccion: (datos.planAccion ?? []).map((f) => ({
+      actividad: t(f.actividad),
+      responsable: t(f.responsable),
+      fechaEntrega: t(f.fechaEntrega),
+      evidencia: t(f.evidencia),
+    })),
+    seguimientoCumplimiento: t(datos.seguimientoCumplimiento),
+    seguimientoEficacia: t(datos.seguimientoEficacia),
+    seguimientoFilas: (datos.seguimientoFilas ?? []).map((f) => ({
+      actividad: t(f.actividad),
+      cumplido: f.cumplido,
+      fueEficaz: f.fueEficaz,
+      porque: t(f.porque),
+    })),
+    verificadoPorNombre: t(datos.verificadoPorNombre),
+    verificadoPorCargo: t(datos.verificadoPorCargo),
+    tratamientoEficaz: datos.tratamientoEficaz,
+    tratamientoEficazPorque: t(datos.tratamientoEficazPorque),
+  };
+}
+
 async function cargarPlantilla(): Promise<ArrayBuffer> {
   if (plantillaCache) return plantillaCache;
   const respuesta = await fetch(rutaPublica(PLANTILLA_URL));
@@ -68,19 +130,19 @@ function partirTexto(texto: string, font: PDFFont, fontSize: number, anchoMax: n
     let linea = "";
     for (const palabra of palabras) {
       const prueba = linea ? `${linea} ${palabra}` : palabra;
-      if (font.widthOfTextAtSize(prueba, fontSize) <= anchoMax) {
+      if (anchoSeguro(font, prueba, fontSize) <= anchoMax) {
         linea = prueba;
         continue;
       }
       if (linea) lineas.push(linea);
-      if (font.widthOfTextAtSize(palabra, fontSize) <= anchoMax) {
+      if (anchoSeguro(font, palabra, fontSize) <= anchoMax) {
         linea = palabra;
         continue;
       }
       let fragmento = "";
       for (const ch of palabra) {
         const t = fragmento + ch;
-        if (font.widthOfTextAtSize(t, fontSize) <= anchoMax) {
+        if (anchoSeguro(font, t, fontSize) <= anchoMax) {
           fragmento = t;
         } else {
           if (fragmento) lineas.push(fragmento);
@@ -110,7 +172,7 @@ function escribirEnCaja(page: PDFPage, font: PDFFont, texto: string, caja: CajaF
   const maxLines = caja.maxLines ?? 1;
   const lineas = partirTexto(texto ?? "", font, fontSize, caja.width - 4).slice(0, maxLines);
   lineas.forEach((linea, indice) => {
-    page.drawText(linea, {
+    drawTextSafe(page, linea, {
       x: caja.x + 2,
       y: yDesdeArriba(caja.yTop + indice * lineHeight, fontSize),
       size: fontSize,
@@ -198,7 +260,7 @@ function escribirEnCuadroAmpliado(
   resultado.lineas.forEach((linea, indice) => {
     const yTopLinea = caja.yTop + indice * resultado.lineHeight;
     if (yTopLinea + resultado.fontSize > yBottomUsado + 1.5) return;
-    page.drawText(linea || " ", {
+    drawTextSafe(page, linea || " ", {
       x: caja.x + 2,
       y: yDesdeArriba(yTopLinea, resultado.fontSize),
       size: resultado.fontSize,
@@ -210,14 +272,14 @@ function escribirEnCuadroAmpliado(
 function marcarOrigen(page: PDFPage, font: PDFFont, origen: string) {
   const marca = ORIGEN_MARCAS[origen];
   if (!marca) return;
-  page.drawText("X", { x: marca.x, y: yDesdeArriba(marca.yTop, 8), size: 8, font });
+  drawTextSafe(page, "X", { x: marca.x, y: yDesdeArriba(marca.yTop, 8), size: 8, font });
 }
 
 function marcarSiNo(page: PDFPage, font: PDFFont, valor: string, xSi: number, xNo: number, yTop: number) {
   if (valor === "si") {
-    page.drawText("X", { x: xSi, y: yDesdeArriba(yTop, 8), size: 8, font });
+    drawTextSafe(page, "X", { x: xSi, y: yDesdeArriba(yTop, 8), size: 8, font });
   } else if (valor === "no") {
-    page.drawText("X", { x: xNo, y: yDesdeArriba(yTop, 8), size: 8, font });
+    drawTextSafe(page, "X", { x: xNo, y: yDesdeArriba(yTop, 8), size: 8, font });
   }
 }
 
@@ -361,13 +423,14 @@ function escribirPagina2(page: PDFPage, font: PDFFont, registro: RegistroNcDatos
 }
 
 export async function generarPdfGcRe009(datos: RegistroNcDatos, numero: number): Promise<Uint8Array> {
+  const datosPdf = sanitizarDatosNc(datos);
   const plantillaBytes = await cargarPlantilla();
   const pdfDoc = await PDFDocument.load(plantillaBytes);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const paginas = pdfDoc.getPages();
 
-  if (paginas[0]) escribirPagina1(paginas[0], font, datos, numero);
-  if (paginas[1]) escribirPagina2(paginas[1], font, datos);
+  if (paginas[0]) escribirPagina1(paginas[0], font, datosPdf, numero);
+  if (paginas[1]) escribirPagina2(paginas[1], font, datosPdf);
 
   return pdfDoc.save();
 }
