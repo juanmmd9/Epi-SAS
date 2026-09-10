@@ -1,6 +1,7 @@
 /**
  * Rellena la plantilla oficial GC-RE-009 con pdf-lib.
  * Coordenadas calibradas sobre public/templates/GC-RE-009-v2.pdf (A4, 596 x 842 pt).
+ * Los textos largos se ajustan en el mismo cuadro (fuente y interlineado más chicos).
  */
 import { PDFDocument, StandardFonts, type PDFFont, type PDFPage } from "pdf-lib";
 import { textoCompatibleWinAnsi } from "../../lib/pdfTextoWinAnsi";
@@ -52,47 +53,155 @@ async function cargarPlantilla(): Promise<ArrayBuffer> {
   return plantillaCache;
 }
 
+/** Respeta saltos de línea y envuelve por ancho. */
 function partirTexto(texto: string, font: PDFFont, fontSize: number, anchoMax: number): string[] {
-  const palabras = textoCompatibleWinAnsi(texto)
-    .replace(/\s+/g, " ")
-    .trim()
-    .split(" ");
-  if (palabras.length === 0 || palabras[0] === "") return [];
+  const normalizado = textoCompatibleWinAnsi(texto).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  if (!normalizado.trim()) return [];
 
   const lineas: string[] = [];
-  let linea = "";
-  for (const palabra of palabras) {
-    const prueba = linea ? `${linea} ${palabra}` : palabra;
-    if (font.widthOfTextAtSize(prueba, fontSize) <= anchoMax) {
-      linea = prueba;
-    } else {
-      if (linea) lineas.push(linea);
-      linea = palabra;
+  for (const parrafo of normalizado.split("\n")) {
+    if (parrafo.trim() === "") {
+      lineas.push("");
+      continue;
     }
+    const palabras = parrafo.replace(/[ \t]+/g, " ").trim().split(" ");
+    let linea = "";
+    for (const palabra of palabras) {
+      const prueba = linea ? `${linea} ${palabra}` : palabra;
+      if (font.widthOfTextAtSize(prueba, fontSize) <= anchoMax) {
+        linea = prueba;
+        continue;
+      }
+      if (linea) lineas.push(linea);
+      if (font.widthOfTextAtSize(palabra, fontSize) <= anchoMax) {
+        linea = palabra;
+        continue;
+      }
+      let fragmento = "";
+      for (const ch of palabra) {
+        const t = fragmento + ch;
+        if (font.widthOfTextAtSize(t, fontSize) <= anchoMax) {
+          fragmento = t;
+        } else {
+          if (fragmento) lineas.push(fragmento);
+          fragmento = ch;
+        }
+      }
+      linea = fragmento;
+    }
+    if (linea) lineas.push(linea);
   }
-  if (linea) lineas.push(linea);
   return lineas;
 }
 
-interface Caja {
+interface CajaFija {
   x: number;
   yTop: number;
   width: number;
   fontSize?: number;
-  lineHeight?: number;
   maxLines?: number;
+  lineHeight?: number;
 }
 
-function escribirEnCaja(page: PDFPage, font: PDFFont, texto: string, caja: Caja) {
+/** Texto corto en casilla fija (sin ampliar). */
+function escribirEnCaja(page: PDFPage, font: PDFFont, texto: string, caja: CajaFija) {
   const fontSize = caja.fontSize ?? 8;
-  const lineHeight = caja.lineHeight ?? 10;
-  const maxLines = caja.maxLines ?? 8;
-  const lineas = partirTexto(texto, font, fontSize, caja.width - 4).slice(0, maxLines);
+  const lineHeight = caja.lineHeight ?? fontSize + 2;
+  const maxLines = caja.maxLines ?? 1;
+  const lineas = partirTexto(texto ?? "", font, fontSize, caja.width - 4).slice(0, maxLines);
   lineas.forEach((linea, indice) => {
     page.drawText(linea, {
       x: caja.x + 2,
       y: yDesdeArriba(caja.yTop + indice * lineHeight, fontSize),
       size: fontSize,
+      font,
+    });
+  });
+}
+
+interface CajaAmpliable {
+  x: number;
+  /** Borde superior del cuadro (desde arriba de la página). */
+  yTop: number;
+  /** Borde inferior nominal del cuadro. */
+  yBottom: number;
+  /**
+   * Si el texto no cabe ni con la fuente mínima, el cuadro puede bajar
+   * hasta este límite (sigue siendo el mismo bloque del formulario).
+   */
+  yBottomMax?: number;
+  width: number;
+  /** Fuente preferida; se reduce hasta que quepa todo. */
+  fontSizeMax?: number;
+  fontSizeMin?: number;
+}
+
+/**
+ * Escribe TODO el texto en el mismo cuadro: reduce fuente e interlineado
+ * y, si hace falta, amplía el alto usable del cuadro hasta yBottomMax.
+ */
+function escribirEnCuadroAmpliado(
+  page: PDFPage,
+  font: PDFFont,
+  texto: string,
+  caja: CajaAmpliable,
+) {
+  const textoLimpio = textoCompatibleWinAnsi(texto ?? "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (!textoLimpio) return;
+
+  const ancho = caja.width - 4;
+  const fontMax = caja.fontSizeMax ?? 8;
+  const fontMin = caja.fontSizeMin ?? 4;
+  const yBottomLimite = caja.yBottomMax ?? caja.yBottom;
+
+  let yBottomUsado = caja.yBottom;
+  let elegido = {
+    fontSize: fontMin,
+    lineHeight: fontMin + 1,
+    lineas: partirTexto(textoLimpio, font, fontMin, ancho),
+  };
+
+  const intentar = (yBottom: number) => {
+    const alto = Math.max(8, yBottom - caja.yTop);
+    for (let fs = fontMax; fs >= fontMin - 0.01; fs -= 0.25) {
+      const lineHeight = Math.max(fs + 0.8, fs * 1.12);
+      const lineas = partirTexto(textoLimpio, font, fs, ancho);
+      if (lineas.length * lineHeight <= alto + 0.5) {
+        return { ok: true as const, fontSize: fs, lineHeight, lineas, yBottom };
+      }
+      elegido = { fontSize: fs, lineHeight, lineas };
+    }
+    const lineHeight = Math.max(elegido.fontSize * 0.92, alto / Math.max(1, elegido.lineas.length));
+    return {
+      ok: elegido.lineas.length * lineHeight <= alto + 0.5,
+      fontSize: elegido.fontSize,
+      lineHeight,
+      lineas: elegido.lineas,
+      yBottom,
+    };
+  };
+
+  let resultado = intentar(caja.yBottom);
+  if (!resultado.ok && yBottomLimite > caja.yBottom) {
+    // Ampliar el cuadro hacia abajo hasta lograr caber el texto.
+    for (let yb = caja.yBottom + 4; yb <= yBottomLimite; yb += 4) {
+      resultado = intentar(yb);
+      yBottomUsado = yb;
+      if (resultado.ok) break;
+    }
+  } else {
+    yBottomUsado = resultado.yBottom;
+  }
+
+  resultado.lineas.forEach((linea, indice) => {
+    const yTopLinea = caja.yTop + indice * resultado.lineHeight;
+    if (yTopLinea + resultado.fontSize > yBottomUsado + 1.5) return;
+    page.drawText(linea || " ", {
+      x: caja.x + 2,
+      y: yDesdeArriba(yTopLinea, resultado.fontSize),
+      size: resultado.fontSize,
       font,
     });
   });
@@ -121,26 +230,40 @@ function escribirPagina1(page: PDFPage, font: PDFFont, registro: RegistroNcDatos
 
   marcarOrigen(page, font, registro.origen);
 
-  escribirEnCaja(page, font, registro.descripcion, {
-    x: 68, yTop: 227, width: 458, fontSize: 8, lineHeight: 10, maxLines: 7,
+  // Descripción: todo el bloque hasta "detectada por"
+  escribirEnCuadroAmpliado(page, font, registro.descripcion, {
+    x: 68, yTop: 220, yBottom: 298, width: 458, fontSizeMax: 8, fontSizeMin: 4.5,
   });
 
-  const detectada = [registro.detectadaPorNombre, registro.detectadaPorCargo].filter(Boolean).join(" — ");
+  const detectada = [registro.detectadaPorNombre, registro.detectadaPorCargo].filter(Boolean).join(" - ");
   escribirEnCaja(page, font, detectada, { x: 258, yTop: 305, width: 268, fontSize: 8, maxLines: 1 });
 
-  escribirEnCaja(page, font, registro.tratamientoInmediato, {
-    x: 68, yTop: 344, width: 458, fontSize: 8, lineHeight: 10, maxLines: 5,
+  escribirEnCuadroAmpliado(page, font, registro.tratamientoInmediato, {
+    x: 68, yTop: 338, yBottom: 392, width: 458, fontSizeMax: 8, fontSizeMin: 4.5,
   });
-  escribirEnCaja(page, font, registro.tratamientoInmediatoPor, { x: 158, yTop: 399, width: 130, fontSize: 8, maxLines: 1 });
+
+  escribirEnCaja(page, font, registro.tratamientoInmediatoPor, {
+    x: 158, yTop: 399, width: 130, fontSize: 8, maxLines: 1,
+  });
   escribirEnCaja(page, font, formatearFecha(registro.tratamientoInmediatoFecha), {
     x: 338, yTop: 399, width: 185, fontSize: 8, maxLines: 1,
   });
-  escribirEnCaja(page, font, registro.herramientaCausa, {
-    x: 187, yTop: 455, width: 340, fontSize: 8, lineHeight: 11, maxLines: 3,
+
+  escribirEnCuadroAmpliado(page, font, registro.herramientaCausa, {
+    x: 187, yTop: 448, yBottom: 492, width: 340, fontSizeMax: 8, fontSizeMin: 5,
   });
-  escribirEnCaja(page, font, registro.resumenCausa, {
-    x: 66, yTop: 511, width: 460, fontSize: 8, lineHeight: 10, maxLines: 6,
+
+  // Resumen de causa: mismo cuadro; baja fuente y, si hace falta, amplía el alto
+  escribirEnCuadroAmpliado(page, font, registro.resumenCausa, {
+    x: 66,
+    yTop: 500,
+    yBottom: 576,
+    yBottomMax: 628,
+    width: 460,
+    fontSizeMax: 8,
+    fontSizeMin: 3.5,
   });
+
   escribirEnCaja(page, font, registro.analisisPor, { x: 226, yTop: 580, width: 135, fontSize: 8, maxLines: 1 });
   escribirEnCaja(page, font, formatearFecha(registro.analisisFecha), {
     x: 412, yTop: 580, width: 115, fontSize: 8, maxLines: 1,
@@ -154,7 +277,7 @@ function escribirFilaPlan(
   font: PDFFont,
   fila: RegistroNcDatos["planAccion"][number],
   yTop: number,
-  maxLines: number,
+  yBottom: number,
 ) {
   const columnas = [
     { x: 56, width: 112 },
@@ -164,8 +287,13 @@ function escribirFilaPlan(
   ];
   const valores = [fila.actividad, fila.responsable, formatearFecha(fila.fechaEntrega), fila.evidencia];
   columnas.forEach((col, indice) => {
-    escribirEnCaja(page, font, valores[indice], {
-      x: col.x, yTop, width: col.width, fontSize: 7, lineHeight: 9, maxLines,
+    escribirEnCuadroAmpliado(page, font, valores[indice], {
+      x: col.x,
+      yTop,
+      yBottom,
+      width: col.width,
+      fontSizeMax: 7,
+      fontSizeMin: 4.5,
     });
   });
 }
@@ -175,6 +303,7 @@ function escribirFilaSeguimiento(
   font: PDFFont,
   fila: RegistroNcDatos["seguimientoFilas"][number],
   yTop: number,
+  yBottom: number,
 ) {
   const columnas = [
     { x: 56, width: 134 },
@@ -184,19 +313,21 @@ function escribirFilaSeguimiento(
   ];
   const valores = [fila.actividad, textoSiNo(fila.cumplido), textoSiNo(fila.fueEficaz), fila.porque];
   columnas.forEach((col, indice) => {
-    escribirEnCaja(page, font, valores[indice], {
-      x: col.x, yTop, width: col.width, fontSize: 7, lineHeight: 9, maxLines: 2,
+    escribirEnCuadroAmpliado(page, font, valores[indice], {
+      x: col.x, yTop, yBottom, width: col.width, fontSizeMax: 7, fontSizeMin: 4.5,
     });
   });
 }
 
 function escribirPagina2(page: PDFPage, font: PDFFont, registro: RegistroNcDatos) {
+  // Tres filas de plan en el área de la tabla (antes solo 2 y se perdía texto).
   const filasPlan = [
-    { yTop: 182, maxLines: 5 },
-    { yTop: 238, maxLines: 4 },
+    { yTop: 175, yBottom: 228 },
+    { yTop: 230, yBottom: 278 },
+    { yTop: 280, yBottom: 322 },
   ];
   registro.planAccion.slice(0, filasPlan.length).forEach((fila, indice) => {
-    escribirFilaPlan(page, font, fila, filasPlan[indice].yTop, filasPlan[indice].maxLines);
+    escribirFilaPlan(page, font, fila, filasPlan[indice].yTop, filasPlan[indice].yBottom);
   });
 
   escribirEnCaja(page, font, registro.seguimientoCumplimiento, {
@@ -206,20 +337,26 @@ function escribirPagina2(page: PDFPage, font: PDFFont, registro: RegistroNcDatos
     x: 290, yTop: 337, width: 245, fontSize: 8, maxLines: 1,
   });
 
-  const filasSegY = [388, 444, 487];
-  registro.seguimientoFilas.slice(0, filasSegY.length).forEach((fila, indice) => {
-    escribirFilaSeguimiento(page, font, fila, filasSegY[indice]);
+  const filasSeg = [
+    { yTop: 382, yBottom: 430 },
+    { yTop: 432, yBottom: 475 },
+    { yTop: 477, yBottom: 518 },
+  ];
+  registro.seguimientoFilas.slice(0, filasSeg.length).forEach((fila, indice) => {
+    escribirFilaSeguimiento(page, font, fila, filasSeg[indice].yTop, filasSeg[indice].yBottom);
   });
 
   const verificado = [registro.verificadoPorNombre, registro.verificadoPorCargo]
     .filter(Boolean)
-    .join(" — ");
-  escribirEnCaja(page, font, verificado, { x: 250, yTop: 530, width: 285, fontSize: 8, lineHeight: 10, maxLines: 2 });
+    .join(" - ");
+  escribirEnCaja(page, font, verificado, {
+    x: 250, yTop: 530, width: 285, fontSize: 8, lineHeight: 10, maxLines: 2,
+  });
 
   marcarSiNo(page, font, registro.tratamientoEficaz, 242, 287, 584);
 
-  escribirEnCaja(page, font, registro.tratamientoEficazPorque, {
-    x: 71, yTop: 626, width: 465, fontSize: 8, lineHeight: 10, maxLines: 8,
+  escribirEnCuadroAmpliado(page, font, registro.tratamientoEficazPorque, {
+    x: 71, yTop: 620, yBottom: 720, width: 465, fontSizeMax: 8, fontSizeMin: 4.5,
   });
 }
 
