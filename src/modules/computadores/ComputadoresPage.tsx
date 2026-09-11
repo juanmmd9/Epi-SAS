@@ -19,6 +19,7 @@ import {
   parseFechaExcel,
   pmProximoEnDias,
   pmVencido,
+  sumarMeses,
 } from "./computadoresUtil";
 import {
   ETIQUETAS_TIPO_COMPUTADOR,
@@ -471,8 +472,25 @@ function ComputadoresPage() {
               <input
                 type="date"
                 value={campos.ultimo_pm ?? ""}
+                onChange={(e) => {
+                  const ultimo = e.target.value || null;
+                  setCampos((c) => ({
+                    ...c,
+                    ultimo_pm: ultimo,
+                    proximo_pm: ultimo
+                      ? sumarMeses(ultimo, c.frecuencia_pm_meses)
+                      : c.proximo_pm,
+                  }));
+                }}
+              />
+            </label>
+            <label>
+              Próximo PM
+              <input
+                type="date"
+                value={campos.proximo_pm ?? ""}
                 onChange={(e) =>
-                  setCampos((c) => ({ ...c, ultimo_pm: e.target.value || null }))
+                  setCampos((c) => ({ ...c, proximo_pm: e.target.value || null }))
                 }
               />
             </label>
