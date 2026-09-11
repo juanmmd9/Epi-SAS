@@ -67,7 +67,7 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
       datos.pruebasFuncionamiento ||
       (datos.detalleInspeccionVisual || "").trim() ||
       (datos.detallePruebasFuncionamiento || "").trim() ||
-      (datos.verificacionEquipoPm || "").trim() ||
+      (datos.firmaVerificacion || "").trim() ||
       (datos.responsableVerificacion || "").trim(),
   );
 
