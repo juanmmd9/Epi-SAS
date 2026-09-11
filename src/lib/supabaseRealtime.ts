@@ -5,8 +5,15 @@ import type {
 } from "@supabase/supabase-js";
 import { supabase } from "../services/supabase";
 
+type EventoPostgres = "*" | "INSERT" | "UPDATE" | "DELETE";
+
 type Binding = {
-  filter: RealtimePostgresChangesFilter<"*">;
+  filter: {
+    event: EventoPostgres;
+    schema: string;
+    table: string;
+    filter?: string;
+  };
   handler: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void;
 };
 
@@ -30,7 +37,11 @@ export function suscribirPostgresChanges(
 
     let canal = supabase.channel(nombreCanal);
     for (const b of bindings) {
-      canal = canal.on("postgres_changes", b.filter, b.handler);
+      canal = canal.on(
+        "postgres_changes",
+        b.filter as RealtimePostgresChangesFilter<EventoPostgres>,
+        b.handler,
+      );
     }
     if (onStatus) {
       canal.subscribe((status) => onStatus(status));
