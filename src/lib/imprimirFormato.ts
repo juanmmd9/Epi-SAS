@@ -7,9 +7,16 @@ export function imprimirFormatoHtml(idFormato = ID_FORMATO): void {
     throw new Error("No se encontró la vista previa del formato para imprimir.");
   }
 
+  const limpiar = () => {
+    document.body.classList.remove("imprimiendo-formato");
+    window.removeEventListener("afterprint", limpiar);
+  };
+
   document.body.classList.add("imprimiendo-formato");
+  window.addEventListener("afterprint", limpiar);
+  // Fallback si el navegador no dispara afterprint
+  window.setTimeout(limpiar, 60_000);
   window.print();
-  window.setTimeout(() => document.body.classList.remove("imprimiendo-formato"), 500);
 }
 
 export { ID_FORMATO };

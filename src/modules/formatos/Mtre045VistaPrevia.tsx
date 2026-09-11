@@ -164,58 +164,71 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
         </tbody>
       </table>
 
-      <table className="mtre045-preview__tabla mtre045-preview__tabla--cols3">
+      <table className="mtre045-preview__tabla mtre045-preview__tabla--cols2">
         <tbody>
           <tr>
-            <td colSpan={3} className="mtre045-preview__fila-titulo">
+            <td colSpan={2} className="mtre045-preview__fila-titulo">
               ACTIVIDAD REALIZADA
             </td>
           </tr>
           <tr>
-            <td className="mtre045-preview__celda-texto mtre045-preview__celda-alta">
+            <td
+              className="mtre045-preview__celda-texto mtre045-preview__celda-alta"
+              colSpan={marcaCorrectivo ? 1 : 2}
+            >
               {datos.actividadRealizada || ""}
             </td>
-            <td className="mtre045-preview__celda-texto mtre045-preview__celda-alta">
-              {datos.actividadCorrectivo || ""}
-            </td>
-            <td className="mtre045-preview__celda-texto" />
+            {marcaCorrectivo ? (
+              <td className="mtre045-preview__celda-texto mtre045-preview__celda-alta">
+                {datos.actividadCorrectivo || ""}
+              </td>
+            ) : null}
           </tr>
           <tr>
-            <td colSpan={3} className="mtre045-preview__fila-titulo">
+            <td colSpan={2} className="mtre045-preview__fila-titulo">
               CAMBIO DE REPUESTOS O INSUMOS
             </td>
           </tr>
           <tr>
-            <td className="mtre045-preview__celda-repuestos">
+            <td
+              className="mtre045-preview__celda-repuestos"
+              colSpan={marcaCorrectivo ? 1 : 2}
+            >
               <ol className="mtre045-preview__lista-num">
                 {repuestosPm.map((linea, i) => (
                   <li key={`pm-${i}`}>{linea}</li>
                 ))}
               </ol>
             </td>
-            <td className="mtre045-preview__celda-repuestos">
-              <ol className="mtre045-preview__lista-num">
-                {repuestosCorr.map((linea, i) => (
-                  <li key={`corr-${i}`}>{linea}</li>
-                ))}
-              </ol>
-            </td>
-            <td />
+            {marcaCorrectivo ? (
+              <td className="mtre045-preview__celda-repuestos">
+                <ol className="mtre045-preview__lista-num">
+                  {repuestosCorr.map((linea, i) => (
+                    <li key={`corr-${i}`}>{linea}</li>
+                  ))}
+                </ol>
+              </td>
+            ) : null}
           </tr>
           <tr>
-            <td colSpan={3} className="mtre045-preview__fila-titulo">
+            <td colSpan={2} className="mtre045-preview__fila-titulo">
               VERIFICACIÓN DEL EQUIPO
             </td>
           </tr>
           <tr>
-            <td className="mtre045-preview__celda-texto">{datos.verificacionEquipoPm || ""}</td>
-            <td className="mtre045-preview__celda-texto">{datos.verificacionCorrectivo || ""}</td>
-            <td />
+            <td
+              className="mtre045-preview__celda-texto"
+              colSpan={marcaCorrectivo ? 1 : 2}
+            >
+              {datos.verificacionEquipoPm || ""}
+            </td>
+            {marcaCorrectivo ? (
+              <td className="mtre045-preview__celda-texto">{datos.verificacionCorrectivo || ""}</td>
+            ) : null}
           </tr>
           <tr>
             <th>INSPECCIÓN VISUAL</th>
             <th>PRUEBAS DE FUNCIONAMIENTO</th>
-            <th />
           </tr>
           <tr>
             <td className="mtre045-preview__celda-an">
@@ -224,7 +237,6 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
             <td className="mtre045-preview__celda-an">
               <CeldaAn valor={datos.pruebasFuncionamiento} />
             </td>
-            <td />
           </tr>
         </tbody>
       </table>

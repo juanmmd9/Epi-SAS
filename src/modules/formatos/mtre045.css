@@ -183,10 +183,20 @@
   width: 28%;
 }
 
-.mtre045-preview__tabla--cols3 th {
+.mtre045-preview__tabla--cols3 th,
+.mtre045-preview__tabla--cols2 th {
   width: auto;
   text-align: center;
   font-size: 0.72rem;
+}
+
+.mtre045-preview__tabla--cols2 {
+  table-layout: fixed;
+}
+
+.mtre045-preview__tabla--cols2 > tbody > tr > td:not([colspan]),
+.mtre045-preview__tabla--cols2 > tbody > tr > th:not([colspan]) {
+  width: 50%;
 }
 
 .mtre045-preview__fila-titulo {
@@ -525,6 +535,11 @@
 }
 
 @media print {
+  @page {
+    size: letter portrait;
+    margin: 12mm;
+  }
+
   body.imprimiendo-formato aside,
   body.imprimiendo-formato .formatos__cabecera,
   body.imprimiendo-formato .mtre045-page__layout,
@@ -532,9 +547,17 @@
   body.imprimiendo-formato .mtre045-lista-pm,
   body.imprimiendo-formato .formatos__mensaje,
   body.imprimiendo-formato .layout__topbar,
+  body.imprimiendo-formato .layout__cuerpo > .sidebar,
   body.imprimiendo-formato .sidebar,
-  body.imprimiendo-formato .permisos__preview-barra {
+  body.imprimiendo-formato .bottom-nav,
+  body.imprimiendo-formato .mas-sheet,
+  body.imprimiendo-formato .mas-sheet__backdrop,
+  body.imprimiendo-formato .permisos__preview-barra,
+  body.imprimiendo-formato .avisos-globales,
+  body.imprimiendo-formato [class*="Aviso"],
+  body.imprimiendo-formato .badge-flotante {
     display: none !important;
+    visibility: hidden !important;
   }
 
   body.imprimiendo-formato .mtre045-panel-preview,
@@ -546,6 +569,8 @@
     display: none !important;
   }
 
+  body.imprimiendo-formato,
+  body.imprimiendo-formato .layout__cuerpo,
   body.imprimiendo-formato .layout__contenido,
   body.imprimiendo-formato .mtre045-page,
   body.imprimiendo-formato .mtre045-panel-preview,
@@ -553,9 +578,11 @@
     padding: 0 !important;
     margin: 0 !important;
     max-height: none !important;
+    height: auto !important;
     overflow: visible !important;
     background: #fff !important;
     border: none !important;
+    box-shadow: none !important;
   }
 
   body.imprimiendo-formato .mtre045-preview {
@@ -576,5 +603,29 @@
     max-height: 3.6rem;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Evitar filas/bloques partidos y números de lista vacíos en la 2ª página */
+  body.imprimiendo-formato .mtre045-preview__cabecera-oficial,
+  body.imprimiendo-formato .mtre045-preview__firmas,
+  body.imprimiendo-formato .mtre045-preview__tabla--diagnostico-tipo,
+  body.imprimiendo-formato .mtre045-preview__tabla--encabezado {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body.imprimiendo-formato .mtre045-preview__tabla--cols3 tr,
+  body.imprimiendo-formato .mtre045-preview__tabla--cols2 tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body.imprimiendo-formato .mtre045-preview__lista-num li:empty {
+    display: none !important;
+  }
+
+  /* Si la lista queda sin ítems visibles, no dejes la celda empujando a otra página */
+  body.imprimiendo-formato .mtre045-preview__celda-repuestos {
+    min-height: 0;
   }
 }
