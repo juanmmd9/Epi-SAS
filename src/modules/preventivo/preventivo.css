@@ -345,6 +345,22 @@
   gap: 0.6rem;
 }
 
+.firma-pad__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.firma-pad__input-archivo {
+  display: none;
+}
+
+.firma-pad__error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #b91c1c;
+}
+
 .firma-pad__lienzo {
   position: relative;
   width: 100%;

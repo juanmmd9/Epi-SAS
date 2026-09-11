@@ -383,8 +383,8 @@ function AprobacionPmPage() {
                 : ""}
             </p>
             <p className="firma-modal__ayuda">
-              Dibuje su firma con el dedo. Quedará guardada en el MT-RE-045 como responsable de
-              verificación.
+              Dibuje su firma con el dedo o cargue una imagen del PC. Quedará guardada en el
+              MT-RE-045 como responsable de verificación.
             </p>
             <FirmaPad
               reinicioClave={registroParaFirmar.id}

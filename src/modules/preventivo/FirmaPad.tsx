@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 
 type Props = {
   onChange: (dataUrl: string | null) => void;
@@ -9,16 +9,18 @@ type Props = {
 type Punto = { x: number; y: number };
 
 /**
- * Lienzo para firmar con dedo (touch/pointer) o mouse.
- * Pensado para Android WebView (Capacitor).
+ * Lienzo para firmar con dedo (touch/pointer), mouse o imagen cargada del PC.
+ * Pensado para Android WebView (Capacitor) y escritorio.
  */
 function FirmaPad({ onChange, reinicioClave = "" }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const inputArchivoRef = useRef<HTMLInputElement | null>(null);
   const dibujando = useRef(false);
   const ultimo = useRef<Punto | null>(null);
   const tieneTrazado = useRef(false);
   const onChangeRef = useRef(onChange);
   const [vacio, setVacio] = useState(true);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
 
   onChangeRef.current = onChange;
 
@@ -73,12 +75,73 @@ function FirmaPad({ onChange, reinicioClave = "" }: Props) {
     ultimo.current = null;
     ajustarTamano();
     setVacio(true);
+    setErrorCarga(null);
   }, [ajustarTamano]);
 
   const limpiar = useCallback(() => {
     limpiarCanvas();
     onChangeRef.current(null);
+    if (inputArchivoRef.current) inputArchivoRef.current.value = "";
   }, [limpiarCanvas]);
+
+  const dibujarImagenEnCanvas = useCallback(
+    (dataUrl: string) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      ajustarTamano();
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const anchoCss = canvas.clientWidth || 280;
+      const altoCss = canvas.clientHeight || 180;
+      const img = new Image();
+      img.onload = () => {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, anchoCss, altoCss);
+        const escala = Math.min(anchoCss / img.width, altoCss / img.height);
+        const w = img.width * escala;
+        const h = img.height * escala;
+        const x = (anchoCss - w) / 2;
+        const y = (altoCss - h) / 2;
+        ctx.drawImage(img, x, y, w, h);
+        tieneTrazado.current = true;
+        setVacio(false);
+        setErrorCarga(null);
+        onChangeRef.current(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => {
+        setErrorCarga("No se pudo leer la imagen. Prueba con PNG o JPG.");
+        onChangeRef.current(null);
+      };
+      img.src = dataUrl;
+    },
+    [ajustarTamano],
+  );
+
+  function manejarArchivo(evento: ChangeEvent<HTMLInputElement>) {
+    const archivo = evento.target.files?.[0];
+    if (!archivo) return;
+    if (!archivo.type.startsWith("image/")) {
+      setErrorCarga("Selecciona un archivo de imagen (PNG, JPG, etc.).");
+      evento.target.value = "";
+      return;
+    }
+    if (archivo.size > 1.5 * 1024 * 1024) {
+      setErrorCarga("La imagen es muy pesada (máx. 1.5 MB).");
+      evento.target.value = "";
+      return;
+    }
+    const lector = new FileReader();
+    lector.onload = () => {
+      const resultado = typeof lector.result === "string" ? lector.result : null;
+      if (!resultado) {
+        setErrorCarga("No se pudo cargar la imagen.");
+        return;
+      }
+      dibujarImagenEnCanvas(resultado);
+    };
+    lector.onerror = () => setErrorCarga("Error al leer el archivo.");
+    lector.readAsDataURL(archivo);
+  }
 
   useEffect(() => {
     limpiarCanvas();
@@ -148,7 +211,6 @@ function FirmaPad({ onChange, reinicioClave = "" }: Props) {
     emitirFirma();
   }
 
-  // Listeners nativos: en Android WebView son más fiables que solo React pointer.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -216,11 +278,30 @@ function FirmaPad({ onChange, reinicioClave = "" }: Props) {
     <div className="firma-pad">
       <div className="firma-pad__lienzo">
         <canvas ref={canvasRef} className="firma-pad__canvas" />
-        {vacio && <span className="firma-pad__guia">Firme aquí con el dedo</span>}
+        {vacio && (
+          <span className="firma-pad__guia">Firme aquí con el dedo o cargue una imagen</span>
+        )}
       </div>
-      <button type="button" className="btn" onClick={limpiar}>
-        Limpiar firma
-      </button>
+      <div className="firma-pad__acciones">
+        <button type="button" className="btn" onClick={limpiar}>
+          Limpiar firma
+        </button>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => inputArchivoRef.current?.click()}
+        >
+          Cargar imagen del PC
+        </button>
+        <input
+          ref={inputArchivoRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="firma-pad__input-archivo"
+          onChange={manejarArchivo}
+        />
+      </div>
+      {errorCarga ? <p className="firma-pad__error">{errorCarga}</p> : null}
     </div>
   );
 }

@@ -414,7 +414,7 @@ function PreventivoPage() {
     }
 
     if (!firmaOperador) {
-      setError("Firme con el dedo en el recuadro de firma del operador antes de guardar.");
+      setError("Firme en el recuadro (dedo o imagen) antes de guardar.");
       return;
     }
 
@@ -701,7 +701,8 @@ function PreventivoPage() {
           <div className="preventivo-form__firma-operador">
             <h3>Firma del operador *</h3>
             <p className="preventivo-form__ayuda">
-              Firme con el dedo. Quedará en el MT-RE-045 como responsable del mantenimiento.
+              Firme con el dedo o cargue una imagen. Quedará en el MT-RE-045 como responsable del
+              mantenimiento.
             </p>
             <FirmaPad reinicioClave={claveFirmaOperador} onChange={setFirmaOperador} />
             {firmaOperador ? (
