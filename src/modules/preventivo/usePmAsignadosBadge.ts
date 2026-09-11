@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
 import { useAuth } from "../auth/AuthContext";
-import { supabase } from "../../services/supabase";
 import { contarMisPmPendientes } from "./pmAsignadosService";
 
 const INTERVALO_MS = 25_000;
@@ -27,6 +27,9 @@ export function usePmAsignadosBadge(): number {
       // Silencioso en navegación.
     }
   }, [habilitado, personalId]);
+
+  const refrescarRef = useRef(refrescar);
+  refrescarRef.current = refrescar;
 
   useEffect(() => {
     if (!habilitado) {
@@ -54,26 +57,21 @@ export function usePmAsignadosBadge(): number {
 
   useEffect(() => {
     if (!habilitado || !personalId) return;
-    const canal = supabase
-      .channel(`pm-asignados-badge-${personalId}-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "preventivo_asignaciones" },
-        (payload) => {
+    const canal = suscribirPostgresChanges(`pm-asignados-badge-${personalId}`, [
+      {
+        filter: { event: "*", schema: "public", table: "preventivo_asignaciones" },
+        handler: (payload) => {
           const fila = (payload.new ?? payload.old) as { personal_id?: string } | null;
-          if (fila?.personal_id === personalId) void refrescar();
+          if (fila?.personal_id === personalId) void refrescarRef.current();
         },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "preventivo" },
-        () => void refrescar(),
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(canal);
-    };
-  }, [habilitado, personalId, refrescar]);
+      },
+      {
+        filter: { event: "*", schema: "public", table: "preventivo" },
+        handler: () => void refrescarRef.current(),
+      },
+    ]);
+    return () => quitarCanalRealtime(canal);
+  }, [habilitado, personalId]);
 
   return cantidad;
 }

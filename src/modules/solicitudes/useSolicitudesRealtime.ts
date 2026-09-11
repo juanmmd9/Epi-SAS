@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { supabase } from "../../services/supabase";
+import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
 import { listarCorrectivo } from "../correctivo/correctivoService";
 import type { RegistroCorrectivo } from "../correctivo/types";
 import {
@@ -168,6 +168,11 @@ export function useSolicitudesRealtime({
     }
   }, [procesarNueva]);
 
+  const procesarNuevaRef = useRef(procesarNueva);
+  procesarNuevaRef.current = procesarNueva;
+  const sondearNuevasRef = useRef(sondearNuevas);
+  sondearNuevasRef.current = sondearNuevas;
+
   // Realtime (inmediato) + sondeo de respaldo cada 8 s
   useEffect(() => {
     if (!habilitado) {
@@ -178,34 +183,36 @@ export function useSolicitudesRealtime({
 
     void solicitarPermisoNotificaciones();
 
-    const canal = supabase
-      .channel(`solicitudes-correctivo-${areaFiltro || "todas"}-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "correctivo" },
-        (payload) => {
-          const registro = registroDesdeRealtime(payload.new as Record<string, unknown>);
-          if (!registro) return;
-          void procesarNueva(registro);
+    const canal = suscribirPostgresChanges(
+      `solicitudes-correctivo-${areaFiltro || "todas"}`,
+      [
+        {
+          filter: { event: "INSERT", schema: "public", table: "correctivo" },
+          handler: (payload) => {
+            const registro = registroDesdeRealtime(
+              (payload.new ?? {}) as Record<string, unknown>,
+            );
+            if (!registro) return;
+            void procesarNuevaRef.current(registro);
+          },
         },
-      )
-      .subscribe((estado) => {
-        setEnLinea(estado === "SUBSCRIBED");
-      });
+      ],
+      (estado) => setEnLinea(estado === "SUBSCRIBED"),
+    );
 
     setSondeoActivo(true);
-    void sondearNuevas();
+    void sondearNuevasRef.current();
     const timer = window.setInterval(() => {
-      void sondearNuevas();
+      void sondearNuevasRef.current();
     }, INTERVALO_SONDEO_MS);
 
     return () => {
       window.clearInterval(timer);
       setSondeoActivo(false);
-      void supabase.removeChannel(canal);
+      quitarCanalRealtime(canal);
       setEnLinea(false);
     };
-  }, [habilitado, areaFiltro, procesarNueva, sondearNuevas]);
+  }, [habilitado, areaFiltro]);
 
   // Al volver a la pestaña, revisar al instante
   useEffect(() => {

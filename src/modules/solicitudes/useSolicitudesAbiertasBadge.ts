@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { coincideArea } from "../../lib/areas";
+import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
 import { useAuth } from "../auth/AuthContext";
 import { listarCorrectivo } from "../correctivo/correctivoService";
-import { supabase } from "../../services/supabase";
 import {
   existeTablaAsignacionesCorrectivo,
   listarAsignacionesCorrectivo,
@@ -13,6 +13,7 @@ import {
 import { solicitudAbierta } from "./solicitudesCalculo";
 
 const INTERVALO_MS = 20_000;
+const CANAL_BADGE = "solicitudes-abiertas-badge";
 
 /**
  * Badge de solicitudes.
@@ -70,6 +71,9 @@ export function useSolicitudesAbiertasBadge(): number {
     }
   }, [habilitado, rol, perfil?.personal_id, perfil?.area]);
 
+  const refrescarRef = useRef(refrescar);
+  refrescarRef.current = refrescar;
+
   useEffect(() => {
     if (!habilitado) {
       setCantidad(0);
@@ -96,23 +100,18 @@ export function useSolicitudesAbiertasBadge(): number {
 
   useEffect(() => {
     if (!habilitado) return;
-    const canal = supabase
-      .channel(`solicitudes-abiertas-badge-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "correctivo" },
-        () => void refrescar(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "correctivo_asignaciones" },
-        () => void refrescar(),
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(canal);
-    };
-  }, [habilitado, refrescar]);
+    const canal = suscribirPostgresChanges(CANAL_BADGE, [
+      {
+        filter: { event: "*", schema: "public", table: "correctivo" },
+        handler: () => void refrescarRef.current(),
+      },
+      {
+        filter: { event: "*", schema: "public", table: "correctivo_asignaciones" },
+        handler: () => void refrescarRef.current(),
+      },
+    ]);
+    return () => quitarCanalRealtime(canal);
+  }, [habilitado]);
 
   return cantidad;
 }

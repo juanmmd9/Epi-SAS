@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
+import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
 import { useAuth } from "../auth/AuthContext";
 import { supabase } from "../../services/supabase";
 import "./solicitudes.css";
@@ -77,23 +78,19 @@ function AvisosAsignacionCorrectivoGlobales() {
   useEffect(() => {
     if (!habilitado || !personalId) return;
 
-    const canal = supabase
-      .channel(`corr-asignacion-realtime-${personalId}-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "correctivo_asignaciones" },
-        (payload) => {
-          const fila = payload.new as Record<string, unknown>;
+    const canal = suscribirPostgresChanges(`corr-asignacion-realtime-${personalId}`, [
+      {
+        filter: { event: "INSERT", schema: "public", table: "correctivo_asignaciones" },
+        handler: (payload) => {
+          const fila = (payload.new ?? {}) as Record<string, unknown>;
           if (fila.personal_id !== personalId) return;
           if (fila.origen === "claim") return;
           void registrar(fila);
         },
-      )
-      .subscribe();
+      },
+    ]);
 
-    return () => {
-      void supabase.removeChannel(canal);
-    };
+    return () => quitarCanalRealtime(canal);
   }, [habilitado, personalId, registrar]);
 
   if (!habilitado || alertas.length === 0) return null;

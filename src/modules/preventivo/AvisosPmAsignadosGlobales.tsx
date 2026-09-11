@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
 import { useAuth } from "../auth/AuthContext";
-import { supabase } from "../../services/supabase";
 import { listarHojas } from "../hojas/hojasService";
 import {
   mostrarNotificacionPmAsignado,
@@ -66,33 +66,28 @@ function AvisosPmAsignadosGlobales() {
   useEffect(() => {
     if (!habilitado || !personalId) return;
 
-    const canal = supabase
-      .channel(`pm-asignacion-realtime-${personalId}-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "preventivo_asignaciones" },
-        (payload) => {
-          const fila = payload.new as Record<string, unknown>;
+    const canal = suscribirPostgresChanges(`pm-asignacion-realtime-${personalId}`, [
+      {
+        filter: { event: "INSERT", schema: "public", table: "preventivo_asignaciones" },
+        handler: (payload) => {
+          const fila = (payload.new ?? {}) as Record<string, unknown>;
           if (fila.personal_id !== personalId) return;
           registrarAlerta(fila);
         },
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "preventivo_asignaciones" },
-        (payload) => {
-          const fila = payload.new as Record<string, unknown>;
-          const anterior = payload.old as Record<string, unknown>;
+      },
+      {
+        filter: { event: "UPDATE", schema: "public", table: "preventivo_asignaciones" },
+        handler: (payload) => {
+          const fila = (payload.new ?? {}) as Record<string, unknown>;
+          const anterior = (payload.old ?? {}) as Record<string, unknown>;
           if (fila.personal_id !== personalId) return;
           if (anterior.personal_id === fila.personal_id) return;
           registrarAlerta(fila);
         },
-      )
-      .subscribe();
+      },
+    ]);
 
-    return () => {
-      void supabase.removeChannel(canal);
-    };
+    return () => quitarCanalRealtime(canal);
   }, [habilitado, personalId, registrarAlerta]);
 
   if (!habilitado || alertas.length === 0) return null;

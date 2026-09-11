@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { coincideArea } from "../../lib/areas";
+import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import { esPendienteAprobacionPm } from "../preventivo/aprobacionPm";
 import { listarPreventivo } from "../preventivo/preventivoService";
-import { supabase } from "../../services/supabase";
 
 const INTERVALO_MS = 20_000;
+const CANAL_BADGE = "pm-aprobacion-badge";
 
 /**
  * Cuenta PM pendientes de firma del líder (área del usuario, o todos si es admin).
@@ -39,6 +40,9 @@ export function usePendientesAprobacionPm(): number {
     }
   }, [habilitado, esAdmin, areaLider]);
 
+  const refrescarRef = useRef(refrescar);
+  refrescarRef.current = refrescar;
+
   useEffect(() => {
     if (!habilitado) {
       setCantidad(0);
@@ -69,20 +73,14 @@ export function usePendientesAprobacionPm(): number {
   // Realtime: si hay INSERT/UPDATE en preventivo, refresca el contador.
   useEffect(() => {
     if (!habilitado) return;
-    const canal = supabase
-      .channel(`pm-aprobacion-badge-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "preventivo" },
-        () => {
-          void refrescar();
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(canal);
-    };
-  }, [habilitado, refrescar]);
+    const canal = suscribirPostgresChanges(CANAL_BADGE, [
+      {
+        filter: { event: "*", schema: "public", table: "preventivo" },
+        handler: () => void refrescarRef.current(),
+      },
+    ]);
+    return () => quitarCanalRealtime(canal);
+  }, [habilitado]);
 
   return cantidad;
 }

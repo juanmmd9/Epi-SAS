@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import CargaPantalla from "../../components/CargaPantalla";
 import { AREAS_CON_PM } from "../../lib/areas";
 import { NOMBRES_MESES } from "../../lib/fechas";
+import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
 import { useAuth } from "../auth/AuthContext";
 import { listarUsuariosPortal } from "../auth/usuariosService";
 import { listarCorrectivo } from "../correctivo/correctivoService";
@@ -31,7 +32,6 @@ import {
 import MisSolicitudesPanel from "../solicitudes/MisSolicitudesPanel";
 import BandejaTomarPanel from "../solicitudes/BandejaTomarPanel";
 import { solicitudAbierta } from "../solicitudes/solicitudesCalculo";
-import { supabase } from "../../services/supabase";
 import CitaPmItem from "./CitaPmItem";
 import { construirDatosArea } from "./inicioDatosArea";
 import MisPmPanel from "./MisPmPanel";
@@ -163,20 +163,18 @@ function InicioPage() {
     const personalId = perfil?.personal_id;
     if (!personalId) return;
 
-    const canal = supabase
-      .channel(`inicio-mis-asig-${personalId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "correctivo_asignaciones" },
-        (payload) => {
+    const canal = suscribirPostgresChanges(`inicio-mis-asig-${personalId}`, [
+      {
+        filter: { event: "*", schema: "public", table: "correctivo_asignaciones" },
+        handler: (payload) => {
           const n = payload.new as Record<string, unknown> | null;
           const o = payload.old as Record<string, unknown> | null;
           const pid = (n?.personal_id ?? o?.personal_id) as string | undefined;
           if (pid !== personalId) return;
           void refrescarMisSolicitudesSilencioso();
         },
-      )
-      .subscribe();
+      },
+    ]);
 
     function alVolver() {
       if (document.visibilityState === "visible") {
@@ -189,7 +187,7 @@ function InicioPage() {
     }, 12_000);
 
     return () => {
-      void supabase.removeChannel(canal);
+      quitarCanalRealtime(canal);
       document.removeEventListener("visibilitychange", alVolver);
       window.clearInterval(poll);
     };

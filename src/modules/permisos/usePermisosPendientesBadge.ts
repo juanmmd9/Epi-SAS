@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
 import { useAuth } from "../auth/AuthContext";
 import { listarPermisosPendientes } from "./permisosService";
-import { supabase } from "../../services/supabase";
 
 const INTERVALO_MS = 20_000;
+const CANAL_BADGE = "permisos-pendientes-badge";
 
 /**
  * Cuenta permisos en estado «solicitado» para el badge del admin que aprueba.
@@ -27,6 +28,9 @@ export function usePermisosPendientesBadge(): number {
       // Silencioso: no tumbar la navegación por un fallo de red.
     }
   }, [habilitado]);
+
+  const refrescarRef = useRef(refrescar);
+  refrescarRef.current = refrescar;
 
   useEffect(() => {
     if (!habilitado) {
@@ -56,20 +60,14 @@ export function usePermisosPendientesBadge(): number {
 
   useEffect(() => {
     if (!habilitado) return;
-    const canal = supabase
-      .channel(`permisos-pendientes-badge-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "permisos_personal" },
-        () => {
-          void refrescar();
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(canal);
-    };
-  }, [habilitado, refrescar]);
+    const canal = suscribirPostgresChanges(CANAL_BADGE, [
+      {
+        filter: { event: "*", schema: "public", table: "permisos_personal" },
+        handler: () => void refrescarRef.current(),
+      },
+    ]);
+    return () => quitarCanalRealtime(canal);
+  }, [habilitado]);
 
   return cantidad;
 }
