@@ -280,7 +280,28 @@
 }
 
 .mtre045-preview__celda-an {
-  text-align: center;
+  vertical-align: top;
+  min-height: 4.5rem;
+}
+
+.mtre045-preview__celda-verificacion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 4.2rem;
+  text-align: left;
+}
+
+.mtre045-preview__detalle-verificacion {
+  margin: 0;
+  flex: 1;
+  white-space: pre-wrap;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.mtre045-preview__celda-verificacion .mtre045-an {
+  align-self: flex-end;
 }
 
 .mtre045-preview__nombre-firma {

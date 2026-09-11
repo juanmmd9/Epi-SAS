@@ -177,6 +177,17 @@
   grid-column: 1 / -1;
 }
 
+.mtre045-campos-form__aviso-lider {
+  grid-column: 1 / -1;
+  margin: 0.25rem 0 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e3a5f;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
 .preventivo__mensaje {
   padding: 0.6rem 0.9rem;
   border-radius: 8px;
@@ -440,6 +451,66 @@
   color: var(--color-texto-suave);
   font-size: 0.85rem;
   line-height: 1.4;
+}
+
+.firma-modal__panel--ancho {
+  width: min(640px, 100%);
+}
+
+.firma-modal__verificacion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 0 0 0.85rem;
+  padding: 0.75rem 0.8rem;
+  border: 1px solid var(--color-borde, #d1d5db);
+  border-radius: 10px;
+  background: var(--color-fondo-suave, #f8fafc);
+}
+
+.firma-modal__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.firma-modal__campo textarea,
+.firma-modal__campo input {
+  font: inherit;
+  font-weight: 400;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--color-borde, #cbd5e1);
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.firma-modal__an {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.1rem;
+  align-items: center;
+}
+
+.firma-modal__an legend {
+  padding: 0;
+  margin: 0 0 0.25rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  float: left;
+  width: 100%;
+}
+
+.firma-modal__an label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .firma-modal__acciones {

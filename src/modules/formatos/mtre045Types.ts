@@ -14,7 +14,11 @@ export interface Mtre045Datos {
   actividadCorrectivo: string;
   cambioRepuestosCorrectivo: string;
   verificacionCorrectivo: string;
+  /** Qué inspección hizo el líder (texto del cuadro INSPECCIÓN VISUAL). */
+  detalleInspeccionVisual: string;
   inspeccionVisual: VerificacionAn;
+  /** Qué pruebas realizó el líder (texto del cuadro PRUEBAS DE FUNCIONAMIENTO). */
+  detallePruebasFuncionamiento: string;
   pruebasFuncionamiento: VerificacionAn;
   noAprobo: string;
   responsableMantenimiento: string;
@@ -55,7 +59,9 @@ export function formularioMtre045Vacio(): Mtre045Datos {
     actividadCorrectivo: "",
     cambioRepuestosCorrectivo: "",
     verificacionCorrectivo: "",
+    detalleInspeccionVisual: "",
     inspeccionVisual: "",
+    detallePruebasFuncionamiento: "",
     pruebasFuncionamiento: "",
     noAprobo: "",
     responsableMantenimiento: "",
@@ -90,7 +96,9 @@ export function prefillMtre045DesdePreventivo(
     actividadCorrectivo: datos.mtre045.actividadCorrectivo,
     cambioRepuestosCorrectivo: datos.mtre045.cambioRepuestosCorrectivo,
     verificacionCorrectivo: datos.mtre045.verificacionCorrectivo,
+    detalleInspeccionVisual: datos.mtre045.detalleInspeccionVisual ?? "",
     inspeccionVisual: datos.mtre045.inspeccionVisual,
+    detallePruebasFuncionamiento: datos.mtre045.detallePruebasFuncionamiento ?? "",
     pruebasFuncionamiento: datos.mtre045.pruebasFuncionamiento,
     noAprobo: datos.mtre045.noAprobo,
     responsableVerificacion: datos.mtre045.responsableVerificacion,

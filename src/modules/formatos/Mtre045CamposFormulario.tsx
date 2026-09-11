@@ -1,4 +1,4 @@
-import type { Mtre045Datos, VerificacionAn } from "./mtre045Types";
+import type { Mtre045Datos } from "./mtre045Types";
 
 /** Campos del formato que el operador llena en el registro PM. */
 export type CamposFormatoMtre045 = Pick<
@@ -8,7 +8,9 @@ export type CamposFormatoMtre045 = Pick<
   | "actividadCorrectivo"
   | "cambioRepuestosCorrectivo"
   | "verificacionCorrectivo"
+  | "detalleInspeccionVisual"
   | "inspeccionVisual"
+  | "detallePruebasFuncionamiento"
   | "pruebasFuncionamiento"
   | "noAprobo"
   | "responsableVerificacion"
@@ -21,7 +23,9 @@ export function camposFormatoMtre045Vacios(): CamposFormatoMtre045 {
     actividadCorrectivo: "",
     cambioRepuestosCorrectivo: "",
     verificacionCorrectivo: "",
+    detalleInspeccionVisual: "",
     inspeccionVisual: "",
+    detallePruebasFuncionamiento: "",
     pruebasFuncionamiento: "",
     noAprobo: "",
     responsableVerificacion: "",
@@ -36,7 +40,9 @@ export function extraerCamposFormato(mtre?: Mtre045Datos): CamposFormatoMtre045 
     actividadCorrectivo: mtre.actividadCorrectivo ?? "",
     cambioRepuestosCorrectivo: mtre.cambioRepuestosCorrectivo ?? "",
     verificacionCorrectivo: mtre.verificacionCorrectivo ?? "",
+    detalleInspeccionVisual: mtre.detalleInspeccionVisual ?? "",
     inspeccionVisual: mtre.inspeccionVisual ?? "",
+    detallePruebasFuncionamiento: mtre.detallePruebasFuncionamiento ?? "",
     pruebasFuncionamiento: mtre.pruebasFuncionamiento ?? "",
     noAprobo: mtre.noAprobo ?? "",
     responsableVerificacion: mtre.responsableVerificacion ?? "",
@@ -102,50 +108,10 @@ function Mtre045CamposFormulario({ datos, onChange }: Props) {
           />
         </label>
 
-        <label>
-          Inspección visual
-          <select
-            value={datos.inspeccionVisual}
-            onChange={(e) =>
-              onChange({ inspeccionVisual: e.target.value as VerificacionAn })
-            }
-          >
-            <option value="">—</option>
-            <option value="A">A — Aprobado</option>
-            <option value="NA">NA — No aprobado</option>
-          </select>
-        </label>
-
-        <label>
-          Pruebas de funcionamiento
-          <select
-            value={datos.pruebasFuncionamiento}
-            onChange={(e) =>
-              onChange({ pruebasFuncionamiento: e.target.value as VerificacionAn })
-            }
-          >
-            <option value="">—</option>
-            <option value="A">A — Aprobado</option>
-            <option value="NA">NA — No aprobado</option>
-          </select>
-        </label>
-
-        <label className="mtre045-campos-form__ancho">
-          No aprobó (detalle)
-          <input
-            value={datos.noAprobo}
-            onChange={(e) => onChange({ noAprobo: e.target.value })}
-          />
-        </label>
-
-        <label>
-          Responsable de verificación
-          <input
-            value={datos.responsableVerificacion}
-            onChange={(e) => onChange({ responsableVerificacion: e.target.value })}
-            placeholder="Nombre de quien verifica"
-          />
-        </label>
+        <p className="mtre045-campos-form__aviso-lider">
+          La inspección visual, pruebas A/NA y firma de verificación las completa el{" "}
+          <strong>líder de área</strong> al aprobar el PM.
+        </p>
       </div>
     </fieldset>
   );

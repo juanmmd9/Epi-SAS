@@ -202,32 +202,53 @@ export async function generarPdfMtre045(datos: Mtre045Datos): Promise<Uint8Array
     font: bold,
   });
   y += 18;
+  const altoVerif = 48;
   rectBorde(page, {
     x: MARGIN,
-    y: yTop(y + 20),
+    y: yTop(y + altoVerif),
     width: colW,
-    height: 20,
+    height: altoVerif,
   });
   rectBorde(page, {
     x: MARGIN + colW,
-    y: yTop(y + 20),
+    y: yTop(y + altoVerif),
     width: colW,
-    height: 20,
+    height: altoVerif,
   });
-  page.drawText("A", { x: MARGIN + colW * 0.35, y: yTop(y + 12, 8), size: 8, font });
-  page.drawText("NA", { x: MARGIN + colW * 0.55, y: yTop(y + 12, 8), size: 8, font });
-  page.drawText("A", { x: MARGIN + colW * 1.35, y: yTop(y + 12, 8), size: 8, font });
-  page.drawText("NA", { x: MARGIN + colW * 1.55, y: yTop(y + 12, 8), size: 8, font });
-  marcarAn(page, font, datos.inspeccionVisual, MARGIN + colW * 0.32, MARGIN + colW * 0.52, y + 4);
+  const dibujarDetalleVerif = (texto: string, xBase: number) => {
+    const lineas = (texto || "").slice(0, 220).match(/.{1,42}/g) ?? [];
+    lineas.slice(0, 3).forEach((linea, li) => {
+      page.drawText(linea, {
+        x: xBase + 4,
+        y: yTop(y + 10 + li * 9, 7),
+        size: 7,
+        font,
+      });
+    });
+  };
+  dibujarDetalleVerif(datos.detalleInspeccionVisual ?? "", MARGIN);
+  dibujarDetalleVerif(datos.detallePruebasFuncionamiento ?? "", MARGIN + colW);
+  page.drawText("A", { x: MARGIN + colW * 0.72, y: yTop(y + altoVerif - 8, 8), size: 8, font });
+  page.drawText("NA", { x: MARGIN + colW * 0.86, y: yTop(y + altoVerif - 8, 8), size: 8, font });
+  page.drawText("A", { x: MARGIN + colW * 1.72, y: yTop(y + altoVerif - 8, 8), size: 8, font });
+  page.drawText("NA", { x: MARGIN + colW * 1.86, y: yTop(y + altoVerif - 8, 8), size: 8, font });
+  marcarAn(
+    page,
+    font,
+    datos.inspeccionVisual,
+    MARGIN + colW * 0.69,
+    MARGIN + colW * 0.83,
+    y + altoVerif - 16,
+  );
   marcarAn(
     page,
     font,
     datos.pruebasFuncionamiento,
-    MARGIN + colW * 1.32,
-    MARGIN + colW * 1.52,
-    y + 4,
+    MARGIN + colW * 1.69,
+    MARGIN + colW * 1.83,
+    y + altoVerif - 16,
   );
-  y += 28;
+  y += altoVerif + 8;
 
   page.drawText("A: aprobado / NA: no aprobado", {
     x: MARGIN,

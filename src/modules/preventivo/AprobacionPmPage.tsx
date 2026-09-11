@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { coincideArea } from "../../lib/areas";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
+import type { VerificacionAn } from "../formatos/mtre045Types";
 import {
   ETIQUETAS_ESTADO_APROBACION_PM,
   esPendienteAprobacionPm,
@@ -18,6 +19,8 @@ import {
 import { numeroReporteDeRegistro } from "./numeroReportePm";
 import type { RegistroPreventivo } from "./types";
 import "./preventivo.css";
+
+type ResultadoAn = Exclude<VerificacionAn, "">;
 
 function nombresTecnicos(registro: RegistroPreventivo): string {
   const nombres = registro.datos.personalNombres;
@@ -36,6 +39,11 @@ function AprobacionPmPage() {
   const [motivoRechazo, setMotivoRechazo] = useState<Record<string, string>>({});
   const [registroParaFirmar, setRegistroParaFirmar] = useState<RegistroPreventivo | null>(null);
   const [imagenFirma, setImagenFirma] = useState<string | null>(null);
+  const [detalleInspeccionVisual, setDetalleInspeccionVisual] = useState("");
+  const [inspeccionVisual, setInspeccionVisual] = useState<ResultadoAn | "">("");
+  const [detallePruebasFuncionamiento, setDetallePruebasFuncionamiento] = useState("");
+  const [pruebasFuncionamiento, setPruebasFuncionamiento] = useState<ResultadoAn | "">("");
+  const [noAprobo, setNoAprobo] = useState("");
 
   const areaLider = areaUsuario(perfil);
   const esAdmin = rol === "admin";
@@ -93,10 +101,32 @@ function AprobacionPmPage() {
     };
   }
 
+  function resetVerificacion() {
+    setDetalleInspeccionVisual("");
+    setInspeccionVisual("");
+    setDetallePruebasFuncionamiento("");
+    setPruebasFuncionamiento("");
+    setNoAprobo("");
+  }
+
   function abrirPanelFirma(registro: RegistroPreventivo) {
     setError(null);
     setMensaje(null);
     setImagenFirma(null);
+    const mtre = registro.datos.mtre045;
+    setDetalleInspeccionVisual(mtre?.detalleInspeccionVisual ?? "");
+    setInspeccionVisual(
+      mtre?.inspeccionVisual === "A" || mtre?.inspeccionVisual === "NA"
+        ? mtre.inspeccionVisual
+        : "",
+    );
+    setDetallePruebasFuncionamiento(mtre?.detallePruebasFuncionamiento ?? "");
+    setPruebasFuncionamiento(
+      mtre?.pruebasFuncionamiento === "A" || mtre?.pruebasFuncionamiento === "NA"
+        ? mtre.pruebasFuncionamiento
+        : "",
+    );
+    setNoAprobo(mtre?.noAprobo ?? "");
     setRegistroParaFirmar(registro);
   }
 
@@ -104,12 +134,32 @@ function AprobacionPmPage() {
     if (procesandoId) return;
     setRegistroParaFirmar(null);
     setImagenFirma(null);
+    resetVerificacion();
   }
 
   async function confirmarFirmaYAprobar() {
     if (!registroParaFirmar) return;
+    if (!detalleInspeccionVisual.trim()) {
+      setError("Escriba qué inspección visual le hizo a la máquina antes de firmar.");
+      return;
+    }
+    if (inspeccionVisual !== "A" && inspeccionVisual !== "NA") {
+      setError("Marque A (aprobado) o NA (no aprobado) en inspección visual.");
+      return;
+    }
+    if (pruebasFuncionamiento !== "A" && pruebasFuncionamiento !== "NA") {
+      setError("Marque A o NA en pruebas de funcionamiento.");
+      return;
+    }
+    if (
+      (inspeccionVisual === "NA" || pruebasFuncionamiento === "NA") &&
+      !noAprobo.trim()
+    ) {
+      setError("Si marca NA, indique en «No aprobó» el detalle.");
+      return;
+    }
     if (!imagenFirma) {
-      setError("Firme con el dedo en el recuadro antes de confirmar.");
+      setError("Firme en el recuadro (dedo o imagen) antes de confirmar.");
       return;
     }
     setProcesandoId(registroParaFirmar.id);
@@ -119,6 +169,13 @@ function AprobacionPmPage() {
       const actualizado = await aprobarPreventivo(
         registroParaFirmar,
         firmaActual(imagenFirma),
+        {
+          detalleInspeccionVisual: detalleInspeccionVisual.trim(),
+          inspeccionVisual,
+          detallePruebasFuncionamiento: detallePruebasFuncionamiento.trim(),
+          pruebasFuncionamiento,
+          noAprobo: noAprobo.trim(),
+        },
       );
       setRegistros((prev) =>
         ordenarRegistrosPreventivo(prev.map((r) => (r.id === actualizado.id ? actualizado : r))),
@@ -128,6 +185,7 @@ function AprobacionPmPage() {
       );
       setRegistroParaFirmar(null);
       setImagenFirma(null);
+      resetVerificacion();
     } catch (e) {
       setError("No se pudo aprobar: " + (e as Error).message);
     } finally {
@@ -179,13 +237,15 @@ function AprobacionPmPage() {
   }
 
   const ocupadoFirma = Boolean(registroParaFirmar && procesandoId === registroParaFirmar.id);
+  const muestraNoAprobo = inspeccionVisual === "NA" || pruebasFuncionamiento === "NA";
 
   return (
     <section className="preventivo">
       <h1>Aprobación de mantenimiento preventivo</h1>
       <p className="preventivo__descripcion">
-        Revisa el formato <strong>MT-RE-045</strong>, fírmalo con el dedo o recházalo con motivo.
-        Solo al aprobar se marca la cita del cronograma como cumplida.
+        Revisa el formato <strong>MT-RE-045</strong>, escribe la inspección visual, marca A/NA,
+        fírmalo o recházalo con motivo. Solo al aprobar se marca la cita del cronograma como
+        cumplida.
         {areaLider && !esAdmin ? (
           <>
             {" "}
@@ -370,7 +430,7 @@ function AprobacionPmPage() {
             aria-label="Cerrar"
             onClick={cerrarPanelFirma}
           />
-          <div className="firma-modal__panel">
+          <div className="firma-modal__panel firma-modal__panel--ancho">
             <h2 id="firma-modal-titulo">Firmar aprobación</h2>
             <p className="firma-modal__detalle">
               <strong>{registroParaFirmar.datos.equipo || "Máquina"}</strong>
@@ -382,9 +442,88 @@ function AprobacionPmPage() {
                 ? ` · Nº ${registroParaFirmar.datos.numeroReporte}`
                 : ""}
             </p>
+
+            <div className="firma-modal__verificacion">
+              <label className="firma-modal__campo">
+                Inspección visual — describa qué revisó en la máquina *
+                <textarea
+                  rows={3}
+                  value={detalleInspeccionVisual}
+                  onChange={(e) => setDetalleInspeccionVisual(e.target.value)}
+                  placeholder="Ej. Revisé fugas, tornillería, niveles de aceite, estado de correas..."
+                  disabled={ocupadoFirma}
+                />
+              </label>
+              <fieldset className="firma-modal__an" disabled={ocupadoFirma}>
+                <legend>Resultado inspección visual *</legend>
+                <label>
+                  <input
+                    type="radio"
+                    name="inspeccion-visual"
+                    checked={inspeccionVisual === "A"}
+                    onChange={() => setInspeccionVisual("A")}
+                  />
+                  A — Aprobado
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="inspeccion-visual"
+                    checked={inspeccionVisual === "NA"}
+                    onChange={() => setInspeccionVisual("NA")}
+                  />
+                  NA — No aprobado
+                </label>
+              </fieldset>
+
+              <label className="firma-modal__campo">
+                Pruebas de funcionamiento — describa las pruebas realizadas
+                <textarea
+                  rows={2}
+                  value={detallePruebasFuncionamiento}
+                  onChange={(e) => setDetallePruebasFuncionamiento(e.target.value)}
+                  placeholder="Ej. Encendido, ciclo en vacío, ruidos, temperaturas..."
+                  disabled={ocupadoFirma}
+                />
+              </label>
+              <fieldset className="firma-modal__an" disabled={ocupadoFirma}>
+                <legend>Resultado pruebas de funcionamiento *</legend>
+                <label>
+                  <input
+                    type="radio"
+                    name="pruebas-funcionamiento"
+                    checked={pruebasFuncionamiento === "A"}
+                    onChange={() => setPruebasFuncionamiento("A")}
+                  />
+                  A — Aprobado
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="pruebas-funcionamiento"
+                    checked={pruebasFuncionamiento === "NA"}
+                    onChange={() => setPruebasFuncionamiento("NA")}
+                  />
+                  NA — No aprobado
+                </label>
+              </fieldset>
+
+              {muestraNoAprobo ? (
+                <label className="firma-modal__campo">
+                  No aprobó (detalle) *
+                  <input
+                    value={noAprobo}
+                    onChange={(e) => setNoAprobo(e.target.value)}
+                    placeholder="Qué no cumplió o qué falta corregir"
+                    disabled={ocupadoFirma}
+                  />
+                </label>
+              ) : null}
+            </div>
+
             <p className="firma-modal__ayuda">
-              Dibuje su firma con el dedo o cargue una imagen del PC. Quedará guardada en el
-              MT-RE-045 como responsable de verificación.
+              Luego dibuje su firma con el dedo o cargue una imagen del PC. Quedará en el MT-RE-045
+              como responsable de verificación.
             </p>
             <FirmaPad
               reinicioClave={registroParaFirmar.id}

@@ -1,4 +1,5 @@
 import { supabase } from "../../services/supabase";
+import { formularioMtre045Vacio } from "../formatos/mtre045Types";
 import type { PreventivoInput, RegistroPreventivo } from "./types";
 
 const TABLA = "preventivo";
@@ -75,6 +76,15 @@ type FirmaAprobacion = {
   imagenFirma: string;
 };
 
+/** Verificación del líder en el MT-RE-045 al aprobar. */
+export type VerificacionAprobacionPm = {
+  detalleInspeccionVisual: string;
+  inspeccionVisual: "A" | "NA";
+  detallePruebasFuncionamiento: string;
+  pruebasFuncionamiento: "A" | "NA";
+  noAprobo: string;
+};
+
 /** Envía / reenvía el PM al líder (pendiente de firma). */
 export function datosEnviarAprobacion(
   datos: RegistroPreventivo["datos"],
@@ -106,16 +116,40 @@ export function datosEnviarAprobacion(
 export async function aprobarPreventivo(
   registro: RegistroPreventivo,
   firma: FirmaAprobacion,
+  verificacion: VerificacionAprobacionPm,
 ): Promise<RegistroPreventivo> {
   const ahora = new Date().toISOString();
-  const mtre045 = registro.datos.mtre045
+  const baseMtre = registro.datos.mtre045;
+  const mtre045 = baseMtre
     ? {
-        ...registro.datos.mtre045,
-        responsableVerificacion:
-          registro.datos.mtre045.responsableVerificacion?.trim() || firma.nombre,
+        ...baseMtre,
+        detalleInspeccionVisual: verificacion.detalleInspeccionVisual.trim(),
+        inspeccionVisual: verificacion.inspeccionVisual,
+        detallePruebasFuncionamiento: verificacion.detallePruebasFuncionamiento.trim(),
+        pruebasFuncionamiento: verificacion.pruebasFuncionamiento,
+        noAprobo: verificacion.noAprobo.trim(),
+        responsableVerificacion: baseMtre.responsableVerificacion?.trim() || firma.nombre,
         firmaVerificacion: firma.imagenFirma,
       }
-    : registro.datos.mtre045;
+    : {
+        ...formularioMtre045Vacio(),
+        preventivoId: registro.id,
+        numeroReporte: registro.datos.numeroReporte ?? "",
+        fecha: registro.fecha,
+        equipo: registro.datos.equipo ?? "",
+        codigo: registro.datos.codigo ?? "",
+        marca: registro.datos.marca ?? "",
+        serie: registro.datos.serial ?? "",
+        area: registro.area,
+        actividadRealizada: registro.descripcion ?? "",
+        detalleInspeccionVisual: verificacion.detalleInspeccionVisual.trim(),
+        inspeccionVisual: verificacion.inspeccionVisual,
+        detallePruebasFuncionamiento: verificacion.detallePruebasFuncionamiento.trim(),
+        pruebasFuncionamiento: verificacion.pruebasFuncionamiento,
+        noAprobo: verificacion.noAprobo.trim(),
+        responsableVerificacion: firma.nombre,
+        firmaVerificacion: firma.imagenFirma,
+      };
   return actualizarPreventivo(registro.id, {
     datos: {
       ...registro.datos,

@@ -7,12 +7,15 @@ interface Props {
   id?: string;
 }
 
-function CeldaAn({ valor }: { valor: string }) {
+function CeldaAn({ valor, detalle }: { valor: string; detalle?: string }) {
   return (
-    <span className="mtre045-an">
-      <span className={valor === "A" ? "mtre045-an--activo" : ""}>A</span>
-      <span className={valor === "NA" ? "mtre045-an--activo" : ""}>NA</span>
-    </span>
+    <div className="mtre045-preview__celda-verificacion">
+      {detalle ? <p className="mtre045-preview__detalle-verificacion">{detalle}</p> : null}
+      <span className="mtre045-an">
+        <span className={valor === "A" ? "mtre045-an--activo" : ""}>A</span>
+        <span className={valor === "NA" ? "mtre045-an--activo" : ""}>NA</span>
+      </span>
+    </div>
   );
 }
 
@@ -62,6 +65,8 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
   const marcaVerificacion = Boolean(
     datos.inspeccionVisual ||
       datos.pruebasFuncionamiento ||
+      (datos.detalleInspeccionVisual || "").trim() ||
+      (datos.detallePruebasFuncionamiento || "").trim() ||
       (datos.verificacionEquipoPm || "").trim() ||
       (datos.responsableVerificacion || "").trim(),
   );
@@ -232,10 +237,16 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
           </tr>
           <tr>
             <td className="mtre045-preview__celda-an">
-              <CeldaAn valor={datos.inspeccionVisual} />
+              <CeldaAn
+                valor={datos.inspeccionVisual}
+                detalle={datos.detalleInspeccionVisual}
+              />
             </td>
             <td className="mtre045-preview__celda-an">
-              <CeldaAn valor={datos.pruebasFuncionamiento} />
+              <CeldaAn
+                valor={datos.pruebasFuncionamiento}
+                detalle={datos.detallePruebasFuncionamiento}
+              />
             </td>
           </tr>
         </tbody>
