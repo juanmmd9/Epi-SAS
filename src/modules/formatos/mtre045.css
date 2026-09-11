@@ -208,16 +208,36 @@
 
 .mtre045-an {
   display: inline-flex;
-  gap: 1.5rem;
+  gap: 1.1rem;
   font-weight: 600;
+  align-items: center;
 }
 
-.mtre045-an--activo {
-  border: 2px solid #1e3a5f;
-  background: #fff;
-  color: #111;
-  padding: 0.05rem 0.45rem;
+.mtre045-an__opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.mtre045-an__caja {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 1.5px solid #334155;
   border-radius: 2px;
+  font-size: 0.85rem;
+  line-height: 1;
+  font-weight: 700;
+  color: #0f172a;
+  background: #fff;
+}
+
+.mtre045-an__opcion--activa .mtre045-an__caja {
+  border-color: #1e3a5f;
+  background: #f8fafc;
 }
 
 .mtre045-preview__tabla--encabezado .mtre045-preview__th-num {
@@ -266,7 +286,7 @@
 
 .mtre045-preview__celda-repuestos {
   vertical-align: top;
-  min-height: 6rem;
+  min-height: 2.4rem;
 }
 
 .mtre045-preview__lista-num {
@@ -277,6 +297,34 @@
 
 .mtre045-preview__lista-num li {
   min-height: 0.95rem;
+}
+
+.mtre045-preview__lista-num--horizontal {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem 0.55rem;
+  list-style: none;
+  padding: 0.15rem 0.2rem;
+  counter-reset: repuesto;
+}
+
+.mtre045-preview__lista-num--horizontal li {
+  min-height: 1.15rem;
+  counter-increment: repuesto;
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  border-bottom: 1px dotted #94a3b8;
+  padding: 0.1rem 0.15rem 0.15rem;
+  font-size: 0.75rem;
+  overflow: hidden;
+}
+
+.mtre045-preview__lista-num--horizontal li::before {
+  content: counter(repuesto) ".";
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: #475569;
 }
 
 .mtre045-preview__celda-an {
@@ -639,6 +687,10 @@
   body.imprimiendo-formato .mtre045-preview__tabla--cols2 tr {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  body.imprimiendo-formato .mtre045-preview__lista-num--horizontal li {
+    display: flex !important;
   }
 
   body.imprimiendo-formato .mtre045-preview__lista-num li:empty {

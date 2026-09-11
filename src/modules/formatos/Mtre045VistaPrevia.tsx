@@ -11,9 +11,19 @@ function CeldaAn({ valor, detalle }: { valor: string; detalle?: string }) {
   return (
     <div className="mtre045-preview__celda-verificacion">
       {detalle ? <p className="mtre045-preview__detalle-verificacion">{detalle}</p> : null}
-      <span className="mtre045-an">
-        <span className={valor === "A" ? "mtre045-an--activo" : ""}>A</span>
-        <span className={valor === "NA" ? "mtre045-an--activo" : ""}>NA</span>
+      <span className="mtre045-an" aria-label={valor === "A" ? "Aprobado" : valor === "NA" ? "No aprobado" : "Sin marcar"}>
+        <span className={`mtre045-an__opcion${valor === "A" ? " mtre045-an__opcion--activa" : ""}`}>
+          <span className="mtre045-an__caja" aria-hidden>
+            {valor === "A" ? "✓" : ""}
+          </span>
+          A
+        </span>
+        <span className={`mtre045-an__opcion${valor === "NA" ? " mtre045-an__opcion--activa" : ""}`}>
+          <span className="mtre045-an__caja" aria-hidden>
+            {valor === "NA" ? "✓" : ""}
+          </span>
+          NA
+        </span>
       </span>
     </div>
   );
@@ -199,17 +209,17 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
               className="mtre045-preview__celda-repuestos"
               colSpan={marcaCorrectivo ? 1 : 2}
             >
-              <ol className="mtre045-preview__lista-num">
+              <ol className="mtre045-preview__lista-num mtre045-preview__lista-num--horizontal">
                 {repuestosPm.map((linea, i) => (
-                  <li key={`pm-${i}`}>{linea}</li>
+                  <li key={`pm-${i}`}>{linea || "\u00a0"}</li>
                 ))}
               </ol>
             </td>
             {marcaCorrectivo ? (
               <td className="mtre045-preview__celda-repuestos">
-                <ol className="mtre045-preview__lista-num">
+                <ol className="mtre045-preview__lista-num mtre045-preview__lista-num--horizontal">
                   {repuestosCorr.map((linea, i) => (
-                    <li key={`corr-${i}`}>{linea}</li>
+                    <li key={`corr-${i}`}>{linea || "\u00a0"}</li>
                   ))}
                 </ol>
               </td>
@@ -253,7 +263,7 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
       </table>
 
       <p className="mtre045-preview__leyenda">
-        A: aprobado / NA: no aprobado
+        ✓ A: aprobado / ✓ NA: no aprobado
         {datos.noAprobo ? ` — No aprobó: ${datos.noAprobo}` : ""}
       </p>
 

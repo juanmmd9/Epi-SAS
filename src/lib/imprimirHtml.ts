@@ -22,8 +22,12 @@ export function imprimirElementoHtml(elemento: HTMLElement, titulo = "Formato"):
     .mtre045-preview__fecha-caja { min-width: 2rem; text-align: center; border-bottom: 1px solid #222; padding: 0 4px; }
     .mtre045-preview__fecha-caja--anio { min-width: 3rem; }
     .mtre045-preview__celda-texto { min-height: 2.5rem; white-space: pre-wrap; }
-    .mtre045-an { display: inline-flex; gap: 12px; font-weight: 600; }
-    .mtre045-an--activo { border: 2px solid #000; padding: 0 6px; background: #fff !important; }
+    .mtre045-an { display: inline-flex; gap: 12px; font-weight: 600; align-items: center; }
+    .mtre045-an__opcion { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; }
+    .mtre045-an__caja { display: inline-flex; align-items: center; justify-content: center; width: 12px; height: 12px; border: 1.5px solid #222; font-size: 10px; font-weight: 700; line-height: 1; }
+    .mtre045-preview__lista-num--horizontal { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 8px; list-style: none; padding: 2px; margin: 0; counter-reset: repuesto; }
+    .mtre045-preview__lista-num--horizontal li { min-height: 14px; counter-increment: repuesto; display: flex; align-items: baseline; gap: 3px; border-bottom: 1px dotted #666; font-size: 10px; }
+    .mtre045-preview__lista-num--horizontal li::before { content: counter(repuesto) "."; font-weight: 600; }
     .mtre045-preview__leyenda { font-size: 10px; margin: 8px 0; }
     .mtre045-preview__firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
     .mtre045-preview__linea-firma { border-bottom: 1px solid #222; height: 28px; margin-bottom: 4px; }
