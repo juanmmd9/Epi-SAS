@@ -1,0 +1,123 @@
+PUSH FIREBASE — Portal Mantenimiento EPI
+========================================
+
+Objetivo: que admin y operador reciban notificación
+aunque la app esté CERRADA:
+  - cuando alguien cree una solicitud (correctivo)
+  - cuando el admin asigne un PM a un operario (preventivo_asignaciones)
+  - cuando el admin asigne una solicitud a un operario (correctivo_asignaciones)
+
+Package Android: com.epi.portalmantenimiento
+
+------------------------------------------------
+PASO 1 — Firebase (consola web)
+------------------------------------------------
+1. Entra a https://console.firebase.google.com
+2. Crear proyecto (ej. epi-mantenimiento)
+3. Agregar app Android
+   - Nombre del paquete: com.epi.portalmantenimiento
+4. Descargar google-services.json
+5. Copiarlo a:
+   curso-web-paso1\android\app\google-services.json
+   (reemplaza el .example)
+
+6. Project settings → Service accounts → Generate new private key
+   Guarda el JSON (NO lo subas a Git).
+
+------------------------------------------------
+PASO 2 — Supabase SQL
+------------------------------------------------
+En SQL Editor ejecuta el archivo:
+  supabase/migrations/push_tokens.sql
+
+(Y si aún no: correctivo_realtime.sql)
+
+------------------------------------------------
+PASO 3 — Edge Function + secreto
+------------------------------------------------
+Con Supabase CLI (o Dashboard → Edge Functions):
+
+1. Secret:
+   FIREBASE_SERVICE_ACCOUNT_JSON = (pega TODO el JSON de la cuenta de servicio)
+
+   SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY suelen estar ya.
+
+2. Deploy:
+   supabase functions deploy avisar-solicitud-push --no-verify-jwt
+
+------------------------------------------------
+PASO 4 — Webhook al crear solicitud
+------------------------------------------------
+Opción A — SQL (recomendada, un solo archivo):
+
+En Supabase → SQL Editor → New query → pega y ejecuta:
+  supabase/migrations/webhook_avisar_solicitud_push.sql
+
+Debe mostrar: "Webhook push: trigger trg_avisar_solicitud_push en correctivo."
+
+Opción B — Dashboard → Database → Webhooks → Create
+
+- Name: avisar-solicitud-push
+- Table: correctivo
+- Events: INSERT
+- Type: Supabase Edge Function
+- Function: avisar-solicitud-push
+  (o URL HTTP:
+   https://TU_PROJECT.supabase.co/functions/v1/avisar-solicitud-push
+   Header Authorization: Bearer SERVICE_ROLE_KEY)
+
+Si usas la opción B, NO ejecutes también el SQL (evita duplicar avisos).
+
+------------------------------------------------
+PASO 4b — Push al asignar solicitud (admin → operario)
+------------------------------------------------
+1. Deploy:
+   supabase functions deploy avisar-asignacion-correctivo-push --no-verify-jwt
+
+2. SQL Editor ejecuta:
+   supabase/migrations/webhook_avisar_asignacion_correctivo_push.sql
+
+Eso avisa al operario cuando el admin lo asigna desde la lista
+(no cuando el operario pulsa TOMAR).
+
+------------------------------------------------
+PASO 5 — Recompilar e instalar APK
+------------------------------------------------
+IMPORTANTE: sin google-services.json la APK anterior podía cerrarse
+al abrir (Firebase). Hasta tener ese archivo, el build NO incluye
+el plugin de Push FCM. Los avisos con la app abierta siguen funcionando.
+
+Cuando ya tengas android\app\google-services.json:
+
+  npm install @capacitor/push-notifications
+  (restaurar el hook usePushNotificaciones)
+  npm run cap:sync
+  luego assembleDebug
+
+Sin Firebase todavía:
+
+  $env:CAPACITOR="true"; npm run cap:sync
+  cd android; .\gradlew.bat assembleDebug
+
+APK: presentacion\Portal-Mantenimiento-EPI.apk
+
+------------------------------------------------
+PASO 5 — PM asignados (operario recibe push)
+------------------------------------------------
+1. SQL Editor:
+   - supabase/migrations/preventivo_asignaciones.sql
+   - supabase/migrations/webhook_avisar_asignacion_pm_push.sql
+
+2. Deploy Edge Function:
+   supabase functions deploy avisar-asignacion-pm-push --no-verify-jwt
+
+3. En Inicio (admin) asigna operario en cada cita PM.
+   El operario ve "Lo mío — PM pendientes" y badge en Inicio.
+
+
+------------------------------------------------
+Notas
+------------------------------------------------
+- iPhone: requiere Apple Developer + APNs (fase aparte).
+- Sin google-services.json el build sigue, pero push no funciona.
+- Los toasts/sonido en app abierta siguen funcionando sin Firebase.
