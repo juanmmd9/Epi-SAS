@@ -1,24 +1,9 @@
-Dominio personalizado: mantenimiento.episafety.com
-==================================================
+Dominio personalizado (revertido)
+=================================
 
-1) DNS en Latinoamérica Hosting (zona DNS de episafety.com)
+El portal volvió a GitHub Pages estándar:
+  https://juanmmd9.github.io/Epi-SAS/login
 
-   Tipo:  CNAME
-   Host:  mantenimiento
-   Valor: juanmmd9.github.io
-   TTL:   3600 (o el que ofrezca el panel)
-
-2) GitHub → repo Epi-SAS → Settings → Pages
-   - Custom domain: mantenimiento.episafety.com → Save
-   - Enforce HTTPS: activar cuando esté disponible
-
-3) Supabase → Authentication → URL Configuration
-   - Site URL: https://mantenimiento.episafety.com
-   - Redirect URLs: agregar
-       https://mantenimiento.episafety.com/**
-       https://mantenimiento.episafety.com/login
-
-4) Tras el push, el workflow publica CNAME automáticamente.
-   URL del portal: https://mantenimiento.episafety.com/login
-
-Nota: el DNS puede tardar minutos u horas en propagarse.
+Si en GitHub → Settings → Pages aún aparece
+mantenimiento.episafety.com, bórralo (Remove) para que
+no redirija al dominio personalizado.

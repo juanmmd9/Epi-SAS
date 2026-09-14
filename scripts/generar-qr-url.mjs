@@ -2,7 +2,7 @@ import QRCode from "qrcode";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const URL_PORTAL = "https://mantenimiento.episafety.com/login";
+const URL_PORTAL = "https://juanmmd9.github.io/Epi-SAS/login";
 const SALIDA = "presentacion/qr-acceso";
 
 async function main() {

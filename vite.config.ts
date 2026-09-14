@@ -3,8 +3,13 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Capacitor: rutas relativas. Dominio custom (mantenimiento.episafety.com) y local: /.
-  base: process.env.CAPACITOR === "true" ? "./" : "/",
+  // Capacitor (APK) necesita rutas relativas; en GitHub Pages la app vive en /Epi-SAS/; local/Vercel usan /.
+  base:
+    process.env.CAPACITOR === "true"
+      ? "./"
+      : process.env.GITHUB_PAGES === "true"
+        ? "/Epi-SAS/"
+        : "/",
   plugins: [react()],
   server: {
     host: true,

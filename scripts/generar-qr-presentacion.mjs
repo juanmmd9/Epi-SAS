@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const SALIDA = "presentacion/qr-acceso";
-const LOGIN_BASE = "https://mantenimiento.episafety.com/login";
+const LOGIN_BASE = "https://juanmmd9.github.io/Epi-SAS/login";
 
 const PERFILES = [
   {

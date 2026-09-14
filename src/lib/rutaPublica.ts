@@ -2,7 +2,7 @@
 export function rutaPublica(ruta: string): string {
   const base = import.meta.env.BASE_URL || "/";
   const limpia = ruta.replace(/^\//, "");
-  // base "./" → "./Image/..." ; base "/" → "/Image/..."
+  // base "./" → "./Image/..." ; base "/Epi-SAS/" → "/Epi-SAS/Image/..."
   if (base === "./" || base === ".") return `./${limpia}`;
   return `${base}${limpia}`;
 }

@@ -44,6 +44,7 @@ jobs:
       - name: Compilar para GitHub Pages
         run: npm run build
         env:
+          GITHUB_PAGES: true
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
@@ -56,4 +57,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           publish_branch: gh-pages
-          cname: mantenimiento.episafety.com
+          # Sin CNAME: el sitio vuelve a https://juanmmd9.github.io/Epi-SAS/
