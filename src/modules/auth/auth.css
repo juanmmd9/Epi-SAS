@@ -37,6 +37,8 @@
   max-width: min(100%, 220px);
   height: auto;
   margin: 0 auto;
+  /* El PNG trae fondo negro: en cabecera oscura se funde y se ve limpio */
+  mix-blend-mode: screen;
 }
 
 .auth-login__marca-texto {

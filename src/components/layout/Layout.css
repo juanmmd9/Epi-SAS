@@ -59,6 +59,8 @@
   max-height: 72px;
   object-fit: contain;
   object-position: left center;
+  /* Quita el rectángulo negro del PNG sobre el sidebar oscuro */
+  mix-blend-mode: screen;
 }
 
 .sidebar__titulo {

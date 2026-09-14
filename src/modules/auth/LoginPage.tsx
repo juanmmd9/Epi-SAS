@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AvisoSetupAuth from "../../components/setup/AvisoSetupAuth";
-import { rutaPublica } from "../../lib/rutaPublica";
+import BrandLogo from "../../components/BrandLogo";
 import { useAuth } from "./AuthContext";
 import { existeTablaUsuarios, iniciarSesion } from "./authService";
 import {
@@ -112,13 +112,7 @@ function LoginPage() {
 
       <div className="auth-login__tarjeta">
         <header className="auth-login__marca">
-          <img
-            className="auth-login__logo"
-            src={rutaPublica("/Image/EPI-Logo.png")}
-            alt="EPI — Empresa de Producción Industrial"
-            width={240}
-            height={76}
-          />
+          <BrandLogo className="auth-login__logo" width={240} height={76} />
           <p className="auth-login__marca-texto">Empresa de Producción Industrial</p>
         </header>
 

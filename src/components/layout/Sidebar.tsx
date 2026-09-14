@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { rutaPublica } from "../../lib/rutaPublica";
+import BrandLogo from "../BrandLogo";
 import { useAuth } from "../../modules/auth/AuthContext";
 import { etiquetaRol, enlacesParaRol } from "../../modules/auth/roles";
 import { areaUsuario } from "../../lib/usuarioArea";
@@ -33,13 +33,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
   return (
     <aside className={"sidebar" + (abierto ? " sidebar--abierto" : "")}>
       <div className="sidebar__marca">
-        <img
-          className="sidebar__logo"
-          src={rutaPublica("/Image/EPI-Logo.png")}
-          alt="EPI — Empresa de Producción Industrial"
-          width={286}
-          height={90}
-        />
+        <BrandLogo className="sidebar__logo" width={286} height={90} />
         <span className="sidebar__titulo">Portal Mantenimiento</span>
       </div>
       <nav className="sidebar__nav">
