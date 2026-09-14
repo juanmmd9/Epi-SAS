@@ -3,5 +3,5 @@ Puede entrar con correo (recomendado) o con usuario:
 Correo: admin.mantenimiento@epi.com
 Usuario: admin.mantenimiento
 Clave: EpiAdmin2026
-Enlace: https://juanmmd9.github.io/Epi-SAS/login
+Enlace: https://mantenimiento.episafety.com/login
 Nota: no hace falta cambiar el email en Authentication.
