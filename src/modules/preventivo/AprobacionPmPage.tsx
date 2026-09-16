@@ -134,6 +134,7 @@ function AprobacionPmPage() {
     if (procesandoId) return;
     setRegistroParaFirmar(null);
     setImagenFirma(null);
+    setError(null);
     resetVerificacion();
   }
 
@@ -270,7 +271,9 @@ function AprobacionPmPage() {
       )}
 
       {mensaje && <p className="preventivo__mensaje preventivo__mensaje--ok">{mensaje}</p>}
-      {error && <p className="preventivo__mensaje preventivo__mensaje--error">{error}</p>}
+      {error && !registroParaFirmar && (
+        <p className="preventivo__mensaje preventivo__mensaje--error">{error}</p>
+      )}
 
       <h2 className="preventivo__subtitulo">
         Pendientes de firma{" "}
@@ -472,15 +475,25 @@ function AprobacionPmPage() {
                 : ""}
             </p>
 
+            {error && (
+              <p className="firma-modal__error" role="alert">
+                {error}
+              </p>
+            )}
+
             <div className="firma-modal__verificacion">
               <label className="firma-modal__campo">
                 Inspección visual — describa qué revisó en la máquina *
                 <textarea
                   rows={3}
                   value={detalleInspeccionVisual}
-                  onChange={(e) => setDetalleInspeccionVisual(e.target.value)}
+                  onChange={(e) => {
+                    setDetalleInspeccionVisual(e.target.value);
+                    if (error) setError(null);
+                  }}
                   placeholder="Ej. Revisé fugas, tornillería, niveles de aceite, estado de correas..."
                   disabled={ocupadoFirma}
+                  aria-invalid={Boolean(error && !detalleInspeccionVisual.trim())}
                 />
               </label>
               <fieldset className="firma-modal__an" disabled={ocupadoFirma}>
@@ -490,7 +503,10 @@ function AprobacionPmPage() {
                     type="radio"
                     name="inspeccion-visual"
                     checked={inspeccionVisual === "A"}
-                    onChange={() => setInspeccionVisual("A")}
+                    onChange={() => {
+                      setInspeccionVisual("A");
+                      if (error) setError(null);
+                    }}
                   />
                   A — Aprobado
                 </label>
@@ -499,7 +515,10 @@ function AprobacionPmPage() {
                     type="radio"
                     name="inspeccion-visual"
                     checked={inspeccionVisual === "NA"}
-                    onChange={() => setInspeccionVisual("NA")}
+                    onChange={() => {
+                      setInspeccionVisual("NA");
+                      if (error) setError(null);
+                    }}
                   />
                   NA — No aprobado
                 </label>
@@ -510,7 +529,10 @@ function AprobacionPmPage() {
                 <textarea
                   rows={2}
                   value={detallePruebasFuncionamiento}
-                  onChange={(e) => setDetallePruebasFuncionamiento(e.target.value)}
+                  onChange={(e) => {
+                    setDetallePruebasFuncionamiento(e.target.value);
+                    if (error) setError(null);
+                  }}
                   placeholder="Ej. Encendido, ciclo en vacío, ruidos, temperaturas..."
                   disabled={ocupadoFirma}
                 />
@@ -522,7 +544,10 @@ function AprobacionPmPage() {
                     type="radio"
                     name="pruebas-funcionamiento"
                     checked={pruebasFuncionamiento === "A"}
-                    onChange={() => setPruebasFuncionamiento("A")}
+                    onChange={() => {
+                      setPruebasFuncionamiento("A");
+                      if (error) setError(null);
+                    }}
                   />
                   A — Aprobado
                 </label>
@@ -531,7 +556,10 @@ function AprobacionPmPage() {
                     type="radio"
                     name="pruebas-funcionamiento"
                     checked={pruebasFuncionamiento === "NA"}
-                    onChange={() => setPruebasFuncionamiento("NA")}
+                    onChange={() => {
+                      setPruebasFuncionamiento("NA");
+                      if (error) setError(null);
+                    }}
                   />
                   NA — No aprobado
                 </label>
@@ -542,7 +570,10 @@ function AprobacionPmPage() {
                   No aprobó (detalle) *
                   <input
                     value={noAprobo}
-                    onChange={(e) => setNoAprobo(e.target.value)}
+                    onChange={(e) => {
+                      setNoAprobo(e.target.value);
+                      if (error) setError(null);
+                    }}
                     placeholder="Qué no cumplió o qué falta corregir"
                     disabled={ocupadoFirma}
                   />
@@ -556,7 +587,10 @@ function AprobacionPmPage() {
             </p>
             <FirmaPad
               reinicioClave={registroParaFirmar.id}
-              onChange={setImagenFirma}
+              onChange={(img) => {
+                setImagenFirma(img);
+                if (error) setError(null);
+              }}
             />
             <div className="firma-modal__acciones">
               <button

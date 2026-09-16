@@ -446,6 +446,18 @@
   font-size: 0.9rem;
 }
 
+.firma-modal__error {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #f5c2c7;
+  background: #f8d7da;
+  color: #842029;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .firma-modal__ayuda {
   margin: 0 0 0.75rem;
   color: var(--color-texto-suave);
