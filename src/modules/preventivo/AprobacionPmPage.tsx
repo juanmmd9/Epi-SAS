@@ -181,7 +181,7 @@ function AprobacionPmPage() {
         ordenarRegistrosPreventivo(prev.map((r) => (r.id === actualizado.id ? actualizado : r))),
       );
       setMensaje(
-        `PM de ${registroParaFirmar.datos.equipo || "máquina"} aprobado con firma. El cronograma ya lo cuenta como cumplido.`,
+        `PM de ${registroParaFirmar.datos.equipo || "máquina"} aprobado con firma. El cronograma ya lo cuenta como cumplido. Usa «Imprimir MT-RE-045» en Decisiones recientes.`,
       );
       setRegistroParaFirmar(null);
       setImagenFirma(null);
@@ -230,7 +230,13 @@ function AprobacionPmPage() {
 
   function abrirFormato(registro: RegistroPreventivo) {
     if (registro.datos.mtre045) {
-      navigate("/formatos/mt-re-045", { state: { mtre045Datos: registro.datos.mtre045 } });
+      navigate("/formatos/mt-re-045", {
+        state: {
+          mtre045Datos: registro.datos.mtre045,
+          soloImprimir: true,
+          volverA: "/preventivo/aprobaciones",
+        },
+      });
       return;
     }
     setError("Este registro aún no tiene el formato MT-RE-045 generado.");
@@ -367,6 +373,7 @@ function AprobacionPmPage() {
                 <th>Máquina</th>
                 <th>Estado</th>
                 <th>Firma / decisión</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -407,6 +414,28 @@ function AprobacionPmPage() {
                         </div>
                       ) : (
                         `${registro.datos.rechazadoPorNombre || "—"} · ${(registro.datos.rechazadoEn ?? "").slice(0, 10)}`
+                      )}
+                    </td>
+                    <td className="preventivo__acciones">
+                      {estado === "aprobado" ? (
+                        <button
+                          type="button"
+                          className="btn btn--primario"
+                          onClick={() => abrirFormato(registro)}
+                          title="Abrir e imprimir el MT-RE-045 firmado"
+                        >
+                          Imprimir MT-RE-045
+                        </button>
+                      ) : registro.datos.mtre045 ? (
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => abrirFormato(registro)}
+                        >
+                          Ver MT-RE-045
+                        </button>
+                      ) : (
+                        "—"
                       )}
                     </td>
                   </tr>

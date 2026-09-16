@@ -34,10 +34,16 @@ import "../permisos/permisos.css";
 interface EstadoNavegacion {
   mtre045?: PrefillMtre045DesdePreventivo;
   mtre045Datos?: Mtre045Datos;
+  /** Solo vista previa + imprimir (p. ej. líder desde Aprobar PM). */
+  soloImprimir?: boolean;
+  volverA?: string;
 }
 
 function Mtre045Page() {
   const ubicacion = useLocation();
+  const navInicial = ubicacion.state as EstadoNavegacion | null;
+  const [soloImprimir] = useState(Boolean(navInicial?.soloImprimir));
+  const [volverA] = useState(navInicial?.volverA || "/formatos");
   const [datos, setDatos] = useState<Mtre045Datos>(formularioMtre045Vacio());
   const [registros, setRegistros] = useState<RegistroPreventivo[]>([]);
   const [hojas, setHojas] = useState<HojaVida[]>([]);
@@ -52,6 +58,7 @@ function Mtre045Page() {
   const [filtroPmAnio, setFiltroPmAnio] = useState("");
 
   useEffect(() => {
+    if (soloImprimir) return;
     Promise.all([listarPreventivo(), listarHojas(), listarPersonalActivo()])
       .then(async ([prev, listaHojas, tecnicos]) => {
         const sincronizados = await sincronizarNumerosReportePendientes(prev);
@@ -60,7 +67,7 @@ function Mtre045Page() {
         setPersonal(tecnicos);
       })
       .catch((e: Error) => setError("No se pudieron cargar datos: " + e.message));
-  }, []);
+  }, [soloImprimir]);
 
   const mapaNumerosReporte = useMemo(
     () => calcularMapaNumerosReporte(registros),
@@ -71,7 +78,11 @@ function Mtre045Page() {
     const nav = ubicacion.state as EstadoNavegacion | null;
     if (nav?.mtre045Datos) {
       setDatos(nav.mtre045Datos);
-      setMensaje("Reporte sincronizado con el registro de mantenimiento preventivo.");
+      setMensaje(
+        soloImprimir || nav.soloImprimir
+          ? "MT-RE-045 listo para imprimir."
+          : "Reporte sincronizado con el registro de mantenimiento preventivo.",
+      );
     } else if (nav?.mtre045) {
       setDatos(prefillMtre045DesdePreventivo(nav.mtre045));
       setMensaje("Reporte precargado desde mantenimiento preventivo. Revise los datos e imprima.");
@@ -79,7 +90,7 @@ function Mtre045Page() {
     if (nav?.mtre045 || nav?.mtre045Datos) {
       window.history.replaceState({}, "");
     }
-  }, [ubicacion.state]);
+  }, [ubicacion.state, soloImprimir]);
 
   useEffect(() => {
     if (!datos.preventivoId) return;
@@ -184,6 +195,52 @@ function Mtre045Page() {
       })
       .sort((a, b) => b.fecha.localeCompare(a.fecha));
   }, [registros, filtroPmArea, filtroPmAnio, filtroPmMes, filtroPmDia]);
+
+  if (soloImprimir) {
+    return (
+      <section className="formatos mtre045-page mtre045-page--solo-imprimir">
+        <header className="formatos__cabecera">
+          <div>
+            <Link to={volverA} className="btn">
+              ← Volver
+            </Link>
+            <h1>Imprimir MT-RE-045</h1>
+            <p className="formatos__descripcion">
+              Vista del reporte firmado. Usa <strong>Imprimir</strong> para generar el documento.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn--primario"
+            disabled={imprimiendo}
+            onClick={manejarImprimir}
+          >
+            {imprimiendo ? "Abriendo..." : "Imprimir"}
+          </button>
+        </header>
+
+        {mensaje && <p className="formatos__mensaje formatos__mensaje--ok">{mensaje}</p>}
+        {error && <p className="formatos__mensaje formatos__mensaje--error">{error}</p>}
+
+        <section className="mtre045-panel-preview">
+          <div className="mtre045-panel-preview__barra">
+            <h2>Vista previa — formato oficial MT-RE-045</h2>
+            <button
+              type="button"
+              className="btn btn--primario"
+              disabled={imprimiendo}
+              onClick={manejarImprimir}
+            >
+              {imprimiendo ? "Abriendo..." : "Imprimir"}
+            </button>
+          </div>
+          <div className="mtre045-panel-preview__scroll">
+            <Mtre045VistaPrevia datos={datos} />
+          </div>
+        </section>
+      </section>
+    );
+  }
 
   return (
     <section className="formatos mtre045-page">
