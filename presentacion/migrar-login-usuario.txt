@@ -1,0 +1,48 @@
+Login híbrido: usuario (operarios) + correo (cuentas actuales)
+==============================================================
+
+Puedes dejar tus cuentas actuales con Gmail / @epi.com tal como están.
+Los operarios nuevos se crean en el portal con USUARIO + CONTRASEÑA.
+
+------------------------------------------------
+Cómo entra cada uno
+------------------------------------------------
+Admin / cuentas viejas:
+  - Correo: juanmanuelmoncayo386@gmail.com  (igual que en Authentication)
+  - O el usuario generado: juanmanuelmoncayo386
+  - Misma contraseña de siempre
+
+Operario nuevo (creado en Usuarios portal):
+  - Usuario: ej. jperez
+  - Contraseña: la que tú defines al crearlo
+  - No necesita Gmail
+
+------------------------------------------------
+1) Ejecutar SQL (una sola vez)
+------------------------------------------------
+Supabase → SQL Editor → pegar y Run:
+  supabase/migrations/usuarios_login_usuario.sql
+
+Eso:
+  - Agrega columna "usuario"
+  - NO cambia los emails de Authentication
+  - Si antes se habían puesto @epi.local en usuarios_portal, los vuelve
+    a alinear con Auth (tu Gmail real)
+  - Crea la función email_auth_por_login (para login por usuario)
+
+NO hace falta editar emails en Authentication → Users.
+
+------------------------------------------------
+2) Desplegar creación de operarios
+------------------------------------------------
+  supabase functions deploy crear-usuario-portal
+
+Luego en el portal: Personal → Usuarios portal → Crear usuario
+(usuario + contraseña + rol).
+
+------------------------------------------------
+3) Probar
+------------------------------------------------
+  - Entra con tu Gmail y tu clave (sigue funcionando)
+  - Crea un operario de prueba (ej. operario1 / clave)
+  - Cierra sesión y entra con operario1
