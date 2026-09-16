@@ -80,7 +80,13 @@ function HojaDetallePage() {
   async function abrirMtre045(registro: HistorialMaquina["preventivos"][number]) {
     if (!hoja) return;
     const datos = construirMtre045DesdePreventivo(registro, hoja, personal);
-    navigate("/formatos/mt-re-045", { state: { mtre045Datos: datos } });
+    navigate("/formatos/mt-re-045", {
+      state: {
+        mtre045Datos: datos,
+        soloImprimir: true,
+        volverA: `/hojas-de-vida/${hoja.id}`,
+      },
+    });
   }
 
   function imprimirHoja() {
@@ -246,8 +252,9 @@ function HojaDetallePage() {
                             type="button"
                             className="btn"
                             onClick={() => void abrirMtre045(registro)}
+                            title="Abrir e imprimir el MT-RE-045"
                           >
-                            MT-RE-045
+                            Imprimir MT-RE-045
                           </button>
                         </td>
                       </tr>

@@ -373,8 +373,13 @@ function PreventivoPage() {
   }
 
   function abrirMtre045(registro: RegistroPreventivo) {
+    const datos = registro.datos.mtre045 ?? construirMtre045DesdeRegistro(registro);
     navigate("/formatos/mt-re-045", {
-      state: { mtre045Datos: construirMtre045DesdeRegistro(registro) },
+      state: {
+        mtre045Datos: datos,
+        soloImprimir: true,
+        volverA: "/preventivo",
+      },
     });
   }
 
@@ -388,7 +393,13 @@ function PreventivoPage() {
       setError("Selecciona una máquina válida.");
       return;
     }
-    navigate("/formatos/mt-re-045", { state: { mtre045Datos: datos } });
+    navigate("/formatos/mt-re-045", {
+      state: {
+        mtre045Datos: datos,
+        soloImprimir: true,
+        volverA: "/preventivo",
+      },
+    });
   }
 
   async function manejarEnvio(evento: FormEvent) {
@@ -872,11 +883,16 @@ function PreventivoPage() {
                   </td>
                   <td>{registro.descripcion}</td>
                   <td className="preventivo__acciones">
-                    <SoloConPermiso permiso="ver.formatos">
-                      <button className="btn" onClick={() => abrirMtre045(registro)}>
-                        MT-RE-045
+                    {(puede("ver.formatos") || puede("aprobar.preventivo")) && (
+                      <button
+                        type="button"
+                        className={estado === "aprobado" ? "btn btn--primario" : "btn"}
+                        onClick={() => abrirMtre045(registro)}
+                        title="Abrir e imprimir el MT-RE-045"
+                      >
+                        {estado === "aprobado" ? "Imprimir MT-RE-045" : "Ver MT-RE-045"}
                       </button>
-                    </SoloConPermiso>
+                    )}
                     <SoloConPermiso permiso="crear.preventivo">
                       <button className="btn" onClick={() => iniciarEdicion(registro)}>
                         {estado === "rechazado" ? "Corregir y reenviar" : "Editar"}
