@@ -18,12 +18,15 @@ import {
   formatoMontoCop,
   semaforoItem,
 } from "./gerenciaSla";
+import EncargadosCampos from "./EncargadosCampos";
 import {
   IMPACTOS_GERENCIA,
+  etiquetaEncargados,
   etiquetaEstado,
   etiquetaImpacto,
   etiquetaTablero,
   etiquetaTipo,
+  normalizarListaEncargados,
   type ComentarioGerencia,
   type CotizacionGerencia,
   type HistorialGerencia,
@@ -56,7 +59,9 @@ function GerenciaItemDetalle({ item: inicial, puedeGestionar, onCerrar, onActual
   const [notasCot, setNotasCot] = useState("");
   const [impacto, setImpacto] = useState<ImpactoGerencia>(inicial.impacto);
   const [compromiso, setCompromiso] = useState(inicial.fecha_compromiso ?? "");
-  const [responsable, setResponsable] = useState(inicial.responsable_nombre ?? "");
+  const [encargados, setEncargados] = useState<string[]>(
+    inicial.encargados?.length ? inicial.encargados : [inicial.responsable_nombre ?? ""],
+  );
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -81,7 +86,9 @@ function GerenciaItemDetalle({ item: inicial, puedeGestionar, onCerrar, onActual
     setItem(inicial);
     setImpacto(inicial.impacto);
     setCompromiso(inicial.fecha_compromiso ?? "");
-    setResponsable(inicial.responsable_nombre ?? "");
+    setEncargados(
+      inicial.encargados?.length ? [...inicial.encargados] : [inicial.responsable_nombre ?? ""],
+    );
     void cargar();
   }, [inicial, cargar]);
 
@@ -180,7 +187,7 @@ function GerenciaItemDetalle({ item: inicial, puedeGestionar, onCerrar, onActual
       const actualizado = await actualizarItemGerencia(item.id, {
         impacto,
         fecha_compromiso: compromiso || null,
-        responsable_nombre: responsable,
+        encargados: normalizarListaEncargados(encargados),
       });
       setItem(actualizado);
       onActualizado(actualizado);
@@ -262,10 +269,10 @@ function GerenciaItemDetalle({ item: inicial, puedeGestionar, onCerrar, onActual
             <p className="gerencia__tarjeta-detalle">
               Creada: {formatoFechaCorta(item.creado_en)} · Impacto:{" "}
               {etiquetaImpacto(item.impacto)}
+              {etiquetaEncargados(item) ? ` · Encargado(s): ${etiquetaEncargados(item)}` : ""}
               {item.fecha_compromiso
                 ? ` · Compromiso: ${formatoFechaCorta(item.fecha_compromiso)}`
                 : ""}
-              {item.responsable_nombre ? ` · Resp.: ${item.responsable_nombre}` : ""}
               {item.proveedor ? ` · Proveedor: ${item.proveedor}` : ""}
             </p>
             {item.notas && <p className="gerencia__tarjeta-detalle">{item.notas}</p>}
@@ -306,14 +313,11 @@ function GerenciaItemDetalle({ item: inicial, puedeGestionar, onCerrar, onActual
                     onChange={(e) => setCompromiso(e.target.value)}
                   />
                 </label>
-                <label className="gerencia__campo">
-                  Responsable Gerencia
-                  <input
-                    value={responsable}
-                    onChange={(e) => setResponsable(e.target.value)}
-                    placeholder="Nombre"
-                  />
-                </label>
+                <EncargadosCampos
+                  valores={encargados}
+                  onChange={setEncargados}
+                  etiqueta="Encargado(s) del proyecto"
+                />
                 <button type="submit" className="btn btn--primario" disabled={ocupado}>
                   Guardar gestión
                 </button>

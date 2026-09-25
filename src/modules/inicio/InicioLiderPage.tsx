@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
+import EncargadosCampos from "../gerencia/EncargadosCampos";
 import GerenciaItemDetalle from "../gerencia/GerenciaItemDetalle";
 import {
   crearColumnaAreaLider,
@@ -26,9 +27,11 @@ import {
 import {
   TIPOS_GERENCIA,
   URGENCIAS_GERENCIA,
+  etiquetaEncargados,
   etiquetaEstado,
   etiquetaTablero,
   etiquetaTipo,
+  normalizarListaEncargados,
   type ColumnaGerencia,
   type ItemGerencia,
   type TipoGerencia,
@@ -66,6 +69,7 @@ function InicioLiderPage() {
   const [nuevoTipo, setNuevoTipo] = useState<TipoGerencia>("proyecto");
   const [nuevaUrgencia, setNuevaUrgencia] = useState<UrgenciaGerencia>("media");
   const [nuevasNotas, setNuevasNotas] = useState("");
+  const [nuevosEncargados, setNuevosEncargados] = useState<string[]>([""]);
   const [enviandoId, setEnviandoId] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
@@ -204,6 +208,7 @@ function InicioLiderPage() {
     setNuevoTablero(tableroId);
     setNuevoTitulo("");
     setNuevasNotas("");
+    setNuevosEncargados([""]);
     setMostrarNuevo(true);
     setError(null);
     setMensaje(null);
@@ -224,6 +229,7 @@ function InicioLiderPage() {
         area,
         urgencia: nuevaUrgencia,
         notas: nuevasNotas,
+        encargados: normalizarListaEncargados(nuevosEncargados),
         tablero: nuevoTablero || bandejaId,
         estado: "pendiente",
         origen: "solicitud",
@@ -350,6 +356,11 @@ function InicioLiderPage() {
             </div>
             {formatoMontoCop(item.monto) && (
               <p className="gerencia__tarjeta-detalle">{formatoMontoCop(item.monto)}</p>
+            )}
+            {etiquetaEncargados(item) && (
+              <p className="gerencia__tarjeta-detalle">
+                Encargado{item.encargados.length > 1 ? "s" : ""}: {etiquetaEncargados(item)}
+              </p>
             )}
             {item.notas && (
               <p
@@ -627,7 +638,14 @@ function InicioLiderPage() {
                   rows={3}
                 />
               </label>
-              <p className="gerencia__modal-detalle">Área: <strong>{area}</strong></p>
+              <EncargadosCampos
+                valores={nuevosEncargados}
+                onChange={setNuevosEncargados}
+                etiqueta="Encargado(s) del proyecto"
+              />
+              <p className="gerencia__modal-detalle">
+                Área: <strong>{area}</strong>
+              </p>
             </div>
             <div className="gerencia__modal-acciones">
               <button type="button" className="btn" onClick={() => setMostrarNuevo(false)}>

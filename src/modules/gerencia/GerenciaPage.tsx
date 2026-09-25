@@ -21,6 +21,7 @@ import {
   TABLEROS_GERENCIA,
   TIPOS_GERENCIA,
   URGENCIAS_GERENCIA,
+  etiquetaEncargados,
   etiquetaTipo,
   type ColumnaGerencia,
   type ImpactoGerencia,
@@ -644,17 +645,24 @@ function GerenciaPage() {
                           {diasAbiertos(item)}d · {sem}
                         </span>
                       </div>
-                      {item.solicitante_nombre && (
-                        <p className="gerencia__tarjeta-detalle">
-                          Pidió: {item.solicitante_nombre}
-                        </p>
-                      )}
-                      {formatoMontoCop(item.monto) && (
-                        <p className="gerencia__tarjeta-detalle">{formatoMontoCop(item.monto)}</p>
-                      )}
-                      {item.notas && (
-                        <p className="gerencia__tarjeta-detalle">{item.notas}</p>
-                      )}
+                    {item.solicitante_nombre && (
+                      <p className="gerencia__tarjeta-detalle">
+                        Pidió: {item.solicitante_nombre}
+                      </p>
+                    )}
+                    {etiquetaEncargados(item) && (
+                      <p className="gerencia__tarjeta-detalle">
+                        Encargado{item.encargados.length > 1 ? "s" : ""}: {etiquetaEncargados(item)}
+                      </p>
+                    )}
+                    {formatoMontoCop(item.monto) && (
+                      <p className="gerencia__tarjeta-detalle">{formatoMontoCop(item.monto)}</p>
+                    )}
+                    {item.notas && (
+                      <p className="gerencia__tarjeta-detalle gerencia__tarjeta-detalle--clamp" title={item.notas ?? undefined}>
+                        {item.notas}
+                      </p>
+                    )}
                       <label className="gerencia__check">
                         <input
                           type="checkbox"

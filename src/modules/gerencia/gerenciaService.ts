@@ -13,7 +13,7 @@ import type {
   TipoGerencia,
   UrgenciaGerencia,
 } from "./types";
-import { TABLEROS_GERENCIA } from "./types";
+import { TABLEROS_GERENCIA, normalizarListaEncargados } from "./types";
 import { diasAbiertos, diasLimiteSla, semaforoItem } from "./gerenciaSla";
 
 const TABLA = "gerencia_items";
@@ -63,12 +63,32 @@ function esImpacto(v: string): v is ImpactoGerencia {
   return ["bajo", "medio", "alto"].includes(v);
 }
 
+function parseEncargadosFila(fila: Record<string, unknown>): string[] {
+  const raw = fila.encargados;
+  if (Array.isArray(raw)) {
+    return normalizarListaEncargados(raw.map((x) => String(x)));
+  }
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        return normalizarListaEncargados(parsed.map((x) => String(x)));
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  const resp = fila.responsable_nombre != null ? String(fila.responsable_nombre).trim() : "";
+  return resp ? [resp] : [];
+}
+
 function normalizar(fila: Record<string, unknown>): ItemGerencia {
   const tipoRaw = String(fila.tipo ?? "proyecto");
   const estadoRaw = String(fila.estado ?? "pendiente");
   const urgenciaRaw = String(fila.urgencia ?? "media");
   const impactoRaw = String(fila.impacto ?? "medio");
   const origenRaw = String(fila.origen ?? "solicitud");
+  const encargados = parseEncargadosFila(fila);
   return {
     id: String(fila.id),
     tablero: String(fila.tablero ?? "por_clasificar") || "por_clasificar",
@@ -90,7 +110,9 @@ function normalizar(fila: Record<string, unknown>): ItemGerencia {
       ? String(fila.fecha_compromiso).slice(0, 10)
       : null,
     responsable_nombre:
-      fila.responsable_nombre != null ? String(fila.responsable_nombre) : null,
+      encargados[0] ??
+      (fila.responsable_nombre != null ? String(fila.responsable_nombre) : null),
+    encargados,
     cerrado_en: fila.cerrado_en != null ? String(fila.cerrado_en) : null,
     confirmado_area: Boolean(fila.confirmado_area),
     motivo_eliminacion:
@@ -174,6 +196,9 @@ export async function obtenerItemGerencia(id: string): Promise<ItemGerencia | nu
 }
 
 export async function crearItemGerencia(input: ItemGerenciaInput): Promise<ItemGerencia> {
+  const encargados = normalizarListaEncargados(
+    input.encargados ?? (input.responsable_nombre ? [input.responsable_nombre] : []),
+  );
   const payload = {
     titulo: input.titulo.trim(),
     tipo: input.tipo,
@@ -190,7 +215,8 @@ export async function crearItemGerencia(input: ItemGerenciaInput): Promise<ItemG
     solicitante_id: input.solicitante_id ?? null,
     solicitante_nombre: input.solicitante_nombre?.trim() || null,
     fecha_compromiso: input.fecha_compromiso || null,
-    responsable_nombre: input.responsable_nombre?.trim() || null,
+    responsable_nombre: encargados[0] ?? (input.responsable_nombre?.trim() || null),
+    encargados,
     actualizado_en: new Date().toISOString(),
   };
   const { data, error } = await supabase.from(TABLA).insert(payload).select("*").single();
@@ -223,8 +249,14 @@ export async function actualizarItemGerencia(
   if (cambios.fecha_compromiso !== undefined) {
     payload.fecha_compromiso = cambios.fecha_compromiso || null;
   }
-  if (cambios.responsable_nombre !== undefined) {
-    payload.responsable_nombre = cambios.responsable_nombre?.trim() || null;
+  if (cambios.encargados !== undefined) {
+    const lista = normalizarListaEncargados(cambios.encargados);
+    payload.encargados = lista;
+    payload.responsable_nombre = lista[0] ?? null;
+  } else if (cambios.responsable_nombre !== undefined) {
+    const nombre = cambios.responsable_nombre?.trim() || null;
+    payload.responsable_nombre = nombre;
+    payload.encargados = nombre ? [nombre] : [];
   }
   if (cambios.confirmado_area != null) payload.confirmado_area = cambios.confirmado_area;
 

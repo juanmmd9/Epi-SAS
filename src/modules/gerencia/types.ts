@@ -74,6 +74,8 @@ export interface ItemGerencia {
   origen: "solicitud" | "gerencia";
   fecha_compromiso: string | null;
   responsable_nombre: string | null;
+  /** Nombres de encargados del proyecto (1 o más). */
+  encargados: string[];
   cerrado_en: string | null;
   confirmado_area: boolean;
   motivo_eliminacion: string | null;
@@ -100,7 +102,30 @@ export interface ItemGerenciaInput {
   solicitante_nombre?: string | null;
   fecha_compromiso?: string | null;
   responsable_nombre?: string | null;
+  encargados?: string[];
   confirmado_area?: boolean;
+}
+
+/** Limpia y deduplica nombres de encargados. */
+export function normalizarListaEncargados(nombres: string[] | null | undefined): string[] {
+  const vistos = new Set<string>();
+  const out: string[] = [];
+  for (const raw of nombres ?? []) {
+    const n = String(raw ?? "").trim();
+    if (!n) continue;
+    const clave = n.toLowerCase();
+    if (vistos.has(clave)) continue;
+    vistos.add(clave);
+    out.push(n);
+  }
+  return out;
+}
+
+export function etiquetaEncargados(item: Pick<ItemGerencia, "encargados" | "responsable_nombre">): string | null {
+  const lista = normalizarListaEncargados(
+    item.encargados?.length ? item.encargados : item.responsable_nombre ? [item.responsable_nombre] : [],
+  );
+  return lista.length ? lista.join(", ") : null;
 }
 
 export interface HistorialGerencia {
