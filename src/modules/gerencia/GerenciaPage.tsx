@@ -682,6 +682,14 @@ function GerenciaPage() {
                     </article>
                     );
                   })}
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ flex: "0 0 auto", alignSelf: "flex-start" }}
+                    onClick={() => abrirNuevoEn(col.id)}
+                  >
+                    + Card
+                  </button>
                 </div>
               </div>
             );
