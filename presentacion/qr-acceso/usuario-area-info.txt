@@ -1,0 +1,7 @@
+Usuario de área
+Puede entrar con correo o con usuario:
+Correo: solicitante.area@epi.com
+Usuario: solicitante.area
+Clave: EpiArea2026
+Enlace: https://juanmmd9.github.io/Epi-SAS/login
+Nota: no hace falta cambiar el email en Authentication.
