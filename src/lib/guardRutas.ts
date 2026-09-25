@@ -6,6 +6,7 @@ export function permisoParaRuta(pathname: string): Permiso | null {
   if (pathname.startsWith("/gerencia/pedir")) return "crear.gerencia";
   if (pathname.startsWith("/gerencia")) return "ver.gerencia";
   if (pathname.startsWith("/solicitudes")) return "ver.solicitudes";
+  if (pathname.startsWith("/preventivo/aprobaciones")) return "aprobar.preventivo";
   if (pathname.startsWith("/preventivo")) return "ver.preventivo";
   if (pathname.startsWith("/correctivo")) return "ver.correctivo";
   if (pathname.startsWith("/hojas-de-vida")) return "ver.hojas";
