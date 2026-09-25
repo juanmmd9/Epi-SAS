@@ -91,7 +91,7 @@ function normalizar(fila: Record<string, unknown>): ItemGerencia {
   const encargados = parseEncargadosFila(fila);
   return {
     id: String(fila.id),
-    tablero: String(fila.tablero ?? "por_clasificar") || "por_clasificar",
+    tablero: String(fila.tablero ?? "por_clasificar"),
     titulo: String(fila.titulo ?? ""),
     tipo: esTipo(tipoRaw) ? tipoRaw : "proyecto",
     area: fila.area != null ? String(fila.area) : null,
