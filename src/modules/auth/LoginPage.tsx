@@ -18,7 +18,7 @@ function destinoSeguro(
   desde: string | null | undefined,
 ): string {
   if (rol === "solicitante") return "/solicitudes";
-  if (rol === "lider") return "/preventivo/aprobaciones";
+  if (rol === "lider") return "/";
   if (desde && desde !== "/login" && !desde.startsWith("/login")) return desde;
   return rutaInicioParaRol(rol);
 }

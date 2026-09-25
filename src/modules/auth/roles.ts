@@ -65,7 +65,7 @@ export type Permiso =
   | "gestionar.usuarios";
 
 const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
-  "ver.inicio": ["admin", "operador", "consulta", "solicitante"],
+  "ver.inicio": ["admin", "operador", "consulta", "solicitante", "lider"],
   "ver.gerencia": ["gerencia"],
   "ver.preventivo": ["admin", "operador", "consulta"],
   "ver.correctivo": ["admin", "operador", "consulta"],
@@ -145,7 +145,7 @@ export function rutaInicioParaRol(
   _area?: string | null | undefined,
 ): string {
   if (rol === "solicitante") return "/solicitudes";
-  if (rol === "lider") return "/preventivo/aprobaciones";
+  if (rol === "lider") return "/";
   if (rol === "gerencia") return "/gerencia";
   return "/";
 }

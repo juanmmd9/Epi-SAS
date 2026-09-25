@@ -34,6 +34,7 @@ import BandejaTomarPanel from "../solicitudes/BandejaTomarPanel";
 import { solicitudAbierta } from "../solicitudes/solicitudesCalculo";
 import CitaPmItem from "./CitaPmItem";
 import { construirDatosArea } from "./inicioDatosArea";
+import InicioLiderPage from "./InicioLiderPage";
 import MisPmPanel from "./MisPmPanel";
 import {
   contarPmSinAsignar,
@@ -44,7 +45,12 @@ import {
 import "./inicio.css";
 
 function InicioPage() {
-  const { puede, esAdmin, perfil, cargando: cargandoAuth } = useAuth();
+  const { puede, esAdmin, perfil, cargando: cargandoAuth, rol } = useAuth();
+
+  if (rol === "lider") {
+    return <InicioLiderPage />;
+  }
+
   const puedeModificarPm = puede("crear.preventivo");
   const anioActual = new Date().getFullYear();
   const mesActual = new Date().getMonth() + 1;

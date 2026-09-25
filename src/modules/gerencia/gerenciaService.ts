@@ -34,6 +34,19 @@ function slugColumna(etiqueta: string): string {
     .slice(0, 48) || `col_${Date.now()}`;
 }
 
+/** Prefijo de columnas del tablero de área del líder (no aparecen en Gerencia). */
+export function prefijoTableroArea(area: string): string {
+  return `area_${slugColumna(area || "sin_area")}_`;
+}
+
+export function esTableroAreaLider(tablero: string): boolean {
+  return tablero.startsWith("area_");
+}
+
+export function idColumnaBandejaArea(area: string): string {
+  return `${prefijoTableroArea(area)}bandeja`;
+}
+
 function esTipo(v: string): v is TipoGerencia {
   return ["proyecto", "compra_internacional", "compra_local", "maquina", "otro"].includes(v);
 }
@@ -138,7 +151,10 @@ export async function listarItemsGerencia(): Promise<ItemGerencia[]> {
     .order("orden", { ascending: true })
     .order("creado_en", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((f) => normalizar(f as Record<string, unknown>));
+  // Solo lo ya enviado a Gerencia (no borradores del tablero de área del líder)
+  return (data ?? [])
+    .map((f) => normalizar(f as Record<string, unknown>))
+    .filter((i) => !esTableroAreaLider(i.tablero));
 }
 
 export async function listarMisPedidosGerencia(userId: string): Promise<ItemGerencia[]> {
@@ -488,12 +504,114 @@ export async function listarColumnasGerencia(): Promise<ColumnaGerencia[]> {
     }
 
     return Array.from(porId.values())
-      .filter((c) => c.activo)
+      .filter((c) => c.activo && !esTableroAreaLider(c.id))
       .map(({ id, etiqueta, orden }) => ({ id, etiqueta, orden }))
       .sort((a, b) => a.orden - b.orden || a.etiqueta.localeCompare(b.etiqueta));
   } catch {
     return base;
   }
+}
+
+export async function listarColumnasAreaLider(area: string): Promise<ColumnaGerencia[]> {
+  const prefijo = prefijoTableroArea(area);
+  const bandejaId = idColumnaBandejaArea(area);
+  const bandeja: ColumnaGerencia = { id: bandejaId, etiqueta: "Por enviar", orden: 10 };
+
+  try {
+    const { data, error } = await supabase
+      .from(TABLA_COLS)
+      .select("id, etiqueta, orden, activo")
+      .like("id", `${prefijo}%`)
+      .order("orden", { ascending: true });
+
+    if (error) return [bandeja];
+
+    const cols = (data ?? [])
+      .filter((f) => (f as { activo?: boolean }).activo !== false)
+      .map((f) => ({
+        id: String((f as { id: string }).id),
+        etiqueta: String((f as { etiqueta: string }).etiqueta),
+        orden: Number((f as { orden: number }).orden) || 100,
+      }));
+
+    if (!cols.some((c) => c.id === bandejaId)) {
+      // Asegura columna bandeja en BD
+      await supabase.from(TABLA_COLS).upsert(
+        { id: bandejaId, etiqueta: "Por enviar", orden: 10, activo: true },
+        { onConflict: "id" },
+      );
+      cols.unshift(bandeja);
+    }
+
+    return cols.sort((a, b) => a.orden - b.orden || a.etiqueta.localeCompare(b.etiqueta));
+  } catch {
+    return [bandeja];
+  }
+}
+
+export async function crearColumnaAreaLider(
+  area: string,
+  etiqueta: string,
+): Promise<ColumnaGerencia> {
+  const nombre = etiqueta.trim();
+  if (!nombre) throw new Error("Escribe el nombre de la columna.");
+  const prefijo = prefijoTableroArea(area);
+  let id = `${prefijo}${slugColumna(nombre)}`;
+  if (id === idColumnaBandejaArea(area)) id = `${prefijo}col_${Date.now()}`;
+
+  const existentes = await listarColumnasAreaLider(area);
+  const maxOrden = existentes.reduce((m, c) => Math.max(m, c.orden), 10);
+  const orden = maxOrden + 10;
+
+  const { data, error } = await supabase
+    .from(TABLA_COLS)
+    .upsert({ id, etiqueta: nombre, orden, activo: true }, { onConflict: "id" })
+    .select("id, etiqueta, orden")
+    .single();
+
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("does not exist") || error.code === "42P01") {
+      throw new Error(
+        "Falta crear la tabla de columnas. Ejecuta en SQL Editor: supabase/migrations/gerencia_tableros.sql",
+      );
+    }
+    if (msg.includes("policy") || msg.includes("permission") || msg.includes("rls")) {
+      throw new Error(
+        "Sin permiso para crear columnas. Ejecuta supabase/migrations/gerencia_tablero_area_lider.sql",
+      );
+    }
+    throw new Error(error.message);
+  }
+
+  return {
+    id: String(data?.id ?? id),
+    etiqueta: String(data?.etiqueta ?? nombre),
+    orden: Number(data?.orden) || orden,
+  };
+}
+
+/** Envía una card del tablero de área a la bandeja de Gerencia (Por clasificar). */
+export async function enviarItemAGerencia(id: string): Promise<ItemGerencia> {
+  const { data, error } = await supabase
+    .from(TABLA)
+    .update({
+      tablero: "por_clasificar",
+      estado: "pendiente",
+      origen: "solicitud",
+      actualizado_en: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  const item = normalizar(data as Record<string, unknown>);
+  await supabase.from(TABLA_HIST).insert({
+    item_id: id,
+    tipo: "envio_gerencia",
+    detalle: "Enviado a Gerencia · Por clasificar",
+  });
+  return item;
 }
 
 export async function crearColumnaGerencia(etiqueta: string): Promise<ColumnaGerencia> {
@@ -537,10 +655,19 @@ export async function crearColumnaGerencia(etiqueta: string): Promise<ColumnaGer
 /** Soft-delete de columna. No permite borrar «Por clasificar». Mueve ítems activos a Por clasificar. */
 export async function eliminarColumnaGerencia(
   columna: ColumnaGerencia,
+  opciones?: { bandejaArea?: string },
 ): Promise<{ movidos: number }> {
   if (columna.id === "por_clasificar") {
     throw new Error("No se puede eliminar la columna «Por clasificar».");
   }
+  if (opciones?.bandejaArea && columna.id === idColumnaBandejaArea(opciones.bandejaArea)) {
+    throw new Error("No se puede eliminar la columna «Por enviar».");
+  }
+
+  const destino =
+    opciones?.bandejaArea != null
+      ? idColumnaBandejaArea(opciones.bandejaArea)
+      : "por_clasificar";
 
   const { data: itemsCol, error: errItems } = await supabase
     .from(TABLA)
@@ -556,7 +683,7 @@ export async function eliminarColumnaGerencia(
     const { error: errMove } = await supabase
       .from(TABLA)
       .update({
-        tablero: "por_clasificar",
+        tablero: destino,
         actualizado_en: new Date().toISOString(),
       })
       .in("id", ids);

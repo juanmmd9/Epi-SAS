@@ -70,8 +70,9 @@ const PRIORIDAD_TABS = [
   "/correctivo",
 ] as const;
 
-/** Líder: Aprobar PM + Solicitar a Gerencia a la mano. */
+/** Líder: Inicio (tablero área) + Aprobar PM + Solicitar a Gerencia. */
 const PRIORIDAD_TABS_LIDER = [
+  "/",
   "/preventivo/aprobaciones",
   "/gerencia/pedir",
   "/solicitudes",
