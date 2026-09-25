@@ -354,7 +354,7 @@ function UsuariosPage() {
           </li>
           <li>
             Para jefes de área: rol <strong>líder de área</strong> (elige el área). Podrán
-            crear solicitudes, ver Hojas de vida / Formatos y firmar PM en{" "}
+            crear solicitudes, ver Hojas de vida, Solicitar a Gerencia y firmar PM en{" "}
             <strong>Aprobar PM</strong>.
           </li>
           <li>

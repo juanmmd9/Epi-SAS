@@ -72,13 +72,10 @@ const PRIORIDAD_TABS = [
 
 /** Líder: Aprobar PM + Solicitar a Gerencia a la mano. */
 const PRIORIDAD_TABS_LIDER = [
-  "/",
   "/preventivo/aprobaciones",
   "/gerencia/pedir",
   "/solicitudes",
-  "/preventivo",
   "/hojas-de-vida",
-  "/formatos",
 ] as const;
 
 function enriquecer(enlace: EnlaceNav): ItemNav {
