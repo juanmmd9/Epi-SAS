@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
-import { AREAS_SISTEMA } from "../../lib/areas";
+import { AREAS_PLANTA } from "../../lib/areas";
 import { borrarBorrador, guardarBorrador, leerBorrador } from "../../lib/borradorFormulario";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
@@ -499,7 +499,7 @@ function CorrectivoPage() {
             <select required value={campos.area}
               onChange={(e) => actualizar("area", e.target.value)}>
               <option value="">Selecciona un área</option>
-              {AREAS_SISTEMA.map((area) => (
+              {AREAS_PLANTA.map((area) => (
                 <option key={area} value={area}>{area}</option>
               ))}
             </select>
@@ -685,7 +685,7 @@ function CorrectivoPage() {
             }}
           >
             <option value="">Todas las áreas</option>
-            {AREAS_SISTEMA.map((area) => (
+            {AREAS_PLANTA.map((area) => (
               <option key={area} value={area}>
                 {area}
               </option>

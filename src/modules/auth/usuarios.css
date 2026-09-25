@@ -18,6 +18,17 @@
   margin-top: 0;
 }
 
+.usuarios__pista {
+  margin: -0.35rem 0 0.35rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  background: #eef6ff;
+  border: 1px solid #c5daf5;
+  color: #1e3a5f;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
 .usuarios__pasos {
   background: #f0f7ff;
   border: 1px solid #c5daf5;

@@ -108,6 +108,14 @@ function IconoNavSvg({ nombre }: { nombre: IconoNav }) {
           <rect x="14" y="14" width="7" height="7" rx="1" />
         </svg>
       );
+    case "gerencia":
+      return (
+        <svg {...props}>
+          <path d="M4 20V8l8-4 8 4v12" />
+          <path d="M9 20v-6h6v6" />
+          <path d="M9 10h.01M15 10h.01M12 10h.01" />
+        </svg>
+      );
     case "mas":
     default:
       return (

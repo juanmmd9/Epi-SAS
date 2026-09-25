@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { AREAS_SISTEMA, coincideArea } from "../../lib/areas";
+import { AREAS_PLANTA, coincideArea } from "../../lib/areas";
 import type { HojaVida, HojaVidaInput } from "./types";
 
 interface Props {
@@ -120,7 +120,7 @@ function HojaForm({ hojaEnEdicion, guardando, onGuardar, onCancelarEdicion }: Pr
             onChange={(e) => actualizarCampo("area", e.target.value)}
           >
             <option value="">Selecciona un área</option>
-            {AREAS_SISTEMA.map((area) => (
+            {AREAS_PLANTA.map((area) => (
               <option key={area} value={area}>
                 {area}
               </option>

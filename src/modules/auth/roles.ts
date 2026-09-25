@@ -58,6 +58,7 @@ export type Permiso =
   | "crear.solicitudes"
   | "crear.repuestos"
   | "crear.permisos"
+  | "crear.gerencia"
   | "aprobar.permisos"
   | "aprobar.preventivo"
   | "eliminar.registros"
@@ -89,6 +90,7 @@ const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
   "crear.solicitudes": ["admin", "operador", "solicitante", "lider"],
   "crear.repuestos": ["admin", "operador", "solicitante", "lider"],
   "crear.permisos": ["admin", "operador"],
+  "crear.gerencia": ["admin", "lider"],
   "aprobar.permisos": ["admin"],
   "aprobar.preventivo": ["admin", "lider"],
   "eliminar.registros": ["admin"],
@@ -109,6 +111,7 @@ export interface EnlaceNav {
 export const ENLACES_NAV: EnlaceNav[] = [
   { ruta: "/", texto: "Inicio", permiso: "ver.inicio" },
   { ruta: "/gerencia", texto: "Gerencia", permiso: "ver.gerencia" },
+  { ruta: "/gerencia/pedir", texto: "Solicitar a Gerencia", permiso: "crear.gerencia" },
   { ruta: "/preventivo", texto: "Mant. preventivo", permiso: "ver.preventivo" },
   {
     ruta: "/preventivo/aprobaciones",

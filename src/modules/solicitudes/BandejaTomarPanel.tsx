@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AREAS_SISTEMA, coincideArea, normalizarArea } from "../../lib/areas";
+import { AREAS_PLANTA, coincideArea, normalizarArea } from "../../lib/areas";
 import { useAuth } from "../auth/AuthContext";
 import { listarCorrectivo } from "../correctivo/correctivoService";
 import type { RegistroCorrectivo } from "../correctivo/types";
@@ -79,7 +79,7 @@ function BandejaTomarPanel({ areaFiltro, onTomada }: Props) {
 
   const porArea = useMemo(() => {
     const mapa = new Map<string, RegistroCorrectivo[]>();
-    for (const area of AREAS_SISTEMA) mapa.set(area, []);
+    for (const area of AREAS_PLANTA) mapa.set(area, []);
     for (const r of todasLibres) {
       const area = normalizarArea(r.area) || r.area || "Sin área";
       const lista = mapa.get(area) ?? [];
@@ -87,11 +87,11 @@ function BandejaTomarPanel({ areaFiltro, onTomada }: Props) {
       mapa.set(area, lista);
     }
     const resultado: Array<{ area: string; items: RegistroCorrectivo[] }> = [];
-    for (const area of AREAS_SISTEMA) {
+    for (const area of AREAS_PLANTA) {
       resultado.push({ area, items: mapa.get(area) ?? [] });
     }
     for (const [area, items] of mapa) {
-      if (!AREAS_SISTEMA.includes(area as (typeof AREAS_SISTEMA)[number])) {
+      if (!AREAS_PLANTA.includes(area as (typeof AREAS_PLANTA)[number])) {
         resultado.push({ area, items });
       }
     }

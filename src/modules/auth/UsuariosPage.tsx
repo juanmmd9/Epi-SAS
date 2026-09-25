@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { AREAS_SISTEMA } from "../../lib/areas";
+import { AREAS_MAPA_PROCESOS, AREAS_PLANTA, AREAS_SISTEMA, USUARIOS_PLANEADOR_SUGERIDOS } from "../../lib/areas";
 import { listarPersonal } from "../personal/personalService";
 import type { Persona } from "../personal/types";
 import { useAuth } from "./AuthContext";
@@ -102,15 +102,35 @@ function UsuariosPage() {
     [personal, idsPersonalConUsuario],
   );
 
-  const operadoresVinculados = useMemo(
-    () => usuarios.filter((u) => u.rol === "operador" && u.personal_id),
-    [usuarios],
+  const planeadoresPendientes = useMemo(() => {
+    const existentes = new Set(
+      usuarios.map((u) => (u.usuario || "").trim().toLowerCase()).filter(Boolean),
+    );
+    return USUARIOS_PLANEADOR_SUGERIDOS.filter(
+      (s) => !existentes.has(s.usuario.toLowerCase()),
+    );
+  }, [usuarios]);
+
+  const pendientesChecklist = useMemo(
+    () => personalSinUsuario.length + planeadoresPendientes.length,
+    [personalSinUsuario.length, planeadoresPendientes.length],
   );
 
-  const operadoresSinPersonal = useMemo(
-    () => usuarios.filter((u) => u.rol === "operador" && !u.personal_id),
-    [usuarios],
-  );
+  function rellenarDesdeSugerido(sugerido: (typeof USUARIOS_PLANEADOR_SUGERIDOS)[number]) {
+    setCampos({
+      usuario: sugerido.usuario,
+      password: "",
+      nombre: sugerido.nombre,
+      rol: sugerido.rol,
+      personal_id: "",
+      area: sugerido.area,
+    });
+    setMensaje(
+      `Formulario listo para «${sugerido.usuario}». Escribe una contraseña y pulsa Crear usuario.`,
+    );
+    setError(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   function prepararAltaDesdePersonal(persona: Persona) {
     setCampos({
@@ -125,6 +145,16 @@ function UsuariosPage() {
     setError(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  const operadoresVinculados = useMemo(
+    () => usuarios.filter((u) => u.rol === "operador" && u.personal_id),
+    [usuarios],
+  );
+
+  const operadoresSinPersonal = useMemo(
+    () => usuarios.filter((u) => u.rol === "operador" && !u.personal_id),
+    [usuarios],
+  );
 
   if (!puede("gestionar.usuarios")) {
     return <Navigate to="/" replace />;
@@ -350,13 +380,16 @@ function UsuariosPage() {
                 ? ` · ${operadoresSinPersonal.length} operador(es) sin fila de Personal`
                 : ""}
               {" · "}
-              Pendientes de alta: <strong>{personalSinUsuario.length}</strong>
+              Pendientes de alta: <strong>{pendientesChecklist}</strong>
+              {" · "}
+              Mantenimiento: usa el <strong>admin</strong> (coordinador)
             </p>
           </div>
 
-          {personalSinUsuario.length === 0 ? (
+          {pendientesChecklist === 0 ? (
             <p className="usuarios__checklist-ok">
-              Todo el personal activo ya tiene usuario vinculado (o no hay personal cargado).
+              Todo el personal activo y los planeadores del mapa ya tienen usuario (o no hay
+              pendientes).
             </p>
           ) : (
             <ul className="usuarios__checklist-lista">
@@ -365,13 +398,31 @@ function UsuariosPage() {
                   <div>
                     <strong>{persona.nombre}</strong>
                     <small>
-                      {[persona.cargo, persona.area].filter(Boolean).join(" · ") || "Sin cargo/área"}
+                      {[persona.cargo, persona.area].filter(Boolean).join(" · ") ||
+                        "Sin cargo/área"}
                     </small>
                   </div>
                   <button
                     type="button"
                     className="btn btn--primario"
                     onClick={() => prepararAltaDesdePersonal(persona)}
+                  >
+                    Crear usuario
+                  </button>
+                </li>
+              ))}
+              {planeadoresPendientes.map((s) => (
+                <li key={`planeador-${s.usuario}`}>
+                  <div>
+                    <strong>{s.nombre}</strong>
+                    <small>
+                      {s.cargo} · {s.area} · {ETIQUETAS_ROL[s.rol]} · sugerido: {s.usuario}
+                    </small>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn--primario"
+                    onClick={() => rellenarDesdeSugerido(s)}
                   >
                     Crear usuario
                   </button>
@@ -443,19 +494,39 @@ function UsuariosPage() {
               <option value="gerencia">Gerencia</option>
             </select>
           </label>
+          {campos.rol === "lider" && (
+            <p className="usuarios__pista">
+              Líder de área incluye el menú <strong>Solicitar a Gerencia</strong> (pedidos a
+              Gerencia) y Aprobar PM.
+            </p>
+          )}
+          {campos.rol === "gerencia" && (
+            <p className="usuarios__pista">
+              Gerencia ve el tablero de proyectos/compras (menú <strong>Gerencia</strong>).
+            </p>
+          )}
           <label>
-            Área de planta {requiereArea(campos.rol) ? "*" : "(opcional)"}
+            Área {requiereArea(campos.rol) ? "*" : "(opcional)"}
             <select
               required={requiereArea(campos.rol)}
               value={campos.area}
               onChange={(e) => setCampos({ ...campos, area: e.target.value })}
             >
               <option value="">— Sin área —</option>
-              {AREAS_SISTEMA.map((area) => (
-                <option key={area} value={area}>
-                  {area}
-                </option>
-              ))}
+              <optgroup label="Planta / mantenimiento">
+                {[...AREAS_PLANTA, "Mantenimiento" as const].map((area) => (
+                  <option key={area} value={area}>
+                    {area}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Mapa de procesos">
+                {AREAS_MAPA_PROCESOS.filter((a) => a !== "Mantenimiento").map((area) => (
+                  <option key={area} value={area}>
+                    {area}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </label>
           <label>
@@ -555,6 +626,11 @@ function UsuariosPage() {
               <option value="gerencia">Gerencia</option>
             </select>
           </label>
+          {vincular.rol === "lider" && (
+            <p className="usuarios__pista">
+              Tendrá el menú <strong>Solicitar a Gerencia</strong> y Aprobar PM.
+            </p>
+          )}
           <label>
             Área {requiereArea(vincular.rol) ? "*" : "(opcional)"}
             <select

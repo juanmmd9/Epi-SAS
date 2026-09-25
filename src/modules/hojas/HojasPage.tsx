@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
-import { AREAS_SISTEMA, coincideArea } from "../../lib/areas";
+import { AREAS_PLANTA, coincideArea } from "../../lib/areas";
 import HojaForm from "./HojaForm";
 import {
   actualizarHoja,
@@ -250,7 +250,7 @@ function HojasPage() {
             Área
             <select value={filtroArea} onChange={(e) => setFiltroArea(e.target.value)}>
               <option value="">Todas las áreas</option>
-              {AREAS_SISTEMA.map((area) => (
+              {AREAS_PLANTA.map((area) => (
                 <option key={area} value={area}>
                   {area}
                 </option>

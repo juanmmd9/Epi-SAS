@@ -3,6 +3,7 @@ import type { Permiso } from "../modules/auth/roles";
 /** Permiso mínimo para acceder a una ruta del portal. */
 export function permisoParaRuta(pathname: string): Permiso | null {
   if (pathname === "/" || pathname === "") return "ver.inicio";
+  if (pathname.startsWith("/gerencia/pedir")) return "crear.gerencia";
   if (pathname.startsWith("/gerencia")) return "ver.gerencia";
   if (pathname.startsWith("/solicitudes")) return "ver.solicitudes";
   if (pathname.startsWith("/preventivo")) return "ver.preventivo";

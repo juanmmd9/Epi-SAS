@@ -15,6 +15,7 @@ export type IconoNav =
   | "usuarios"
   | "permisos"
   | "matriz"
+  | "gerencia"
   | "mas";
 
 export interface ItemNav extends EnlaceNav {
@@ -25,7 +26,8 @@ export interface ItemNav extends EnlaceNav {
 
 const ICONOS_POR_RUTA: Record<string, IconoNav> = {
   "/": "inicio",
-  "/gerencia": "mas",
+  "/gerencia": "gerencia",
+  "/gerencia/pedir": "gerencia",
   "/preventivo": "preventivo",
   "/preventivo/aprobaciones": "aprobar",
   "/correctivo": "correctivo",
@@ -43,6 +45,7 @@ const ICONOS_POR_RUTA: Record<string, IconoNav> = {
 const ETIQUETA_CORTA: Record<string, string> = {
   "/": "Inicio",
   "/gerencia": "Gerencia",
+  "/gerencia/pedir": "A Gerencia",
   "/preventivo": "Preventivo",
   "/preventivo/aprobaciones": "Aprobar",
   "/correctivo": "Correctivo",
@@ -67,10 +70,11 @@ const PRIORIDAD_TABS = [
   "/correctivo",
 ] as const;
 
-/** Líder: Aprobar + Solicitudes a la mano (reportar fallas y firmar PM). */
+/** Líder: Aprobar PM + Solicitar a Gerencia a la mano. */
 const PRIORIDAD_TABS_LIDER = [
   "/",
   "/preventivo/aprobaciones",
+  "/gerencia/pedir",
   "/solicitudes",
   "/preventivo",
   "/hojas-de-vida",
@@ -140,6 +144,12 @@ export function rutaActiva(pathname: string, rutaItem: string): boolean {
   }
   if (rutaItem === "/personal") {
     return pathname === "/personal";
+  }
+  if (rutaItem === "/gerencia") {
+    return pathname === "/gerencia";
+  }
+  if (rutaItem === "/gerencia/pedir") {
+    return pathname === "/gerencia/pedir" || pathname.startsWith("/gerencia/pedir/");
   }
   return pathname === rutaItem || pathname.startsWith(`${rutaItem}/`);
 }

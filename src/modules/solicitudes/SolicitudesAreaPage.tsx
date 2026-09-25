@@ -4,7 +4,7 @@ import { ContadorListaMensual, etiquetaPeriodoContador } from "../../components/
 import { useAuth } from "../auth/AuthContext";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { listarUsuariosPortal } from "../auth/usuariosService";
-import { AREAS_SISTEMA, coincideArea, esAreaValida, normalizarArea } from "../../lib/areas";
+import { AREAS_PLANTA, coincideArea, esAreaPlanta, normalizarArea } from "../../lib/areas";
 import {
   rutaSolicitudesArea,
   usuarioPuedeAccederArea,
@@ -107,7 +107,7 @@ function SolicitudesAreaPage({
 } = {}) {
   const { area: areaParam } = useParams<{ area: string }>();
   const area = areaIncrustada ?? (areaParam ? decodeURIComponent(areaParam) : "");
-  const areaValida = esAreaValida(area);
+  const areaValida = esAreaPlanta(area);
   const navegar = useNavigate();
   const { perfil, puede, esAdmin } = useAuth();
 
@@ -517,7 +517,7 @@ function SolicitudesAreaPage({
           Volver al tablero
         </Link>
         <ul>
-          {AREAS_SISTEMA.map((a) => (
+          {AREAS_PLANTA.map((a) => (
             <li key={a}>
               <Link to={rutaSolicitudesArea(a)}>{a}</Link>
             </li>

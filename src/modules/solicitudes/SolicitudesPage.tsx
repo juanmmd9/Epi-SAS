@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AREAS_SISTEMA, normalizarArea } from "../../lib/areas";
+import { AREAS_PLANTA, normalizarArea } from "../../lib/areas";
 import { esRolReportaSolicitudes } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import { NOMBRES_MESES } from "../../lib/fechas";
@@ -53,7 +53,7 @@ function SolicitudesPage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [vistaMetrica, setVistaMetrica] = useState<VistaMetrica | null>(null);
-  const [areaActiva, setAreaActiva] = useState<string>(AREAS_SISTEMA[0]);
+  const [areaActiva, setAreaActiva] = useState<string>(AREAS_PLANTA[0]);
 
   useEffect(() => {
     if (cargandoAuth) return;
@@ -99,7 +99,7 @@ function SolicitudesPage() {
   }, [vistaMetrica]);
 
   const resumenes = useMemo(
-    () => resumenesTodasAreas(AREAS_SISTEMA, correctivos, repuestos),
+    () => resumenesTodasAreas(AREAS_PLANTA, correctivos, repuestos),
     [correctivos, repuestos],
   );
 
