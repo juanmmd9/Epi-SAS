@@ -90,7 +90,7 @@ function AprobacionPmPage() {
   }, [registros, esAdmin, areaLider]);
 
   if (!puedeAprobar) {
-    return <Navigate to="/preventivo" replace />;
+    return <Navigate to="/solicitudes" replace />;
   }
 
   function firmaActual(imagenFirmaPng: string) {
