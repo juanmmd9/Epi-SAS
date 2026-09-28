@@ -44,6 +44,7 @@ function AprobacionPmPage() {
   const [detallePruebasFuncionamiento, setDetallePruebasFuncionamiento] = useState("");
   const [pruebasFuncionamiento, setPruebasFuncionamiento] = useState<ResultadoAn | "">("");
   const [noAprobo, setNoAprobo] = useState("");
+  const [nombreFirmante, setNombreFirmante] = useState("");
 
   const areaLider = areaUsuario(perfil);
   const esAdmin = rol === "admin";
@@ -107,6 +108,7 @@ function AprobacionPmPage() {
     setDetallePruebasFuncionamiento("");
     setPruebasFuncionamiento("");
     setNoAprobo("");
+    setNombreFirmante("");
   }
 
   function abrirPanelFirma(registro: RegistroPreventivo) {
@@ -127,6 +129,11 @@ function AprobacionPmPage() {
         : "",
     );
     setNoAprobo(mtre?.noAprobo ?? "");
+    const guardado = (mtre?.responsableVerificacion ?? "").trim();
+    const esElArea = Boolean(guardado) && coincideArea(guardado, registro.area);
+    setNombreFirmante(
+      !guardado || esElArea ? perfil?.nombre || perfil?.usuario || "" : guardado,
+    );
     setRegistroParaFirmar(registro);
   }
 
@@ -159,6 +166,10 @@ function AprobacionPmPage() {
       setError("Si marca NA, indique en «No aprobó» el detalle.");
       return;
     }
+    if (!nombreFirmante.trim()) {
+      setError("Escriba el nombre de quien firma la verificación.");
+      return;
+    }
     if (!imagenFirma) {
       setError("Firme en el recuadro (dedo o imagen) antes de confirmar.");
       return;
@@ -176,6 +187,7 @@ function AprobacionPmPage() {
           detallePruebasFuncionamiento: detallePruebasFuncionamiento.trim(),
           pruebasFuncionamiento,
           noAprobo: noAprobo.trim(),
+          nombreFirmante: nombreFirmante.trim(),
         },
       );
       setRegistros((prev) =>
@@ -592,6 +604,22 @@ function AprobacionPmPage() {
                 if (error) setError(null);
               }}
             />
+            <label className="firma-modal__campo">
+              Nombre de quien firma *
+              <input
+                value={nombreFirmante}
+                onChange={(e) => {
+                  setNombreFirmante(e.target.value);
+                  if (error) setError(null);
+                }}
+                placeholder="Ej. Juan Guillermo Alvarez"
+                disabled={ocupadoFirma}
+                autoComplete="name"
+              />
+              <span className="firma-modal__ayuda-inline">
+                Queda bajo la firma de verificación del MT-RE-045, en lugar del área.
+              </span>
+            </label>
             <div className="firma-modal__acciones">
               <button
                 type="button"

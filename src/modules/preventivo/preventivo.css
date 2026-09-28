@@ -465,6 +465,13 @@
   line-height: 1.4;
 }
 
+.firma-modal__ayuda-inline {
+  font-weight: 400;
+  color: var(--color-texto-suave);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 .firma-modal__panel--ancho {
   width: min(640px, 100%);
 }

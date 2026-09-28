@@ -83,6 +83,8 @@ export type VerificacionAprobacionPm = {
   detallePruebasFuncionamiento: string;
   pruebasFuncionamiento: "A" | "NA";
   noAprobo: string;
+  /** Nombre que queda bajo la firma de verificación en el MT-RE-045. */
+  nombreFirmante: string;
 };
 
 /** Envía / reenvía el PM al líder (pendiente de firma). */
@@ -128,7 +130,7 @@ export async function aprobarPreventivo(
         detallePruebasFuncionamiento: verificacion.detallePruebasFuncionamiento.trim(),
         pruebasFuncionamiento: verificacion.pruebasFuncionamiento,
         noAprobo: verificacion.noAprobo.trim(),
-        responsableVerificacion: baseMtre.responsableVerificacion?.trim() || firma.nombre,
+        responsableVerificacion: verificacion.nombreFirmante.trim() || firma.nombre,
         firmaVerificacion: firma.imagenFirma,
       }
     : {
@@ -147,7 +149,7 @@ export async function aprobarPreventivo(
         detallePruebasFuncionamiento: verificacion.detallePruebasFuncionamiento.trim(),
         pruebasFuncionamiento: verificacion.pruebasFuncionamiento,
         noAprobo: verificacion.noAprobo.trim(),
-        responsableVerificacion: firma.nombre,
+        responsableVerificacion: verificacion.nombreFirmante.trim() || firma.nombre,
         firmaVerificacion: firma.imagenFirma,
       };
   return actualizarPreventivo(registro.id, {
