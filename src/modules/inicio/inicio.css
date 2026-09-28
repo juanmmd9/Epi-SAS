@@ -644,6 +644,40 @@
   gap: 1rem;
 }
 
+.inicio--lider {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 3rem);
+}
+
+.inicio--lider .inicio__areas {
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: stretch;
+}
+
+.inicio--lider .area-card {
+  height: calc(100vh - 13rem);
+  min-height: 22rem;
+}
+
+.inicio--lider .area-card__meses {
+  flex: 1;
+  max-height: none;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .inicio--lider {
+    min-height: calc(100dvh - 8.5rem);
+  }
+
+  .inicio--lider .area-card {
+    height: calc(100dvh - 18rem);
+    min-height: 18rem;
+  }
+}
+
 .area-card {
   background: var(--color-superficie);
   border: 1px solid var(--color-borde);

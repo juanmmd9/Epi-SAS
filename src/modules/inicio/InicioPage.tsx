@@ -299,7 +299,7 @@ function InicioPage() {
   }
 
   return (
-    <section className={"inicio" + (esOperario ? " inicio--operario" : "")}>
+    <section className={"inicio" + (esOperario ? " inicio--operario" : "") + (esLider ? " inicio--lider" : "")}>
       <div className="inicio__cabecera">
         <div>
           <h1>
