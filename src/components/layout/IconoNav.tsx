@@ -116,6 +116,14 @@ function IconoNavSvg({ nombre }: { nombre: IconoNav }) {
           <path d="M9 10h.01M15 10h.01M12 10h.01" />
         </svg>
       );
+    case "tablero":
+      return (
+        <svg {...props}>
+          <rect x="3" y="3" width="5" height="18" rx="1" />
+          <rect x="10" y="3" width="5" height="12" rx="1" />
+          <rect x="17" y="3" width="4" height="8" rx="1" />
+        </svg>
+      );
     case "mas":
     default:
       return (

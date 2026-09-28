@@ -5,6 +5,7 @@ import { AuthProvider } from "./modules/auth/AuthContext";
 import LoginPage from "./modules/auth/LoginPage";
 import RequireAuth from "./modules/auth/RequireAuth";
 import InicioPage from "./modules/inicio/InicioPage";
+import InicioLiderPage from "./modules/inicio/InicioLiderPage";
 import GerenciaPage from "./modules/gerencia/GerenciaPage";
 import PedirGerenciaPage from "./modules/gerencia/PedirGerenciaPage";
 import PreventivoPage from "./modules/preventivo/PreventivoPage";
@@ -39,6 +40,8 @@ function App() {
         <Route element={<RequireAuth />}>
           <Route element={<Layout />}>
             <Route index element={<InicioPage />} />
+            <Route path="tablero" element={<InicioLiderPage />} />
+            <Route path="preventivo/aprobaciones/imprimir" element={<Mtre045Page />} />
             <Route path="gerencia" element={<GerenciaPage />} />
             <Route path="gerencia/pedir" element={<PedirGerenciaPage />} />
             <Route path="preventivo" element={<PreventivoPage />} />

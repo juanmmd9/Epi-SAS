@@ -354,8 +354,9 @@ function UsuariosPage() {
           </li>
           <li>
             Para jefes de área: rol <strong>líder de área</strong> (elige el área). Podrán
-            crear solicitudes, ver Hojas de vida, su Inicio (tablero del área), Solicitar a
-            Gerencia y firmar PM en <strong>Aprobar PM</strong>.
+            crear solicitudes, ver Hojas de vida, el panel preventivo en <strong>Inicio</strong>,
+            el <strong>Tablero</strong> de su área, Solicitar a Gerencia y firmar PM en{" "}
+            <strong>Aprobar PM</strong>.
           </li>
           <li>
             Si es operador de mantenimiento, vincula su fila de <strong>personal</strong> (para la
@@ -496,8 +497,9 @@ function UsuariosPage() {
           </label>
           {campos.rol === "lider" && (
             <p className="usuarios__pista">
-              Líder de área incluye <strong>Inicio</strong> (tablero de su área),{" "}
-              <strong>Solicitar a Gerencia</strong> y Aprobar PM.
+              Líder de área incluye <strong>Inicio</strong> (panel de mantenimiento preventivo),{" "}
+              <strong>Tablero</strong> de su área, <strong>Solicitar a Gerencia</strong> y Aprobar
+              PM.
             </p>
           )}
           {campos.rol === "gerencia" && (
@@ -628,7 +630,8 @@ function UsuariosPage() {
           </label>
           {vincular.rol === "lider" && (
             <p className="usuarios__pista">
-              Tendrá el menú <strong>Solicitar a Gerencia</strong> y Aprobar PM.
+              Tendrá <strong>Inicio</strong> (panel preventivo), <strong>Tablero</strong> del área,{" "}
+              <strong>Solicitar a Gerencia</strong> y Aprobar PM.
             </p>
           )}
           <label>

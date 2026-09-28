@@ -243,7 +243,7 @@ function AprobacionPmPage() {
 
   function abrirFormato(registro: RegistroPreventivo) {
     if (registro.datos.mtre045) {
-      navigate("/formatos/mt-re-045", {
+      navigate("/preventivo/aprobaciones/imprimir", {
         state: {
           mtre045Datos: registro.datos.mtre045,
           soloImprimir: true,

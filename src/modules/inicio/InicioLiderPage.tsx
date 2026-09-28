@@ -395,7 +395,7 @@ function InicioLiderPage() {
     <section className="gerencia">
       <header className="gerencia__cabecera">
         <div>
-          <h1>Inicio · {area}</h1>
+          <h1>Tablero · {area}</h1>
           <p className="gerencia__descripcion">
             Arma el tablero de tu área: crea columnas y cards. Cuando una esté lista, envíala a
             Gerencia.

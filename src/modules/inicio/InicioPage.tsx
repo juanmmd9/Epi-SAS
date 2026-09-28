@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import CargaPantalla from "../../components/CargaPantalla";
 import { AREAS_CON_PM } from "../../lib/areas";
 import { NOMBRES_MESES } from "../../lib/fechas";
+import { areaUsuario } from "../../lib/usuarioArea";
 import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
 import { useAuth } from "../auth/AuthContext";
 import { listarUsuariosPortal } from "../auth/usuariosService";
@@ -34,7 +35,6 @@ import BandejaTomarPanel from "../solicitudes/BandejaTomarPanel";
 import { solicitudAbierta } from "../solicitudes/solicitudesCalculo";
 import CitaPmItem from "./CitaPmItem";
 import { construirDatosArea } from "./inicioDatosArea";
-import InicioLiderPage from "./InicioLiderPage";
 import MisPmPanel from "./MisPmPanel";
 import {
   contarPmSinAsignar,
@@ -47,15 +47,13 @@ import "./inicio.css";
 function InicioPage() {
   const { puede, esAdmin, perfil, cargando: cargandoAuth, rol } = useAuth();
 
-  if (rol === "lider") {
-    return <InicioLiderPage />;
-  }
-
   const puedeModificarPm = puede("crear.preventivo");
   const anioActual = new Date().getFullYear();
   const mesActual = new Date().getMonth() + 1;
   const ubicacion = useLocation();
   const esOperario = perfil?.rol === "operador";
+  const esLider = rol === "lider";
+  const areaLider = esLider ? areaUsuario(perfil) : null;
   const mostrarCronogramaCompleto = !esOperario;
   const [anio, setAnio] = useState(anioActual);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
@@ -201,10 +199,11 @@ function InicioPage() {
 
   const datosPorArea = useMemo(() => {
     if (esOperario) return [];
-    return AREAS_CON_PM.map((area) =>
+    const areas = areaLider ? [areaLider] : AREAS_CON_PM;
+    return areas.map((area) =>
       construirDatosArea(area, anio, maquinas, excepciones, preventivo),
     );
-  }, [anio, esOperario, maquinas, excepciones, preventivo]);
+  }, [anio, esOperario, areaLider, maquinas, excepciones, preventivo]);
 
   const mapaAsignaciones = useMemo(
     () => mapaAsignacionesPorClave(asignaciones),
@@ -311,6 +310,11 @@ function InicioPage() {
               <>
                 Aquí ves tus preventivos y las solicitudes que tomaste. En Solicitudes del
                 área usa la bandeja y pulsa <strong>Tomar</strong>.
+              </>
+            ) : esLider ? (
+              <>
+                Programación anual
+                {areaLider ? <> del área {areaLider}</> : " por área"}.
               </>
             ) : puedeModificarPm ? (
               <>

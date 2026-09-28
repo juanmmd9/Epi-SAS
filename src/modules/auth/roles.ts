@@ -34,6 +34,7 @@ export const ETIQUETAS_ROL: Record<RolPortal, string> = {
 
 export type Permiso =
   | "ver.inicio"
+  | "ver.tablero.area"
   | "ver.gerencia"
   | "ver.preventivo"
   | "ver.correctivo"
@@ -66,6 +67,7 @@ export type Permiso =
 
 const MATRIZ_PERMISOS: Record<Permiso, RolPortal[]> = {
   "ver.inicio": ["admin", "operador", "consulta", "solicitante", "lider"],
+  "ver.tablero.area": ["lider"],
   "ver.gerencia": ["gerencia"],
   "ver.preventivo": ["admin", "operador", "consulta"],
   "ver.correctivo": ["admin", "operador", "consulta"],
@@ -110,6 +112,7 @@ export interface EnlaceNav {
 
 export const ENLACES_NAV: EnlaceNav[] = [
   { ruta: "/", texto: "Inicio", permiso: "ver.inicio" },
+  { ruta: "/tablero", texto: "Tablero", permiso: "ver.tablero.area" },
   { ruta: "/gerencia", texto: "Gerencia", permiso: "ver.gerencia" },
   { ruta: "/gerencia/pedir", texto: "Solicitar a Gerencia", permiso: "crear.gerencia" },
   { ruta: "/preventivo", texto: "Mant. preventivo", permiso: "ver.preventivo" },

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type DragEvent } from "react";
 import { Link } from "react-router-dom";
 import { AREAS_CON_PM, coincideArea } from "../../lib/areas";
 import { aFechaIso, diasEnMes, NOMBRES_MESES, valorFecha } from "../../lib/fechas";
+import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import { listarHojas } from "../hojas/hojasService";
 import type { HojaVida } from "../hojas/types";
@@ -48,10 +49,11 @@ interface DragCitaPayload {
 
 function CronogramaPage() {
   const anioActual = new Date().getFullYear();
-  const { puede, esAdmin } = useAuth();
+  const { puede, esAdmin, rol, perfil } = useAuth();
   const puedeGestionar = esAdmin || puede("crear.preventivo");
+  const areaLider = rol === "lider" ? areaUsuario(perfil) : null;
 
-  const [area, setArea] = useState<string>(AREAS_CON_PM[0]);
+  const [area, setArea] = useState<string>(areaLider ?? AREAS_CON_PM[0]);
   const [anio, setAnio] = useState(anioActual);
   const [maquinas, setMaquinas] = useState<HojaVida[]>([]);
   const [excepciones, setExcepciones] = useState<ExcepcionCronograma[]>([]);
@@ -70,6 +72,10 @@ function CronogramaPage() {
     const hoy = new Date();
     return valorFecha(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate());
   }, []);
+
+  useEffect(() => {
+    if (areaLider) setArea(areaLider);
+  }, [areaLider]);
 
   useEffect(() => {
     Promise.all([listarHojas(), listarExcepciones(), listarPreventivo()])
@@ -357,28 +363,32 @@ function CronogramaPage() {
     <section className="cronograma">
       <h1>Calendario de mantenimiento preventivo</h1>
       <p className="cronograma__descripcion">
-        Programación desde hojas de vida (primer PM + frecuencia). La fecha base no cambia:
-        puedes <strong>reprogramar</strong> o <strong>arrastrar</strong> la máquina a otro día
-        si no se pudo hacer el PM en la fecha planeada.
+        {puedeGestionar
+          ? "Programación desde hojas de vida (primer PM + frecuencia). La fecha base no cambia: puedes reprogramar o arrastrar la máquina a otro día si no se pudo hacer el PM en la fecha planeada."
+          : "Cronograma de mantenimiento preventivo de tu área, según hojas de vida y PM ya aprobados."}
       </p>
 
       <div className="cronograma__controles">
-        <label>
-          Área
-          <select
-            value={area}
-            onChange={(e) => {
-              setArea(e.target.value);
-              setDiaSeleccionado(null);
-            }}
-          >
-            {AREAS_CON_PM.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </label>
+        {areaLider ? (
+          <p className="cronograma__total">Área: {areaLider}</p>
+        ) : (
+          <label>
+            Área
+            <select
+              value={area}
+              onChange={(e) => {
+                setArea(e.target.value);
+                setDiaSeleccionado(null);
+              }}
+            >
+              {AREAS_CON_PM.map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label>
           Año
           <div className="cronograma__anio">
