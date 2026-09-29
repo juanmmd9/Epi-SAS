@@ -12,10 +12,12 @@ import {
 import FirmaPad from "./FirmaPad";
 import {
   aprobarPreventivo,
+  actualizarPreventivo,
   listarPreventivo,
   ordenarRegistrosPreventivo,
   rechazarPreventivo,
 } from "./preventivoService";
+import { datosRehaceFormato, mtre045ParaImprimir } from "../formatos/mtre045DesdePreventivo";
 import { numeroReporteDeRegistro } from "./numeroReportePm";
 import type { RegistroPreventivo } from "./types";
 import "./preventivo.css";
@@ -54,7 +56,20 @@ function AprobacionPmPage() {
     setError(null);
     try {
       const lista = await listarPreventivo();
-      setRegistros(ordenarRegistrosPreventivo(lista));
+      const ajustados: RegistroPreventivo[] = [];
+      for (const registro of lista) {
+        const datos = datosRehaceFormato(registro);
+        if (!datos) {
+          ajustados.push(registro);
+          continue;
+        }
+        try {
+          ajustados.push(await actualizarPreventivo(registro.id, { datos }));
+        } catch {
+          ajustados.push({ ...registro, datos });
+        }
+      }
+      setRegistros(ordenarRegistrosPreventivo(ajustados));
     } catch (e) {
       setError("No se pudieron cargar los PM: " + (e as Error).message);
     } finally {
@@ -242,17 +257,35 @@ function AprobacionPmPage() {
   }
 
   function abrirFormato(registro: RegistroPreventivo) {
-    if (registro.datos.mtre045) {
-      navigate("/preventivo/aprobaciones/imprimir", {
-        state: {
-          mtre045Datos: registro.datos.mtre045,
-          soloImprimir: true,
-          volverA: "/preventivo/aprobaciones",
-        },
-      });
+    const datos = mtre045ParaImprimir(registro);
+    if (!datos) {
+      setError("Este registro aún no tiene el formato MT-RE-045 generado.");
       return;
     }
-    setError("Este registro aún no tiene el formato MT-RE-045 generado.");
+    const previo = registro.datos.mtre045;
+    if (
+      previo &&
+      (previo.responsableVerificacion !== datos.responsableVerificacion ||
+        previo.firmaVerificacion !== datos.firmaVerificacion ||
+        previo.numeroReporte !== datos.numeroReporte)
+    ) {
+      void actualizarPreventivo(registro.id, {
+        datos: { ...registro.datos, mtre045: datos },
+      })
+        .then((actualizado) => {
+          setRegistros((prev) =>
+            ordenarRegistrosPreventivo(prev.map((r) => (r.id === actualizado.id ? actualizado : r))),
+          );
+        })
+        .catch(() => undefined);
+    }
+    navigate("/preventivo/aprobaciones/imprimir", {
+      state: {
+        mtre045Datos: datos,
+        soloImprimir: true,
+        volverA: "/preventivo/aprobaciones",
+      },
+    });
   }
 
   const ocupadoFirma = Boolean(registroParaFirmar && procesandoId === registroParaFirmar.id);

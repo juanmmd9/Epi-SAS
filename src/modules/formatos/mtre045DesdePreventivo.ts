@@ -1,4 +1,5 @@
 import type { HojaVida } from "../hojas/types";
+import { coincideArea } from "../../lib/areas";
 import { nombresPersonalEnRegistro, idsDesdeRegistroPreventivo } from "../personal/personalVinculo";
 import type { Persona } from "../personal/types";
 import type { RegistroPreventivo } from "../preventivo/types";
@@ -78,12 +79,12 @@ export function construirMtre045DesdePreventivo(
     fusionado[campo] = desdePm[campo];
   }
   // Conservar repuestos, verificación, firmas y responsable de verificación del PM
-  return {
+  return completarFirmaVerificacion(registro, {
     ...fusionado,
     ...extraerCamposFormato(guardado),
     firmaMantenimiento: guardado.firmaMantenimiento,
     firmaVerificacion: guardado.firmaVerificacion,
-  };
+  });
 }
 
 export function nombreYCodigoPm(
@@ -133,5 +134,91 @@ export function construirMtre045AlGuardar(params: {
     ...(params.firmaVerificacion
       ? { firmaVerificacion: params.firmaVerificacion }
       : {}),
+  };
+}
+
+/**
+ * Reportes ya aprobados que guardaron el área como firmante.
+ * Se rehacen al imprimir para que salgan con el nombre de la firma.
+ */
+const FORMATOS_REHACER: { fecha: string; numero: string; equipo: string; firmante: string }[] = [
+  {
+    fecha: "2026-05-21",
+    numero: "10",
+    equipo: "PC 32",
+    firmante: "Juan Guillermo Alvarez",
+  },
+  {
+    fecha: "2026-05-21",
+    numero: "11",
+    equipo: "PC 33",
+    firmante: "Juan Guillermo Alvarez",
+  },
+];
+
+function numeroPlano(registro: RegistroPreventivo): string {
+  const texto = String(
+    registro.datos.numeroReporte ?? registro.datos.mtre045?.numeroReporte ?? "",
+  ).trim();
+  return texto.replace(/^0+/, "") || texto;
+}
+
+export function datosRehaceFormato(registro: RegistroPreventivo): RegistroPreventivo["datos"] | null {
+  const base = registro.datos.mtre045;
+  if (!base) return null;
+  const equipo = registro.datos.equipo ?? base.equipo ?? "";
+  const regla = FORMATOS_REHACER.find(
+    (item) =>
+      registro.fecha === item.fecha &&
+      numeroPlano(registro) === item.numero &&
+      equipo.includes(item.equipo),
+  );
+  if (!regla) return null;
+  if (
+    base.responsableVerificacion?.trim() === regla.firmante &&
+    registro.datos.aprobadoPorNombre?.trim() === regla.firmante
+  ) {
+    return null;
+  }
+  const firma = base.firmaVerificacion || registro.datos.firmaAprobacion;
+  return {
+    ...registro.datos,
+    aprobadoPorNombre: regla.firmante,
+    mtre045: {
+      ...formularioMtre045Vacio(),
+      ...base,
+      numeroReporte: base.numeroReporte || registro.datos.numeroReporte || regla.numero,
+      responsableVerificacion: regla.firmante,
+      ...(firma ? { firmaVerificacion: firma } : {}),
+    },
+  };
+}
+
+/** Si el formato viejo guardó el área como firmante, usa el nombre de quien aprobó. */
+export function mtre045ParaImprimir(registro: RegistroPreventivo): Mtre045Datos | null {
+  const rehecho = datosRehaceFormato(registro);
+  const base = rehecho?.mtre045 ?? registro.datos.mtre045;
+  if (!base) return null;
+  const origen = rehecho ? { ...registro, datos: rehecho } : registro;
+  return completarFirmaVerificacion(origen, { ...base });
+}
+
+function completarFirmaVerificacion(
+  registro: RegistroPreventivo,
+  datos: Mtre045Datos,
+): Mtre045Datos {
+  const area = (datos.area || registro.area || "").trim();
+  const guardado = (datos.responsableVerificacion || "").trim();
+  const nombreAprobador = (registro.datos.aprobadoPorNombre || "").trim();
+  const verificador =
+    nombreAprobador && (!guardado || coincideArea(guardado, area))
+      ? nombreAprobador
+      : guardado;
+  const firma = datos.firmaVerificacion || registro.datos.firmaAprobacion;
+  return {
+    ...datos,
+    numeroReporte: datos.numeroReporte || registro.datos.numeroReporte || "",
+    responsableVerificacion: verificador,
+    ...(firma ? { firmaVerificacion: firma } : {}),
   };
 }

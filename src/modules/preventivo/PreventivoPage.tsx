@@ -34,6 +34,7 @@ import {
   construirMtre045AlGuardar,
   construirMtre045DesdePreventivo,
   etiquetaEquipoPm,
+  mtre045ParaImprimir,
 } from "../formatos/mtre045DesdePreventivo";
 import Mtre045CamposFormulario, {
   camposFormatoMtre045Vacios,
@@ -373,7 +374,7 @@ function PreventivoPage() {
   }
 
   function abrirMtre045(registro: RegistroPreventivo) {
-    const datos = registro.datos.mtre045 ?? construirMtre045DesdeRegistro(registro);
+    const datos = mtre045ParaImprimir(registro) ?? construirMtre045DesdeRegistro(registro);
     navigate("/formatos/mt-re-045", {
       state: {
         mtre045Datos: datos,
