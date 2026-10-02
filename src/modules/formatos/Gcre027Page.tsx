@@ -1,6 +1,10 @@
 ﻿import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { coincideArea } from "../../lib/areas";
 import { rutaPublica } from "../../lib/rutaPublica";
+import { areaUsuario } from "../../lib/usuarioArea";
+import { useAuth } from "../auth/AuthContext";
+import Gcre027Vista from "./Gcre027Vista";
 import "../../components/setup/avisoSetupPersonal.css";
 import { descargarBlob, generarExcelGcRe027, nombreArchivoGc027 } from "./gcre027Excel";
 import {
@@ -21,6 +25,7 @@ import {
   type RegistroGc027Datos,
 } from "./gcre027Types";
 import "./formatos.css";
+import "./gcre027.css";
 
 function AvisoSetupGestionCambio() {
   const projectRef =
@@ -49,6 +54,13 @@ function AvisoSetupGestionCambio() {
 }
 
 function Gcre027Page() {
+  const { rol, perfil, puede } = useAuth();
+  const area = areaUsuario(perfil);
+  const volverFormatos = puede("ver.formatos")
+    ? "/formatos"
+    : rol && area && coincideArea(area, "Tejidos")
+      ? "/tejidos/formatos"
+      : "/area/formatos";
   const [datos, setDatos] = useState<RegistroGc027Datos>(formularioGc027Vacio());
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [numeroActual, setNumeroActual] = useState<number | null>(null);
@@ -58,15 +70,24 @@ function Gcre027Page() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [faltaTabla, setFaltaTabla] = useState(false);
+  const [vista, setVista] = useState<{ datos: RegistroGc027Datos; numero: number | null } | null>(
+    null,
+  );
 
   useEffect(() => {
-    listarGestionCambio()
+    if (!area) return;
+    listarGestionCambio(area)
       .then(setRegistros)
       .catch((e: Error) => {
         if (esErrorTablaGestionCambio(e.message)) setFaltaTabla(true);
         setError("No se pudieron cargar los registros: " + e.message);
       });
-  }, []);
+  }, [area]);
+
+  useEffect(() => {
+    if (!area || editandoId) return;
+    setDatos((prev) => (prev.proceso.trim() ? prev : { ...prev, proceso: area }));
+  }, [area, editandoId]);
 
   function actualizarDatos(cambios: Partial<RegistroGc027Datos>) {
     setDatos((prev) => ({ ...prev, ...cambios }));
@@ -96,7 +117,7 @@ function Gcre027Page() {
   function limpiarFormulario() {
     setEditandoId(null);
     setNumeroActual(null);
-    setDatos(formularioGc027Vacio());
+    setDatos({ ...formularioGc027Vacio(), proceso: area ?? "" });
     setMensaje(null);
     setError(null);
   }
@@ -130,7 +151,8 @@ function Gcre027Page() {
       if (!datos.descripcion.trim()) {
         throw new Error("La descripción del cambio es obligatoria.");
       }
-      const guardado = await guardarGestionCambio(datos, editandoId);
+      if (!area) throw new Error("Tu usuario no tiene área. No se puede guardar el registro.");
+      const guardado = await guardarGestionCambio(datos, editandoId, area);
       setEditandoId(guardado.id);
       setNumeroActual(guardado.numero);
       setRegistros((prev) => {
@@ -155,7 +177,8 @@ function Gcre027Page() {
   async function manejarEliminar(registro: RegistroGc027) {
     if (!window.confirm(`¿Eliminar el registro GC-RE-027 No. ${registro.numero}?`)) return;
     try {
-      await eliminarGestionCambio(registro.id);
+      if (!area) throw new Error("Tu usuario no tiene área.");
+      await eliminarGestionCambio(registro.id, area);
       setRegistros((prev) => prev.filter((r) => r.id !== registro.id));
       if (editandoId === registro.id) limpiarFormulario();
       setMensaje(`Registro No. ${registro.numero} eliminado.`);
@@ -178,13 +201,24 @@ function Gcre027Page() {
     }
   }
 
+  function imprimirVista() {
+    document.body.classList.add("imprimiendo-gc027");
+    const limpiar = () => {
+      document.body.classList.remove("imprimiendo-gc027");
+      window.removeEventListener("afterprint", limpiar);
+    };
+    window.addEventListener("afterprint", limpiar);
+    window.setTimeout(limpiar, 60_000);
+    window.print();
+  }
+
   const urlEjemplo = rutaPublica("/templates/GC-RE-027-Portal-Mantenimiento.xlsx");
 
   return (
-    <section className="formatos">
+    <section className="formatos gc027-pagina">
       <header className="formatos__cabecera">
         <div>
-          <Link to="/formatos" className="btn">
+          <Link to={volverFormatos} className="btn">
             ← Volver a formatos
           </Link>
           <h1>GC-RE-027 — Gestión del cambio</h1>
@@ -209,7 +243,7 @@ function Gcre027Page() {
         <div className="formatos__formulario">
           <form className="gcre-form" onSubmit={(e) => void manejarGuardar(e)}>
             <h3 className="gcre-form__seccion">Información general</h3>
-            <div className="gcre-form__grid-3">
+            <div className="gc027-general">
               <label>
                 No. registro
                 <input type="text" readOnly value={numeroActual ?? "Nuevo"} />
@@ -231,8 +265,6 @@ function Gcre027Page() {
                   onChange={(e) => actualizarDatos({ fechaUltimaRevision: e.target.value })}
                 />
               </label>
-            </div>
-            <div className="gcre-form__grid-2">
               <label>
                 Proceso o área *
                 <input
@@ -399,6 +431,13 @@ function Gcre027Page() {
               >
                 {exportando ? "Generando..." : "Descargar Excel"}
               </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setVista({ datos, numero: numeroActual })}
+              >
+                Vista previa
+              </button>
               <button type="button" className="btn" onClick={limpiarFormulario}>
                 Nuevo
               </button>
@@ -408,8 +447,9 @@ function Gcre027Page() {
           {mensaje && <p className="formatos__mensaje formatos__mensaje--ok">{mensaje}</p>}
           {error && <p className="formatos__mensaje formatos__mensaje--error">{error}</p>}
         </div>
+      </div>
 
-        <aside className="formatos__lista">
+      <aside className="formatos__lista gc027-registros">
           <h2>Registros guardados</h2>
           <p className="formatos__plantilla">
             Plantilla oficial:{" "}
@@ -436,8 +476,20 @@ function Gcre027Page() {
                   {(registro.datos.descripcion || "").length > 70 ? "..." : ""}
                 </p>
                 <div className="item-nc__acciones">
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() =>
+                      setVista({
+                        datos: normalizarDatosGc027(registro.datos),
+                        numero: registro.numero,
+                      })
+                    }
+                  >
+                    Vista previa
+                  </button>
                   <button type="button" className="btn" onClick={() => cargarRegistro(registro)}>
-                    Editar
+                    Modificar
                   </button>
                   <button
                     type="button"
@@ -450,8 +502,26 @@ function Gcre027Page() {
               </article>
             ))
           )}
-        </aside>
-      </div>
+      </aside>
+
+      {vista ? (
+        <div className="gc027-vista" role="dialog" aria-modal="true" aria-label="Vista previa GC-RE-027">
+          <div className="gc027-vista__barra">
+            <h2>Vista previa</h2>
+            <div className="gc027-vista__acciones">
+              <button type="button" className="btn btn--primario" onClick={imprimirVista}>
+                Imprimir
+              </button>
+              <button type="button" className="btn" onClick={() => setVista(null)}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+          <div className="gc027-vista__hoja">
+            <Gcre027Vista datos={vista.datos} numero={vista.numero} />
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

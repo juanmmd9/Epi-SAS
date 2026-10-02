@@ -22,6 +22,7 @@ export interface RegistroGc027Datos {
 export interface RegistroGc027 {
   id: string;
   numero: number;
+  area: string | null;
   datos: RegistroGc027Datos;
   creado_en: string;
 }

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { areaUsuario } from "../../lib/usuarioArea";
+import { useAuth } from "../auth/AuthContext";
 import { listarAccionesMejora } from "./gcre001Service";
 import type { RegistroAm } from "./gcre001Types";
 import { listarGestionCambio } from "./gcre027Service";
@@ -9,6 +11,8 @@ import type { RegistroNc } from "./types";
 import "./formatos.css";
 
 function FormatosPage() {
+  const { perfil } = useAuth();
+  const area = areaUsuario(perfil);
   const [registros, setRegistros] = useState<RegistroNc[]>([]);
   const [mejoras, setMejoras] = useState<RegistroAm[]>([]);
   const [cambios, setCambios] = useState<RegistroGc027[]>([]);
@@ -18,7 +22,7 @@ function FormatosPage() {
     Promise.all([
       listarNoConformidades(),
       listarAccionesMejora(),
-      listarGestionCambio().catch(() => [] as RegistroGc027[]),
+      listarGestionCambio(area).catch(() => [] as RegistroGc027[]),
     ])
       .then(([nc, am, gc]) => {
         setRegistros(nc);
@@ -26,7 +30,7 @@ function FormatosPage() {
         setCambios(gc);
       })
       .finally(() => setCargando(false));
-  }, []);
+  }, [area]);
 
   return (
     <section className="formatos">

@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import BrandLogo from "../BrandLogo";
 import { useAuth } from "../../modules/auth/AuthContext";
 import { enlacesParaRol } from "../../modules/auth/roles";
@@ -22,6 +22,7 @@ interface Props {
 
 function Sidebar({ abierto, onCerrar }: Props) {
   const navegar = useNavigate();
+  const ubicacion = useLocation();
   const { perfil, salir } = useAuth();
   const area = areaUsuario(perfil);
   const esDiseno = perfil?.rol === "lider" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
@@ -29,6 +30,8 @@ function Sidebar({ abierto, onCerrar }: Props) {
   const enlaces = enlacesParaRol(perfil?.rol).filter((enlace) =>
     enlaceVisibleParaArea(perfil?.rol, area, enlace.ruta),
   );
+  const yaTieneFormatos = enlaces.some((enlace) => enlace.ruta === "/formatos");
+  const rutaFormatos = esTejidos ? "/tejidos/formatos" : "/area/formatos";
   const pendientesFirma = usePendientesAprobacionPm();
   const pmAsignados = usePmAsignadosBadge();
   const solicitudesAbiertas = useSolicitudesAbiertasBadge();
@@ -106,12 +109,16 @@ function Sidebar({ abierto, onCerrar }: Props) {
                 </span>
               ) : null}
             </NavLink>
-            {esTejidos && esInicio ? (
+            {!yaTieneFormatos && esInicio ? (
               <NavLink
-                to="/tejidos/formatos"
-                className={({ isActive }) =>
-                  "sidebar__enlace" + (isActive ? " sidebar__enlace--activo" : "")
-                }
+                to={rutaFormatos}
+                className={() => {
+                  const activo =
+                    ubicacion.pathname === rutaFormatos ||
+                    ubicacion.pathname.startsWith(`${rutaFormatos}/`) ||
+                    ubicacion.pathname.startsWith("/formatos/gc-re-027");
+                  return "sidebar__enlace" + (activo ? " sidebar__enlace--activo" : "");
+                }}
                 onClick={onCerrar}
               >
                 <span className="sidebar__enlace-texto">Formatos</span>

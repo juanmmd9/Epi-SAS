@@ -39,6 +39,7 @@ const ICONOS_POR_RUTA: Record<string, IconoNav> = {
   "/computadores": "computadores",
   "/indicadores": "indicadores",
   "/formatos": "formatos",
+  "/area/formatos": "formatos",
   "/tejidos/formatos": "formatos",
   "/personal": "personal",
   "/personal/usuarios": "usuarios",
@@ -59,6 +60,7 @@ const ETIQUETA_CORTA: Record<string, string> = {
   "/computadores": "PCs",
   "/indicadores": "Indicadores",
   "/formatos": "Formatos",
+  "/area/formatos": "Formatos",
   "/tejidos/formatos": "Formatos",
   "/personal": "Personal",
   "/personal/usuarios": "Usuarios",
@@ -134,11 +136,12 @@ export function itemsNavParaRol(
     .map(enriquecer)
     .filter((item) => enlaceVisibleParaArea(rol, area, item.ruta));
   const esTejidos = Boolean(area && coincideArea(area, "Tejidos"));
-  if (esTejidos) {
+  const yaTieneFormatos = todos.some((item) => item.ruta === "/formatos");
+  if (!yaTieneFormatos) {
     todos = [
       ...todos,
       enriquecer({
-        ruta: "/tejidos/formatos",
+        ruta: esTejidos ? "/tejidos/formatos" : "/area/formatos",
         texto: "Formatos",
         permiso: "ver.inicio",
       }),
@@ -147,13 +150,17 @@ export function itemsNavParaRol(
   const porRuta = new Map(todos.map((i) => [i.ruta, i]));
   const tabs: ItemNav[] = [];
   const usados = new Set<string>();
-  const prioridad = esTejidos
+  const prioridadBase = esTejidos
     ? rol === "lider"
       ? (["/", "/tejidos/formatos", "/preventivo/aprobaciones", "/tablero"] as const)
       : (["/", "/tejidos/formatos", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
     : rol === "lider"
       ? PRIORIDAD_TABS_LIDER
       : PRIORIDAD_TABS;
+  const prioridad =
+    yaTieneFormatos || esTejidos
+      ? prioridadBase
+      : ["/", "/area/formatos", ...prioridadBase.filter((ruta) => ruta !== "/")];
 
   for (const ruta of prioridad) {
     if (tabs.length >= 3) break;
@@ -199,6 +206,13 @@ export function rutaActiva(pathname: string, rutaItem: string): boolean {
   }
   if (rutaItem === "/formatos") {
     return pathname === "/formatos" || pathname.startsWith("/formatos/");
+  }
+  if (rutaItem === "/area/formatos" || rutaItem === "/tejidos/formatos") {
+    return (
+      pathname === rutaItem ||
+      pathname.startsWith(`${rutaItem}/`) ||
+      pathname.startsWith("/formatos/gc-re-027")
+    );
   }
   if (rutaItem === "/personal") {
     return pathname === "/personal";
