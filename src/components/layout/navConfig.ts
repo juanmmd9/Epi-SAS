@@ -39,6 +39,7 @@ const ICONOS_POR_RUTA: Record<string, IconoNav> = {
   "/computadores": "computadores",
   "/indicadores": "indicadores",
   "/formatos": "formatos",
+  "/tejidos/formatos": "formatos",
   "/personal": "personal",
   "/personal/usuarios": "usuarios",
   "/personal/permisos": "permisos",
@@ -58,6 +59,7 @@ const ETIQUETA_CORTA: Record<string, string> = {
   "/computadores": "PCs",
   "/indicadores": "Indicadores",
   "/formatos": "Formatos",
+  "/tejidos/formatos": "Formatos",
   "/personal": "Personal",
   "/personal/usuarios": "Usuarios",
   "/personal/permisos": "Permisos",
@@ -131,10 +133,27 @@ export function itemsNavParaRol(
   let todos = enlacesParaRol(rol)
     .map(enriquecer)
     .filter((item) => enlaceVisibleParaArea(rol, area, item.ruta));
+  const esTejidos = Boolean(area && coincideArea(area, "Tejidos"));
+  if (esTejidos) {
+    todos = [
+      ...todos,
+      enriquecer({
+        ruta: "/tejidos/formatos",
+        texto: "Formatos",
+        permiso: "ver.inicio",
+      }),
+    ];
+  }
   const porRuta = new Map(todos.map((i) => [i.ruta, i]));
   const tabs: ItemNav[] = [];
   const usados = new Set<string>();
-  const prioridad = rol === "lider" ? PRIORIDAD_TABS_LIDER : PRIORIDAD_TABS;
+  const prioridad = esTejidos
+    ? rol === "lider"
+      ? (["/", "/tejidos/formatos", "/preventivo/aprobaciones", "/tablero"] as const)
+      : (["/", "/tejidos/formatos", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
+    : rol === "lider"
+      ? PRIORIDAD_TABS_LIDER
+      : PRIORIDAD_TABS;
 
   for (const ruta of prioridad) {
     if (tabs.length >= 3) break;

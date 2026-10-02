@@ -32,6 +32,8 @@ import Gcre009Page from "./modules/formatos/Gcre009Page";
 import Gcre027Page from "./modules/formatos/Gcre027Page";
 import Ghre030Page from "./modules/formatos/Ghre030Page";
 import Mtre045Page from "./modules/formatos/Mtre045Page";
+import FormatosTejidosPage from "./modules/tejidos/FormatosTejidosPage";
+import ReporteProduccionPage from "./modules/tejidos/ReporteProduccionPage";
 import PersonalPage from "./modules/personal/PersonalPage";
 import UsuariosPage from "./modules/auth/UsuariosPage";
 import MatrizPage from "./modules/matriz/MatrizPage";
@@ -70,6 +72,8 @@ function App() {
             <Route path="computadores/:id" element={<ComputadorDetallePage />} />
             <Route path="indicadores" element={<IndicadoresPage />} />
             <Route path="formatos" element={<FormatosPage />} />
+            <Route path="tejidos/formatos" element={<FormatosTejidosPage />} />
+            <Route path="tejidos/formatos/reporte-produccion" element={<ReporteProduccionPage />} />
             <Route path="formatos/gc-re-001" element={<Gcre001Page />} />
             <Route path="formatos/gc-re-009" element={<Gcre009Page />} />
             <Route path="formatos/gc-re-027" element={<Gcre027Page />} />

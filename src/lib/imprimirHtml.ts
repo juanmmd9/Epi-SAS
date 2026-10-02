@@ -1,6 +1,6 @@
 /** Imprime un elemento HTML tal como se ve en pantalla (vista previa del formato). */
 export function imprimirElementoHtml(elemento: HTMLElement, titulo = "Formato"): void {
-  const ventana = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
+  const ventana = window.open("", "_blank", "width=900,height=700");
   if (!ventana) {
     window.alert("Permite ventanas emergentes para imprimir el formato.");
     return;
@@ -55,8 +55,12 @@ export function imprimirElementoHtml(elemento: HTMLElement, titulo = "Formato"):
 </html>`);
   ventana.document.close();
   ventana.focus();
-  setTimeout(() => {
-    ventana.print();
+  const cerrar = () => {
+    ventana.removeEventListener("afterprint", cerrar);
     ventana.close();
-  }, 250);
+  };
+  ventana.addEventListener("afterprint", cerrar);
+  window.setTimeout(() => {
+    ventana.print();
+  }, 300);
 }

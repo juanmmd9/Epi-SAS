@@ -25,6 +25,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
   const { perfil, salir } = useAuth();
   const area = areaUsuario(perfil);
   const esDiseno = perfil?.rol === "lider" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
+  const esTejidos = Boolean(area && coincideArea(area, "Tejidos"));
   const enlaces = enlacesParaRol(perfil?.rol).filter((enlace) =>
     enlaceVisibleParaArea(perfil?.rol, area, enlace.ruta),
   );
@@ -105,6 +106,17 @@ function Sidebar({ abierto, onCerrar }: Props) {
                 </span>
               ) : null}
             </NavLink>
+            {esTejidos && esInicio ? (
+              <NavLink
+                to="/tejidos/formatos"
+                className={({ isActive }) =>
+                  "sidebar__enlace" + (isActive ? " sidebar__enlace--activo" : "")
+                }
+                onClick={onCerrar}
+              >
+                <span className="sidebar__enlace-texto">Formatos</span>
+              </NavLink>
+            ) : null}
             {esDiseno && enlace.ruta === "/tablero" ? (
               <NavLink
                 to="/equipo"

@@ -36,6 +36,16 @@ function FormatosPage() {
       </p>
 
       <article className="formato-card">
+        <h2>Reporte de producción — Tejidos</h2>
+        <p>
+          TJ-RE-004. Liberación de trenzadoras y telares, con firma del operario y del supervisor.
+        </p>
+        <Link to="/tejidos/formatos" className="btn btn--primario">
+          Abrir formatos de Tejidos
+        </Link>
+      </article>
+
+      <article className="formato-card">
         <h2>GC-RE-001</h2>
         <p>
           Acciones de mejora del SGC. Registre oportunidades de mejora, evaluación y plan de acción.
