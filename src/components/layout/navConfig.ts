@@ -1,5 +1,6 @@
 import type { RolPortal, EnlaceNav, Permiso } from "../../modules/auth/roles";
 import { enlacesParaRol, puede } from "../../modules/auth/roles";
+import { coincideArea } from "../../lib/areas";
 
 export type IconoNav =
   | "inicio"
@@ -83,6 +84,35 @@ const PRIORIDAD_TABS_LIDER = [
   "/hojas-de-vida",
 ] as const;
 
+const RUTAS_OCULTAS_DISENO = ["/hojas-de-vida", "/preventivo/aprobaciones"] as const;
+
+/** Siguen abiertas desde las cards; no van en el menú de Diseño. */
+const RUTAS_SOLO_FUERA_DEL_MENU_DISENO = ["/gerencia/pedir", "/solicitudes"] as const;
+
+/** Diseño no usa hojas de vida ni aprueba mantenimiento preventivo. */
+export function rutaVisibleParaArea(
+  rol: RolPortal | null | undefined,
+  area: string | null | undefined,
+  ruta: string,
+): boolean {
+  if (rol !== "lider" || !area || !coincideArea(area, "Diseno y Desarrollo")) return true;
+  return !RUTAS_OCULTAS_DISENO.some(
+    (oculta) => ruta === oculta || ruta.startsWith(`${oculta}/`),
+  );
+}
+
+export function enlaceVisibleParaArea(
+  rol: RolPortal | null | undefined,
+  area: string | null | undefined,
+  ruta: string,
+): boolean {
+  if (!rutaVisibleParaArea(rol, area, ruta)) return false;
+  if (rol !== "lider" || !area || !coincideArea(area, "Diseno y Desarrollo")) return true;
+  return !RUTAS_SOLO_FUERA_DEL_MENU_DISENO.some(
+    (oculta) => ruta === oculta || ruta.startsWith(`${oculta}/`),
+  );
+}
+
 function enriquecer(enlace: EnlaceNav): ItemNav {
   return {
     ...enlace,
@@ -91,11 +121,16 @@ function enriquecer(enlace: EnlaceNav): ItemNav {
   };
 }
 
-export function itemsNavParaRol(rol: RolPortal | null | undefined): {
+export function itemsNavParaRol(
+  rol: RolPortal | null | undefined,
+  area?: string | null,
+): {
   tabs: ItemNav[];
   mas: ItemNav[];
 } {
-  const todos = enlacesParaRol(rol).map(enriquecer);
+  let todos = enlacesParaRol(rol)
+    .map(enriquecer)
+    .filter((item) => enlaceVisibleParaArea(rol, area, item.ruta));
   const porRuta = new Map(todos.map((i) => [i.ruta, i]));
   const tabs: ItemNav[] = [];
   const usados = new Set<string>();
@@ -125,7 +160,9 @@ export function itemsNavParaRol(rol: RolPortal | null | undefined): {
 
 /** True si la ruta actual pertenece a este ítem (o a un submódulo). */
 export function rutaActiva(pathname: string, rutaItem: string): boolean {
-  if (rutaItem === "/") return pathname === "/" || pathname === "";
+  if (rutaItem === "/") {
+    return pathname === "/" || pathname === "" || pathname.startsWith("/diseno");
+  }
   if (rutaItem === "/preventivo") {
     return (
       pathname === "/preventivo" ||

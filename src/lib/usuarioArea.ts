@@ -1,7 +1,11 @@
 import type { UsuarioPortal } from "../modules/auth/roles";
-import { esAreaValida, normalizarArea } from "./areas";
+import { coincideArea, esAreaValida, normalizarArea } from "./areas";
 
-/** Área asignada al usuario (catálogo del sistema). Opcional / informativa. */
+/** El nombre «Portal Mantenimiento» queda para Mantenimiento y el resto del equipo. Los demás líderes no lo ven. */
+export function muestraPortalMantenimiento(perfil: UsuarioPortal | null | undefined): boolean {
+  if (!perfil || perfil.rol !== "lider") return true;
+  return coincideArea(areaUsuario(perfil) ?? "", "Mantenimiento");
+}
 export function areaUsuario(perfil: UsuarioPortal | null | undefined): string | null {
   const area = perfil?.area?.trim();
   if (!area) return null;

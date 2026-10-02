@@ -9,7 +9,8 @@ import {
   type RolPortal,
 } from "../../modules/auth/roles";
 import { permisoParaRuta } from "../../lib/guardRutas";
-import { areaUsuario } from "../../lib/usuarioArea";
+import { areaUsuario, muestraPortalMantenimiento } from "../../lib/usuarioArea";
+import { rutaVisibleParaArea } from "./navConfig";
 import AvisosSolicitudesGlobales from "../../modules/solicitudes/AvisosSolicitudesGlobales";
 import AvisosAsignacionCorrectivoGlobales from "../../modules/solicitudes/AvisosAsignacionCorrectivoGlobales";
 import AvisosPmAsignadosGlobales from "../../modules/preventivo/AvisosPmAsignadosGlobales";
@@ -53,6 +54,10 @@ function Layout() {
   const rutasPermitidas = useRef(new Set<string>());
 
   const pathname = normalizarRuta(ubicacion.pathname);
+  const area = areaUsuario(perfil);
+  if (!rutaVisibleParaArea(rol, area, pathname)) {
+    return <Navigate to="/" replace />;
+  }
   const permisoRuta = permisoParaRuta(pathname);
   const tienePermiso = !permisoRuta || puede(permisoRuta);
   if (tienePermiso) rutasPermitidas.current.add(pathname);
@@ -93,7 +98,9 @@ function Layout() {
       <Sidebar abierto={false} onCerrar={() => undefined} />
       <div className="layout__cuerpo">
         <header className="layout__topbar">
-          <span className="layout__topbar-titulo">Portal Mantenimiento</span>
+          {muestraPortalMantenimiento(perfil) ? (
+            <span className="layout__topbar-titulo">Portal Mantenimiento</span>
+          ) : null}
         </header>
         <main className="layout__contenido">
           <Outlet />

@@ -32,6 +32,15 @@ export function imprimirElementoHtml(elemento: HTMLElement, titulo = "Formato"):
     .mtre045-preview__firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
     .mtre045-preview__linea-firma { border-bottom: 1px solid #222; height: 28px; margin-bottom: 4px; }
     .mtre045-preview__firmas small { color: #444; font-size: 9px; }
+    .formato-hoja { background: #fff; color: #111; font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+    .formato-hoja table { width: 100%; border-collapse: collapse; }
+    .formato-hoja td { border: 1px solid #111; padding: 4px 6px; vertical-align: top; }
+    .formato-hoja__logo { width: 28%; text-align: center; }
+    .formato-hoja__logo img { display: block; max-width: 160px; max-height: 64px; margin: 0 auto; }
+    .formato-hoja__proceso, .formato-hoja__titulo, .formato-hoja__titulo-celda { text-align: center; font-weight: 700; text-transform: uppercase; }
+    .formato-hoja__titulo-celda, .formato-hoja__etiqueta { background: #f3f4f6 !important; font-weight: 700; }
+    .formato-hoja__grilla { margin-top: -1px; }
+    .formato-hoja__diligencia { min-height: 28px; white-space: pre-wrap; }
     @page { margin: 12mm; }
   `;
 

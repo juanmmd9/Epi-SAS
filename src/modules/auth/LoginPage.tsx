@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AvisoSetupAuth from "../../components/setup/AvisoSetupAuth";
 import BrandLogo from "../../components/BrandLogo";
 import { useAuth } from "./AuthContext";
@@ -9,7 +9,8 @@ import {
   guardarCredencialesRecordadas,
   leerCredencialesRecordadas,
 } from "./credencialesRecordadas";
-import { ETIQUETAS_ROL, rutaInicioParaRol, type RolPortal } from "./roles";
+import { rutaInicioParaRol, type RolPortal } from "./roles";
+import { etiquetaCargo } from "./cargosArea";
 import "./auth.css";
 
 /** Destino tras login: el solicitante siempre entra al tablero de áreas. */
@@ -117,14 +118,13 @@ function LoginPage() {
         </header>
 
         <div className="auth-login__cuerpo">
-          <h1>Portal de Mantenimiento</h1>
           <p className="auth-login__subtitulo">Inicia sesión con tu usuario o correo</p>
 
           {sesionActiva && (
             <div className="auth-login__sesion-activa">
               <p>
                 Ya hay una sesión abierta como <strong>{etiquetaPerfil(perfil)}</strong> (
-                {ETIQUETAS_ROL[perfil.rol]}).
+                {etiquetaCargo(perfil.rol, perfil.area)}).
               </p>
               <div className="auth-login__sesion-acciones">
                 <button
@@ -202,10 +202,12 @@ function LoginPage() {
               <button type="submit" className="btn btn--primario auth-login__btn" disabled={enviando}>
                 {enviando ? "Entrando..." : "Iniciar sesión"}
               </button>
+              <p className="auth-login__enlace">
+                <Link to="/registro">Crear mi perfil</Link>
+              </p>
             </form>
           )}
 
-          <p className="auth-login__pie">Mantenimiento EPI</p>
         </div>
       </div>
     </div>

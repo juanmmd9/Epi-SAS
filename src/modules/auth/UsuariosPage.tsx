@@ -1,11 +1,18 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { AREAS_MAPA_PROCESOS, AREAS_PLANTA, AREAS_SISTEMA, USUARIOS_PLANEADOR_SUGERIDOS } from "../../lib/areas";
+import {
+  AREAS_MAPA_PROCESOS,
+  AREAS_PLANTA,
+  AREAS_SISTEMA,
+  coincideArea,
+  normalizarArea,
+} from "../../lib/areas";
 import { listarPersonal } from "../personal/personalService";
 import type { Persona } from "../personal/types";
 import { useAuth } from "./AuthContext";
 import { esUsuarioValido, normalizarUsuario, emailAuthDesdeUsuario } from "./loginUsuario";
-import { ETIQUETAS_ROL, type RolPortal, type UsuarioPortal } from "./roles";
+import { type RolPortal, type UsuarioPortal } from "./roles";
+import { etiquetaCargo } from "./cargosArea";
 import {
   actualizarPerfilUsuario,
   crearPerfilUsuario,
@@ -47,6 +54,85 @@ function badgeRol(rol: RolPortal) {
   return `usuarios__badge usuarios__badge--${rol}`;
 }
 
+interface GrupoUsuarios {
+  id: string;
+  titulo: string;
+  detalle: string;
+  usuarios: UsuarioPortal[];
+}
+
+function porNombre(a: UsuarioPortal, b: UsuarioPortal): number {
+  return a.nombre.localeCompare(b.nombre, "es");
+}
+
+/** Agrupa con el rol y el área ya guardados. Los campos en edición no mueven a los demás. */
+function agruparUsuarios(base: UsuarioPortal[], actuales: UsuarioPortal[]): GrupoUsuarios[] {
+  const enPantalla = new Map(actuales.map((u) => [u.id, u]));
+  const ver = (u: UsuarioPortal) => enPantalla.get(u.id) ?? u;
+
+  const admins = base.filter((u) => u.rol === "admin").sort(porNombre);
+  const operarios = base.filter((u) => u.rol === "operador").sort(porNombre);
+  const resto = base.filter((u) => u.rol !== "admin" && u.rol !== "operador");
+  const deMantenimiento = resto.filter((u) => coincideArea(u.area ?? "", "Mantenimiento"));
+  const lideresMant = deMantenimiento.filter((u) => u.rol === "lider").sort(porNombre);
+  const otrosMant = deMantenimiento.filter((u) => u.rol !== "lider").sort(porNombre);
+
+  const grupos: GrupoUsuarios[] = [];
+  const bloqueMantenimiento = [...admins, ...lideresMant, ...otrosMant, ...operarios].map(ver);
+  if (bloqueMantenimiento.length > 0) {
+    grupos.push({
+      id: "mantenimiento",
+      titulo: "Mantenimiento",
+      detalle: "Administrador y operarios. Cada fila se guarda sola.",
+      usuarios: bloqueMantenimiento,
+    });
+  }
+
+  const porArea = new Map<string, UsuarioPortal[]>();
+  const sinArea: UsuarioPortal[] = [];
+  for (const usuario of resto) {
+    if (coincideArea(usuario.area ?? "", "Mantenimiento")) continue;
+    const area = normalizarArea(usuario.area);
+    if (!area) {
+      sinArea.push(usuario);
+      continue;
+    }
+    const lista = porArea.get(area) ?? [];
+    lista.push(usuario);
+    porArea.set(area, lista);
+  }
+
+  const areasOrdenadas = [
+    ...AREAS_SISTEMA.filter((area) => porArea.has(area)),
+    ...[...porArea.keys()]
+      .filter((area) => !AREAS_SISTEMA.includes(area as (typeof AREAS_SISTEMA)[number]))
+      .sort((a, b) => a.localeCompare(b, "es")),
+  ];
+
+  for (const area of areasOrdenadas) {
+    const gente = porArea.get(area) ?? [];
+    const lideres = gente.filter((u) => u.rol === "lider").sort(porNombre);
+    const otros = gente.filter((u) => u.rol !== "lider").sort(porNombre);
+    grupos.push({
+      id: `area-${area}`,
+      titulo: area,
+      detalle: "Para mover solo a esta persona, cambia su Área y pulsa Guardar en su fila. El rol Líder no cambia a los demás.",
+      usuarios: [...lideres, ...otros].map(ver),
+    });
+  }
+
+  if (sinArea.length > 0) {
+    grupos.push({
+      id: "sin-area",
+      titulo: "Sin área",
+      detalle: "Perfiles que no son operarios de mantenimiento y aún no tienen área.",
+      usuarios: sinArea.sort(porNombre).map(ver),
+    });
+  }
+
+  return grupos;
+}
+
 /** Sugiere login a partir del nombre (ej. César Taibel → cesartaibel). */
 function sugerirUsuarioDesdeNombre(nombre: string): string {
   const sinAcentos = nombre
@@ -63,6 +149,7 @@ function sugerirUsuarioDesdeNombre(nombre: string): string {
 function UsuariosPage() {
   const { puede, perfil: yo } = useAuth();
   const [usuarios, setUsuarios] = useState<UsuarioPortal[]>([]);
+  const [agrupacion, setAgrupacion] = useState<UsuarioPortal[]>([]);
   const [personal, setPersonal] = useState<Persona[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -77,6 +164,7 @@ function UsuariosPage() {
     try {
       const [lista, tecnicos] = await Promise.all([listarUsuariosPortal(), listarPersonal()]);
       setUsuarios(lista);
+      setAgrupacion(lista);
       setPersonal(tecnicos.filter((p) => p.activo));
     } catch (e) {
       setError("No se pudieron cargar los usuarios: " + (e as Error).message);
@@ -88,73 +176,6 @@ function UsuariosPage() {
   useEffect(() => {
     void recargar();
   }, [recargar]);
-
-  const idsPersonalConUsuario = useMemo(() => {
-    const ids = new Set<string>();
-    for (const u of usuarios) {
-      if (u.personal_id) ids.add(u.personal_id);
-    }
-    return ids;
-  }, [usuarios]);
-
-  const personalSinUsuario = useMemo(
-    () => personal.filter((p) => !idsPersonalConUsuario.has(p.id)),
-    [personal, idsPersonalConUsuario],
-  );
-
-  const planeadoresPendientes = useMemo(() => {
-    const existentes = new Set(
-      usuarios.map((u) => (u.usuario || "").trim().toLowerCase()).filter(Boolean),
-    );
-    return USUARIOS_PLANEADOR_SUGERIDOS.filter(
-      (s) => !existentes.has(s.usuario.toLowerCase()),
-    );
-  }, [usuarios]);
-
-  const pendientesChecklist = useMemo(
-    () => personalSinUsuario.length + planeadoresPendientes.length,
-    [personalSinUsuario.length, planeadoresPendientes.length],
-  );
-
-  function rellenarDesdeSugerido(sugerido: (typeof USUARIOS_PLANEADOR_SUGERIDOS)[number]) {
-    setCampos({
-      usuario: sugerido.usuario,
-      password: "",
-      nombre: sugerido.nombre,
-      rol: sugerido.rol,
-      personal_id: "",
-      area: sugerido.area,
-    });
-    setMensaje(
-      `Formulario listo para «${sugerido.usuario}». Escribe una contraseña y pulsa Crear usuario.`,
-    );
-    setError(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function prepararAltaDesdePersonal(persona: Persona) {
-    setCampos({
-      usuario: sugerirUsuarioDesdeNombre(persona.nombre),
-      password: "",
-      nombre: persona.nombre,
-      rol: "operador",
-      personal_id: persona.id,
-      area: persona.area ?? "",
-    });
-    setMensaje(`Formulario listo para ${persona.nombre}. Define la contraseña y Guarda.`);
-    setError(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  const operadoresVinculados = useMemo(
-    () => usuarios.filter((u) => u.rol === "operador" && u.personal_id),
-    [usuarios],
-  );
-
-  const operadoresSinPersonal = useMemo(
-    () => usuarios.filter((u) => u.rol === "operador" && !u.personal_id),
-    [usuarios],
-  );
 
   if (!puede("gestionar.usuarios")) {
     return <Navigate to="/" replace />;
@@ -278,6 +299,20 @@ function UsuariosPage() {
         activo: usuario.activo,
       });
       setMensaje(`Perfil de ${usuario.nombre || usuario.usuario || usuario.email} actualizado.`);
+      setAgrupacion((lista) =>
+        lista.map((u) =>
+          u.id === usuario.id
+            ? {
+                ...u,
+                nombre: usuario.nombre,
+                rol: usuario.rol,
+                personal_id: usuario.personal_id,
+                area: usuario.area,
+                activo: usuario.activo,
+              }
+            : u,
+        ),
+      );
     } catch (e) {
       const msg = (e as Error).message;
       if (/usuarios_portal_rol_check|violates check constraint/i.test(msg)) {
@@ -371,76 +406,6 @@ function UsuariosPage() {
         </p>
       </aside>
 
-      {!cargando && (
-        <section className="usuarios__checklist" aria-label="Checklist de altas">
-          <div className="usuarios__checklist-cabecera">
-            <h2>Checklist — personal sin cuenta de portal</h2>
-            <p>
-              Operadores vinculados: <strong>{operadoresVinculados.length}</strong>
-              {operadoresSinPersonal.length > 0
-                ? ` · ${operadoresSinPersonal.length} operador(es) sin fila de Personal`
-                : ""}
-              {" · "}
-              Pendientes de alta: <strong>{pendientesChecklist}</strong>
-              {" · "}
-              Mantenimiento: usa el <strong>admin</strong> (coordinador)
-            </p>
-          </div>
-
-          {pendientesChecklist === 0 ? (
-            <p className="usuarios__checklist-ok">
-              Todo el personal activo y los planeadores del mapa ya tienen usuario (o no hay
-              pendientes).
-            </p>
-          ) : (
-            <ul className="usuarios__checklist-lista">
-              {personalSinUsuario.map((persona) => (
-                <li key={persona.id}>
-                  <div>
-                    <strong>{persona.nombre}</strong>
-                    <small>
-                      {[persona.cargo, persona.area].filter(Boolean).join(" · ") ||
-                        "Sin cargo/área"}
-                    </small>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn--primario"
-                    onClick={() => prepararAltaDesdePersonal(persona)}
-                  >
-                    Crear usuario
-                  </button>
-                </li>
-              ))}
-              {planeadoresPendientes.map((s) => (
-                <li key={`planeador-${s.usuario}`}>
-                  <div>
-                    <strong>{s.nombre}</strong>
-                    <small>
-                      {s.cargo} · {s.area} · {ETIQUETAS_ROL[s.rol]} · sugerido: {s.usuario}
-                    </small>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn--primario"
-                    onClick={() => rellenarDesdeSugerido(s)}
-                  >
-                    Crear usuario
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {operadoresSinPersonal.length > 0 && (
-            <p className="usuarios__checklist-aviso">
-              Revisar vínculo Personal en la tabla de abajo:{" "}
-              {operadoresSinPersonal.map((u) => u.usuario || u.nombre).join(", ")}.
-            </p>
-          )}
-        </section>
-      )}
-
       {mensaje && <p className="usuarios__mensaje usuarios__mensaje--ok">{mensaje}</p>}
       {error && <p className="usuarios__mensaje usuarios__mensaje--error">{error}</p>}
 
@@ -488,11 +453,11 @@ function UsuariosPage() {
               onChange={(e) => setCampos({ ...campos, rol: e.target.value as RolPortal })}
             >
               <option value="admin">Administrador</option>
-              <option value="operador">Operador</option>
+              <option value="operador">{etiquetaCargo("operador", campos.area)}</option>
               <option value="consulta">Consulta</option>
-              <option value="solicitante">Solicitante de área</option>
-              <option value="lider">Líder de área</option>
-              <option value="gerencia">Gerencia</option>
+              <option value="solicitante">{etiquetaCargo("solicitante", campos.area)}</option>
+              <option value="lider">{etiquetaCargo("lider", campos.area)}</option>
+              <option value="gerencia">{etiquetaCargo("gerencia", campos.area)}</option>
             </select>
           </label>
           {campos.rol === "lider" && (
@@ -621,11 +586,11 @@ function UsuariosPage() {
               onChange={(e) => setVincular({ ...vincular, rol: e.target.value as RolPortal })}
             >
               <option value="admin">Administrador</option>
-              <option value="operador">Operador</option>
+              <option value="operador">{etiquetaCargo("operador", vincular.area)}</option>
               <option value="consulta">Consulta</option>
-              <option value="solicitante">Solicitante de área</option>
-              <option value="lider">Líder de área</option>
-              <option value="gerencia">Gerencia</option>
+              <option value="solicitante">{etiquetaCargo("solicitante", vincular.area)}</option>
+              <option value="lider">{etiquetaCargo("lider", vincular.area)}</option>
+              <option value="gerencia">{etiquetaCargo("gerencia", vincular.area)}</option>
             </select>
           </label>
           {vincular.rol === "lider" && (
@@ -658,24 +623,33 @@ function UsuariosPage() {
       </form>
 
       <h2>Usuarios registrados</h2>
+      <p className="usuarios__descripcion">
+        Mantenimiento agrupa al administrador y a los operarios. Cada área muestra a su líder y a
+        su gente. Para cambiar solo a una persona, edita su fila (sobre todo el Área) y pulsa
+        Guardar ahí. El rol Líder es el mismo para todos; no reescribe a los demás.
+      </p>
       {cargando ? (
         <p>Cargando...</p>
       ) : (
-        <div className="usuarios-tabla-wrap">
-          <table className="usuarios-tabla">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Área</th>
-                <th>Técnico</th>
-                <th>Activo</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.map((u) => (
+        agruparUsuarios(agrupacion, usuarios).map((grupo) => (
+          <section key={grupo.id} className="usuarios-grupo">
+            <h3>{grupo.titulo}</h3>
+            <p className="usuarios-grupo__detalle">{grupo.detalle}</p>
+            <div className="usuarios-tabla-wrap">
+              <table className="usuarios-tabla">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Área</th>
+                    <th>Técnico</th>
+                    <th>Activo</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grupo.usuarios.map((u) => (
                 <tr key={u.id} className={u.activo ? "" : "usuarios-tabla__inactivo"}>
                   <td>
                     <input
@@ -688,7 +662,7 @@ function UsuariosPage() {
                     <code>{u.usuario || "—"}</code>
                   </td>
                   <td>
-                    <span className={badgeRol(u.rol)}>{ETIQUETAS_ROL[u.rol]}</span>
+                    <span className={badgeRol(u.rol)}>{etiquetaCargo(u.rol, u.area)}</span>
                     <select
                       value={u.rol}
                       onChange={(e) =>
@@ -696,11 +670,11 @@ function UsuariosPage() {
                       }
                     >
                       <option value="admin">Administrador</option>
-                      <option value="operador">Operador</option>
+                      <option value="operador">{etiquetaCargo("operador", u.area)}</option>
                       <option value="consulta">Consulta</option>
-                      <option value="solicitante">Solicitante de área</option>
-                      <option value="lider">Líder de área</option>
-                      <option value="gerencia">Gerencia</option>
+                      <option value="solicitante">{etiquetaCargo("solicitante", u.area)}</option>
+                      <option value="lider">{etiquetaCargo("lider", u.area)}</option>
+                      <option value="gerencia">{etiquetaCargo("gerencia", u.area)}</option>
                     </select>
                   </td>
                   <td>
@@ -760,10 +734,12 @@ function UsuariosPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))
       )}
     </div>
   );

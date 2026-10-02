@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { AREAS_PLANTA, normalizarArea } from "../../lib/areas";
 import { esRolReportaSolicitudes } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
@@ -43,6 +43,8 @@ function rutaArea(area: string): string {
 
 function SolicitudesPage() {
   const { perfil, puede, cargando: cargandoAuth } = useAuth();
+  const ubicacion = useLocation();
+  const pedido = ubicacion.state as { solicitudesDe?: string; desdeArea?: string } | null;
   const mesActual = NOMBRES_MESES[new Date().getMonth()];
   const esAdmin = perfil?.rol === "admin";
   const esReporta = esRolReportaSolicitudes(perfil);
@@ -270,8 +272,13 @@ function SolicitudesPage() {
     <section className="solicitudes">
       <div className="solicitudes__cabecera">
         <div>
-          <h1>Solicitudes</h1>
+          <h1>{pedido?.solicitudesDe ? `Solicitudes de ${pedido.solicitudesDe}` : "Solicitudes"}</h1>
           <p className="solicitudes__descripcion">
+            {pedido?.desdeArea ? (
+              <>
+                Pedido desde <strong>{pedido.desdeArea}</strong>.{" "}
+              </>
+            ) : null}
             {esReporta ? (
               <>
                 Vista de todas las áreas. Entra a cualquiera para crear o consultar solicitudes.

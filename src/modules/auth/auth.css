@@ -26,6 +26,10 @@
   text-align: center;
 }
 
+.auth-login__tarjeta--amplia {
+  width: min(100%, 28rem);
+}
+
 .auth-login__marca {
   padding: 1.75rem 1.5rem 1.35rem;
   background: #000;
@@ -83,7 +87,8 @@
 
 .auth-login__form input[type="email"],
 .auth-login__form input[type="password"],
-.auth-login__form input[type="text"] {
+.auth-login__form input[type="text"],
+.auth-login__form select {
   font: inherit;
   padding: 0.75rem 0.8rem;
   border: 1px solid var(--color-borde);
@@ -98,10 +103,16 @@
   color: #94a3b8;
 }
 
-.auth-login__form input:focus {
+.auth-login__form input:focus,
+.auth-login__form select:focus {
   outline: 2px solid #93c5fd;
   outline-offset: 1px;
   border-color: #2563eb;
+}
+
+.auth-login__form select:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
 }
 
 .auth-login__clave-fila {
@@ -167,6 +178,27 @@
   color: #991b1b;
   border-radius: 8px;
   font-size: 0.85rem;
+}
+
+.auth-login__aviso {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  background: #ecfdf5;
+  color: #065f46;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.auth-login__enlace {
+  margin: 0.15rem 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.auth-login__enlace a,
+.auth-login__pie a {
+  color: #1d4ed8;
+  font-weight: 700;
 }
 
 .auth-login__pie {

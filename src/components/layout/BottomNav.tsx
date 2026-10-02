@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../modules/auth/AuthContext";
-import { etiquetaRol } from "../../modules/auth/roles";
+import { etiquetaCargo } from "../../modules/auth/cargosArea";
 import { areaUsuario } from "../../lib/usuarioArea";
+import { coincideArea } from "../../lib/areas";
+import { AREAS_MENU_DISENO, rutaMenuArea } from "../../modules/inicio/areasDiseno";
 import { usePmAsignadosBadge } from "../../modules/preventivo/usePmAsignadosBadge";
 import { usePendientesAprobacionPm } from "../../modules/preventivo/usePendientesAprobacionPm";
 import { usePermisosPendientesBadge } from "../../modules/permisos/usePermisosPendientesBadge";
@@ -52,7 +54,11 @@ function BottomNav() {
   const solicitudesAbiertas = useSolicitudesAbiertasBadge();
   const permisosPendientes = usePermisosPendientesBadge();
 
-  const { tabs, mas } = useMemo(() => itemsNavParaRol(rol), [rol]);
+  const area = areaUsuario(perfil);
+  const esDiseno = rol === "lider" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
+  const equipoActivo =
+    ubicacion.pathname === "/equipo" || ubicacion.pathname.startsWith("/equipo/");
+  const { tabs, mas } = useMemo(() => itemsNavParaRol(rol, area), [rol, area]);
   const masActivo = algunMasActivo(ubicacion.pathname, mas);
   const aprobarEnMas = mas.some((i) => i.ruta === "/preventivo/aprobaciones");
   const solicitudesEnMas = mas.some((i) => i.ruta === "/solicitudes");
@@ -133,7 +139,7 @@ function BottomNav() {
       <nav className="bottom-nav" aria-label="Navegación principal">
         {tabs.map((item) => {
           const activo = rutaActiva(ubicacion.pathname, item.ruta);
-          return (
+          const tab = (
             <NavLink
               key={item.ruta}
               to={item.ruta}
@@ -146,6 +152,21 @@ function BottomNav() {
               </span>
               <span>{item.etiquetaCorta}</span>
             </NavLink>
+          );
+          if (!(esDiseno && item.ruta === "/tablero")) return tab;
+          return (
+            <Fragment key={item.ruta}>
+              {tab}
+              <NavLink
+                to="/equipo"
+                className={"bottom-nav__item" + (equipoActivo ? " bottom-nav__item--activo" : "")}
+              >
+                <span className="bottom-nav__icono-wrap">
+                  <IconoNavSvg nombre="personal" />
+                </span>
+                <span>Equipo</span>
+              </NavLink>
+            </Fragment>
           );
         })}
         <button
@@ -238,12 +259,31 @@ function BottomNav() {
               <p className="mas-sheet__vacio">No hay más módulos para tu rol.</p>
             )}
 
+            {rol === "lider" && area && coincideArea(area, "Diseno y Desarrollo") ? (
+              <div className="mas-sheet__areas">
+                <h3>Áreas</h3>
+                {AREAS_MENU_DISENO.map((areaMenu) => (
+                  <button
+                    key={areaMenu}
+                    type="button"
+                    className="mas-sheet__area"
+                    onClick={() => {
+                      setMasAbierto(false);
+                      navegar(rutaMenuArea(areaMenu));
+                    }}
+                  >
+                    {areaMenu}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
             {perfil && (
               <div className="mas-sheet__usuario">
                 <div>
                   <strong>{perfil.nombre || perfil.usuario || perfil.email}</strong>
                   <small>
-                    {etiquetaRol(perfil.rol)}
+                    {etiquetaCargo(perfil.rol, areaUsuario(perfil))}
                     {areaUsuario(perfil) ? ` · ${areaUsuario(perfil)}` : ""}
                   </small>
                 </div>

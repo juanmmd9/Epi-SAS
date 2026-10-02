@@ -13,7 +13,7 @@ import {
   resolverFechaProgramadaCercana,
   vincularPreventivoConHojas,
 } from "../preventivo/pmCompletado";
-import { esPendienteAprobacionPm } from "../preventivo/aprobacionPm";
+import { esPendienteAprobacionPm, pmCuentaParaCronograma } from "../preventivo/aprobacionPm";
 import type { RegistroPreventivo } from "../preventivo/types";
 import type { RegistroCorrectivo } from "../correctivo/types";
 import {
@@ -345,7 +345,16 @@ export function clasificarCitasPreventivas(
     if (!maquinaActivaEnFecha(maquina, anio, mes, desde.dia)) continue;
 
     const destino = { anio: d.anio, mes: d.mes, dia: d.dia };
-    const pm = buscarPmEnMes(maquina.id);
+    const pmMismoMes = buscarPmEnMes(maquina.id);
+    const destinoIso = aFechaIso(destino.anio, destino.mes, destino.dia);
+    const pmDestino = preventivoVinculado.find((r) => {
+      if (r.hoja_id !== maquina.id || !pmCuentaParaCronograma(r)) return false;
+      if (registroEnMes(r.fecha, destino.anio, destino.mes)) return true;
+      const programada = (r.datos.fechaProgramada ?? "").slice(0, 10);
+      return programada === destinoIso;
+    });
+    const pm =
+      pmMismoMes && pmCuentaParaCronograma(pmMismoMes) ? pmMismoMes : pmDestino;
     const baseReprogramada: CitaClasificada = {
       maquinaId: maquina.id,
       nombre: maquina.nombre,

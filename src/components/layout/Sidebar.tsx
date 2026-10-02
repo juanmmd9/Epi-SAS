@@ -1,8 +1,13 @@
+import { Fragment } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import BrandLogo from "../BrandLogo";
 import { useAuth } from "../../modules/auth/AuthContext";
-import { etiquetaRol, enlacesParaRol } from "../../modules/auth/roles";
-import { areaUsuario } from "../../lib/usuarioArea";
+import { enlacesParaRol } from "../../modules/auth/roles";
+import { etiquetaCargo } from "../../modules/auth/cargosArea";
+import { areaUsuario, muestraPortalMantenimiento } from "../../lib/usuarioArea";
+import { enlaceVisibleParaArea } from "./navConfig";
+import { AREAS_MENU_DISENO, rutaMenuArea } from "../../modules/inicio/areasDiseno";
+import { coincideArea } from "../../lib/areas";
 import { usePmAsignadosBadge } from "../../modules/preventivo/usePmAsignadosBadge";
 import { usePendientesAprobacionPm } from "../../modules/preventivo/usePendientesAprobacionPm";
 import { usePermisosPendientesBadge } from "../../modules/permisos/usePermisosPendientesBadge";
@@ -18,7 +23,11 @@ interface Props {
 function Sidebar({ abierto, onCerrar }: Props) {
   const navegar = useNavigate();
   const { perfil, salir } = useAuth();
-  const enlaces = enlacesParaRol(perfil?.rol);
+  const area = areaUsuario(perfil);
+  const esDiseno = perfil?.rol === "lider" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
+  const enlaces = enlacesParaRol(perfil?.rol).filter((enlace) =>
+    enlaceVisibleParaArea(perfil?.rol, area, enlace.ruta),
+  );
   const pendientesFirma = usePendientesAprobacionPm();
   const pmAsignados = usePmAsignadosBadge();
   const solicitudesAbiertas = useSolicitudesAbiertasBadge();
@@ -34,7 +43,9 @@ function Sidebar({ abierto, onCerrar }: Props) {
     <aside className={"sidebar" + (abierto ? " sidebar--abierto" : "")}>
       <div className="sidebar__marca">
         <BrandLogo className="sidebar__logo" width={286} height={90} />
-        <span className="sidebar__titulo">Portal Mantenimiento</span>
+        {muestraPortalMantenimiento(perfil) ? (
+          <span className="sidebar__titulo">Portal Mantenimiento</span>
+        ) : null}
       </div>
       <nav className="sidebar__nav">
         {enlaces.map((enlace) => {
@@ -47,8 +58,8 @@ function Sidebar({ abierto, onCerrar }: Props) {
           const avisoSol = esSolicitudes && solicitudesAbiertas > 0;
           const avisoPerm = esPermisos && permisosPendientes > 0;
           return (
+            <Fragment key={enlace.ruta}>
             <NavLink
-              key={enlace.ruta}
               to={enlace.ruta}
               end={enlace.ruta === "/" || enlace.ruta === "/solicitudes"}
               className={({ isActive }) =>
@@ -94,8 +105,37 @@ function Sidebar({ abierto, onCerrar }: Props) {
                 </span>
               ) : null}
             </NavLink>
+            {esDiseno && enlace.ruta === "/tablero" ? (
+              <NavLink
+                to="/equipo"
+                className={({ isActive }) =>
+                  "sidebar__enlace" + (isActive ? " sidebar__enlace--activo" : "")
+                }
+                onClick={onCerrar}
+              >
+                <span className="sidebar__enlace-texto">Equipo</span>
+              </NavLink>
+            ) : null}
+            </Fragment>
           );
         })}
+        {esDiseno ? (
+          <>
+            <p className="sidebar__grupo">Áreas</p>
+            {AREAS_MENU_DISENO.map((areaMenu) => (
+              <NavLink
+                key={areaMenu}
+                to={rutaMenuArea(areaMenu)}
+                className={({ isActive }) =>
+                  "sidebar__enlace" + (isActive ? " sidebar__enlace--activo" : "")
+                }
+                onClick={onCerrar}
+              >
+                <span className="sidebar__enlace-texto">{areaMenu}</span>
+              </NavLink>
+            ))}
+          </>
+        ) : null}
       </nav>
       {perfil && (
         <div className="sidebar__usuario">
@@ -103,7 +143,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
             {perfil.nombre || perfil.usuario || perfil.email}
           </span>
           <span className="sidebar__usuario-rol">
-            {etiquetaRol(perfil.rol)}
+            {etiquetaCargo(perfil.rol, areaUsuario(perfil))}
             {areaUsuario(perfil) ? ` · ${areaUsuario(perfil)}` : ""}
           </span>
           <button

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import CargaPantalla from "../../components/CargaPantalla";
-import { AREAS_CON_PM } from "../../lib/areas";
+import { AREAS_CON_PM, coincideArea } from "../../lib/areas";
 import { NOMBRES_MESES } from "../../lib/fechas";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
@@ -35,6 +35,7 @@ import BandejaTomarPanel from "../solicitudes/BandejaTomarPanel";
 import { solicitudAbierta } from "../solicitudes/solicitudesCalculo";
 import CitaPmItem from "./CitaPmItem";
 import { construirDatosArea } from "./inicioDatosArea";
+import InicioDisenoPage from "./InicioDisenoPage";
 import MisPmPanel from "./MisPmPanel";
 import {
   contarPmSinAsignar,
@@ -298,6 +299,10 @@ function InicioPage() {
     return <CargaPantalla mensaje="Preparando inicio..." />;
   }
 
+  if (esLider && areaLider && coincideArea(areaLider, "Diseno y Desarrollo")) {
+    return <InicioDisenoPage />;
+  }
+
   return (
     <section className={"inicio" + (esOperario ? " inicio--operario" : "") + (esLider ? " inicio--lider" : "")}>
       <div className="inicio__cabecera">
@@ -328,14 +333,6 @@ function InicioPage() {
           {esAdmin && asignacionesDisponibles && sinAsignar > 0 && (
             <p className="inicio__aviso-asignacion">
               {sinAsignar} PM pendiente(s) sin operario asignado en {anio}.
-            </p>
-          )}
-          {esAdmin && !asignacionesDisponibles && (
-            <p className="inicio__aviso-asignacion inicio__aviso-asignacion--sql">
-              Para asignar operarios, ejecuta en Supabase el SQL{" "}
-              <code>supabase/migrations/preventivo_asignaciones.sql</code>
-              {" "}y luego{" "}
-              <code>preventivo_asignaciones_multi.sql</code>.
             </p>
           )}
           {mostrarCronogramaCompleto && (

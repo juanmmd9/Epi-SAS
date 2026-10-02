@@ -3,8 +3,15 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/layout/Layout";
 import { AuthProvider } from "./modules/auth/AuthContext";
 import LoginPage from "./modules/auth/LoginPage";
+import RegistroPage from "./modules/auth/RegistroPage";
 import RequireAuth from "./modules/auth/RequireAuth";
 import InicioPage from "./modules/inicio/InicioPage";
+import AreaMenuPage from "./modules/inicio/AreaMenuPage";
+import InicioDisenoDetallePage from "./modules/inicio/InicioDisenoDetallePage";
+import InicioDisenoItemPage from "./modules/inicio/InicioDisenoItemPage";
+import EquipoPage from "./modules/inicio/EquipoPage";
+import EquipoEtapasPage from "./modules/inicio/EquipoEtapasPage";
+import EquipoPersonaPage from "./modules/inicio/EquipoPersonaPage";
 import InicioLiderPage from "./modules/inicio/InicioLiderPage";
 import GerenciaPage from "./modules/gerencia/GerenciaPage";
 import PedirGerenciaPage from "./modules/gerencia/PedirGerenciaPage";
@@ -37,9 +44,16 @@ function App() {
       <AuthProvider>
         <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/registro" element={<RegistroPage />} />
         <Route element={<RequireAuth />}>
           <Route element={<Layout />}>
             <Route index element={<InicioPage />} />
+            <Route path="diseno/areas/:areaNombre" element={<AreaMenuPage />} />
+            <Route path="diseno/:pasoId/item/:itemId" element={<InicioDisenoItemPage />} />
+            <Route path="diseno/:pasoId" element={<InicioDisenoDetallePage />} />
+            <Route path="equipo" element={<EquipoPage />} />
+            <Route path="equipo/usuario/:usuarioId" element={<EquipoEtapasPage />} />
+            <Route path="equipo/:personaId" element={<EquipoPersonaPage />} />
             <Route path="tablero" element={<InicioLiderPage />} />
             <Route path="preventivo/aprobaciones/imprimir" element={<Mtre045Page />} />
             <Route path="gerencia" element={<GerenciaPage />} />
