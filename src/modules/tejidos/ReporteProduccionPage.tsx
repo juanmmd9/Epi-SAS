@@ -57,6 +57,7 @@ function ReporteProduccionPage() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [vistaPrevia, setVistaPrevia] = useState<ReporteProduccionDatos | null>(null);
+  const [claveFormulario, setClaveFormulario] = useState(0);
 
   const permitido = puedeUsarFormatosTejidos(rol, areaUsuario(perfil));
   const esTrenzadora = datos.areaTrabajo === "Trenzadora";
@@ -107,17 +108,32 @@ function ReporteProduccionPage() {
     }));
   }
 
+  function formularioEnBlanco(): ReporteProduccionDatos {
+    const vacio = reporteVacio();
+    const nombre = perfil?.nombre?.trim();
+    if (!nombre) return vacio;
+    if (rol === "operador") return { ...vacio, operario: nombre };
+    if (rol === "lider") return { ...vacio, supervisor: nombre };
+    return vacio;
+  }
+
+  function limpiarFormulario() {
+    setEditandoId(null);
+    setDatos(formularioEnBlanco());
+    setClaveFormulario((actual) => actual + 1);
+  }
+
   function abrirRegistro(registro: RegistroReporteProduccion) {
     setEditandoId(registro.id);
     setDatos(registro.datos);
+    setClaveFormulario((actual) => actual + 1);
     setMensaje(null);
     setError(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function nuevo() {
-    setEditandoId(null);
-    setDatos(reporteVacio());
+    limpiarFormulario();
     setMensaje(null);
     setError(null);
   }
@@ -140,12 +156,12 @@ function ReporteProduccionPage() {
     setGuardando(true);
     try {
       const guardado = await guardarReporteProduccion(datos, editandoId);
-      setEditandoId(guardado.id);
       setRegistros((prev) => {
         const resto = prev.filter((r) => r.id !== guardado.id);
         return [guardado, ...resto];
       });
-      setMensaje("Reporte guardado.");
+      limpiarFormulario();
+      setMensaje("Reporte guardado. El formulario quedó en blanco para crear uno nuevo.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar");
     } finally {
@@ -331,7 +347,7 @@ function ReporteProduccionPage() {
                 Dibuja la firma o carga una imagen. El nombre queda debajo, como en Aprobar PM.
               </p>
               <FirmaPad
-                reinicioClave={`op-${editandoId ?? "nuevo"}`}
+                reinicioClave={`op-${claveFormulario}`}
                 onChange={(firmaOperario) => setDatos((prev) => ({ ...prev, firmaOperario }))}
               />
               <label>
@@ -354,7 +370,7 @@ function ReporteProduccionPage() {
                 Dibuja la firma o carga una imagen. El nombre queda debajo, como en Aprobar PM.
               </p>
               <FirmaPad
-                reinicioClave={`sup-${editandoId ?? "nuevo"}`}
+                reinicioClave={`sup-${claveFormulario}`}
                 onChange={(firmaSupervisor) => setDatos((prev) => ({ ...prev, firmaSupervisor }))}
               />
               <label>
