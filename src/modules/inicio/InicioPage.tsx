@@ -503,6 +503,11 @@ function InicioPage() {
               )}
 
               <div className="area-card__pie">
+                {esLider && puede("aprobar.preventivo") && (
+                  <Link className="btn btn--primario" to="/preventivo/aprobaciones">
+                    Aprobar PM y cargar firmas
+                  </Link>
+                )}
                 {puedeModificarPm && (
                   <>
                     <Link className="btn" to="/preventivo/cronograma">

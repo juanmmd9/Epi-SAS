@@ -97,7 +97,7 @@ function AprobacionPmPage() {
       .filter((r) => {
         const estado = estadoAprobacionPm(r);
         if (estado === "pendiente_aprobacion") return false;
-        if (!r.datos.estadoAprobacion) return false;
+        if (!r.datos.estadoAprobacion && !r.datos.mtre045) return false;
         if (esAdmin) return true;
         if (!areaLider) return false;
         return coincideArea(r.area, areaLider);
@@ -465,6 +465,15 @@ function AprobacionPmPage() {
                       )}
                     </td>
                     <td className="preventivo__acciones">
+                      {estado === "aprobado" && !firmaImg ? (
+                        <button
+                          type="button"
+                          className="btn btn--primario"
+                          onClick={() => abrirPanelFirma(registro)}
+                        >
+                          Cargar firma
+                        </button>
+                      ) : null}
                       {estado === "aprobado" ? (
                         <button
                           type="button"

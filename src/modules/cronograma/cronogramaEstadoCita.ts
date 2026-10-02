@@ -101,7 +101,11 @@ export function evaluarEstadoCitaPm(
   const origenFecha: FechaCita = { anio, mes, dia };
   const destino = destinoReprogramacion(excepciones, area, maquinaId, origenFecha);
 
-  if (hecho) {
+  const destinoHecho = destino
+    ? pmCompletado(maquinaId, aFechaIso(destino.anio, destino.mes, destino.dia), indices)
+    : false;
+
+  if (hecho || destinoHecho) {
     return { estado: "completada", reprogramadoA: destino };
   }
 
