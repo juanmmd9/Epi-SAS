@@ -27,11 +27,18 @@ function Sidebar({ abierto, onCerrar }: Props) {
   const area = areaUsuario(perfil);
   const esDiseno = perfil?.rol === "lider" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
   const esTejidos = Boolean(area && coincideArea(area, "Tejidos"));
+  const esMantenimiento =
+    Boolean(area && coincideArea(area, "Mantenimiento")) ||
+    (perfil?.rol === "admin" && !area);
   const enlaces = enlacesParaRol(perfil?.rol).filter((enlace) =>
     enlaceVisibleParaArea(perfil?.rol, area, enlace.ruta),
   );
   const yaTieneFormatos = enlaces.some((enlace) => enlace.ruta === "/formatos");
-  const rutaFormatos = esTejidos ? "/tejidos/formatos" : "/area/formatos";
+  const rutaFormatos = esTejidos
+    ? "/tejidos/formatos"
+    : esMantenimiento
+      ? "/mantenimiento/formatos"
+      : "/area/formatos";
   const pendientesFirma = usePendientesAprobacionPm();
   const pmAsignados = usePmAsignadosBadge();
   const solicitudesAbiertas = useSolicitudesAbiertasBadge();
@@ -109,7 +116,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
                 </span>
               ) : null}
             </NavLink>
-            {!yaTieneFormatos && esInicio ? (
+            {(!yaTieneFormatos || esMantenimiento) && esInicio ? (
               <NavLink
                 to={rutaFormatos}
                 className={() => {

@@ -10,6 +10,7 @@ import { descargarBlob, generarExcelGcRe027, nombreArchivoGc027 } from "./gcre02
 import {
   eliminarGestionCambio,
   esErrorTablaGestionCambio,
+  areaDeGestionCambio,
   guardarGestionCambio,
   listarGestionCambio,
   SQL_MIGRACION_GESTION_CAMBIO,
@@ -55,12 +56,15 @@ function AvisoSetupGestionCambio() {
 
 function Gcre027Page() {
   const { rol, perfil, puede } = useAuth();
-  const area = areaUsuario(perfil);
-  const volverFormatos = puede("ver.formatos")
-    ? "/formatos"
-    : rol && area && coincideArea(area, "Tejidos")
+  const area = areaDeGestionCambio(areaUsuario(perfil), rol);
+  const volverFormatos =
+    area && coincideArea(area, "Tejidos")
       ? "/tejidos/formatos"
-      : "/area/formatos";
+      : area && coincideArea(area, "Mantenimiento")
+        ? "/mantenimiento/formatos"
+        : puede("ver.formatos")
+          ? "/formatos"
+          : "/area/formatos";
   const [datos, setDatos] = useState<RegistroGc027Datos>(formularioGc027Vacio());
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [numeroActual, setNumeroActual] = useState<number | null>(null);

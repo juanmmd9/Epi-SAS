@@ -27,6 +27,7 @@ import ComputadoresPage from "./modules/computadores/ComputadoresPage";
 import ComputadorDetallePage from "./modules/computadores/ComputadorDetallePage";
 import IndicadoresPage from "./modules/indicadores/IndicadoresPage";
 import FormatosAreaPage from "./modules/formatos/FormatosAreaPage";
+import FormatosMantenimientoPage from "./modules/formatos/FormatosMantenimientoPage";
 import FormatosPage from "./modules/formatos/FormatosPage";
 import Gcre001Page from "./modules/formatos/Gcre001Page";
 import Gcre009Page from "./modules/formatos/Gcre009Page";
@@ -74,6 +75,7 @@ function App() {
             <Route path="indicadores" element={<IndicadoresPage />} />
             <Route path="formatos" element={<FormatosPage />} />
             <Route path="area/formatos" element={<FormatosAreaPage />} />
+            <Route path="mantenimiento/formatos" element={<FormatosMantenimientoPage />} />
             <Route path="tejidos/formatos" element={<FormatosTejidosPage />} />
             <Route path="tejidos/formatos/reporte-produccion" element={<ReporteProduccionPage />} />
             <Route path="formatos/gc-re-001" element={<Gcre001Page />} />

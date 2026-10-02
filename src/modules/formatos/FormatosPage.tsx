@@ -4,15 +4,15 @@ import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import { listarAccionesMejora } from "./gcre001Service";
 import type { RegistroAm } from "./gcre001Types";
-import { listarGestionCambio } from "./gcre027Service";
+import { areaDeGestionCambio, listarGestionCambio } from "./gcre027Service";
 import type { RegistroGc027 } from "./gcre027Types";
 import { listarNoConformidades } from "./formatosService";
 import type { RegistroNc } from "./types";
 import "./formatos.css";
 
 function FormatosPage() {
-  const { perfil } = useAuth();
-  const area = areaUsuario(perfil);
+  const { perfil, rol } = useAuth();
+  const area = areaDeGestionCambio(areaUsuario(perfil), rol);
   const [registros, setRegistros] = useState<RegistroNc[]>([]);
   const [mejoras, setMejoras] = useState<RegistroAm[]>([]);
   const [cambios, setCambios] = useState<RegistroGc027[]>([]);

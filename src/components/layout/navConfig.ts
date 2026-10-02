@@ -40,6 +40,7 @@ const ICONOS_POR_RUTA: Record<string, IconoNav> = {
   "/indicadores": "indicadores",
   "/formatos": "formatos",
   "/area/formatos": "formatos",
+  "/mantenimiento/formatos": "formatos",
   "/tejidos/formatos": "formatos",
   "/personal": "personal",
   "/personal/usuarios": "usuarios",
@@ -61,6 +62,7 @@ const ETIQUETA_CORTA: Record<string, string> = {
   "/indicadores": "Indicadores",
   "/formatos": "Formatos",
   "/area/formatos": "Formatos",
+  "/mantenimiento/formatos": "Formatos",
   "/tejidos/formatos": "Formatos",
   "/personal": "Personal",
   "/personal/usuarios": "Usuarios",
@@ -136,16 +138,25 @@ export function itemsNavParaRol(
     .map(enriquecer)
     .filter((item) => enlaceVisibleParaArea(rol, area, item.ruta));
   const esTejidos = Boolean(area && coincideArea(area, "Tejidos"));
+  const esMantenimiento =
+    Boolean(area && coincideArea(area, "Mantenimiento")) || (rol === "admin" && !area);
   const yaTieneFormatos = todos.some((item) => item.ruta === "/formatos");
-  if (!yaTieneFormatos) {
-    todos = [
-      ...todos,
-      enriquecer({
-        ruta: esTejidos ? "/tejidos/formatos" : "/area/formatos",
-        texto: "Formatos",
-        permiso: "ver.inicio",
-      }),
-    ];
+  const rutaFormatosArea = esTejidos
+    ? "/tejidos/formatos"
+    : esMantenimiento
+      ? "/mantenimiento/formatos"
+      : "/area/formatos";
+  if (!yaTieneFormatos || esMantenimiento) {
+    if (!todos.some((item) => item.ruta === rutaFormatosArea)) {
+      todos = [
+        ...todos,
+        enriquecer({
+          ruta: rutaFormatosArea,
+          texto: "Formatos",
+          permiso: "ver.inicio",
+        }),
+      ];
+    }
   }
   const porRuta = new Map(todos.map((i) => [i.ruta, i]));
   const tabs: ItemNav[] = [];
@@ -154,13 +165,19 @@ export function itemsNavParaRol(
     ? rol === "lider"
       ? (["/", "/tejidos/formatos", "/preventivo/aprobaciones", "/tablero"] as const)
       : (["/", "/tejidos/formatos", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
-    : rol === "lider"
-      ? PRIORIDAD_TABS_LIDER
-      : PRIORIDAD_TABS;
+    : esMantenimiento
+      ? rol === "lider" || rol === "admin"
+        ? (["/", "/mantenimiento/formatos", "/preventivo/aprobaciones", "/tablero"] as const)
+        : (["/", "/mantenimiento/formatos", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
+      : rol === "lider"
+        ? PRIORIDAD_TABS_LIDER
+        : PRIORIDAD_TABS;
   const prioridad =
-    yaTieneFormatos || esTejidos
+    yaTieneFormatos && !esMantenimiento
       ? prioridadBase
-      : ["/", "/area/formatos", ...prioridadBase.filter((ruta) => ruta !== "/")];
+      : esTejidos || esMantenimiento
+        ? prioridadBase
+        : ["/", "/area/formatos", ...prioridadBase.filter((ruta) => ruta !== "/")];
 
   for (const ruta of prioridad) {
     if (tabs.length >= 3) break;
@@ -207,7 +224,11 @@ export function rutaActiva(pathname: string, rutaItem: string): boolean {
   if (rutaItem === "/formatos") {
     return pathname === "/formatos" || pathname.startsWith("/formatos/");
   }
-  if (rutaItem === "/area/formatos" || rutaItem === "/tejidos/formatos") {
+  if (
+    rutaItem === "/area/formatos" ||
+    rutaItem === "/tejidos/formatos" ||
+    rutaItem === "/mantenimiento/formatos"
+  ) {
     return (
       pathname === rutaItem ||
       pathname.startsWith(`${rutaItem}/`) ||

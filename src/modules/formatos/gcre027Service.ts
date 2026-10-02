@@ -3,6 +3,16 @@ import type { RegistroGc027, RegistroGc027Datos } from "./gcre027Types";
 
 const TABLA = "gestion_cambio";
 
+/** El administrador del portal, sin área propia, trabaja los registros de Mantenimiento. */
+export function areaDeGestionCambio(
+  area: string | null,
+  rol: string | null | undefined,
+): string | null {
+  if (area) return area;
+  if (rol === "admin") return "Mantenimiento";
+  return null;
+}
+
 export async function listarGestionCambio(area: string | null): Promise<RegistroGc027[]> {
   if (!area) return [];
   const { data, error } = await supabase
