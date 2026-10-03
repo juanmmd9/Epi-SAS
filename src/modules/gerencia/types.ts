@@ -81,6 +81,10 @@ export interface ItemGerencia {
   motivo_eliminacion: string | null;
   eliminado_en: string | null;
   eliminado_por_nombre: string | null;
+  /** Línea de Diseño: alturas, plasticos o ingenieria. Vacío en las demás áreas. */
+  linea_diseno: string | null;
+  auxiliar_id: string | null;
+  etapa_diseno: string | null;
   creado_en: string;
   actualizado_en: string;
 }
@@ -104,6 +108,9 @@ export interface ItemGerenciaInput {
   responsable_nombre?: string | null;
   encargados?: string[];
   confirmado_area?: boolean;
+  linea_diseno?: string | null;
+  auxiliar_id?: string | null;
+  etapa_diseno?: string | null;
 }
 
 /** Limpia y deduplica nombres de encargados. */

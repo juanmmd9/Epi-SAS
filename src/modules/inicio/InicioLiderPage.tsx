@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { coincideArea } from "../../lib/areas";
 import { quitarCanalRealtime, suscribirPostgresChanges } from "../../lib/supabaseRealtime";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
+import type { UsuarioPortal } from "../auth/roles";
+import { listarRegistradosDelArea } from "./equipoRegistrados";
+import { PROYECTOS_DISENO, type IdProyectoDiseno } from "./proyectosDiseno";
 import EncargadosCampos from "../gerencia/EncargadosCampos";
 import GerenciaItemDetalle from "../gerencia/GerenciaItemDetalle";
 import {
+  actualizarItemGerencia,
   crearColumnaAreaLider,
   crearItemGerencia,
   eliminarColumnaGerencia,
@@ -48,7 +53,11 @@ type FiltroVista = "tablero" | "en_gerencia" | "hechos" | "eliminados";
 function InicioLiderPage() {
   const { perfil } = useAuth();
   const area = areaUsuario(perfil) || perfil?.area?.trim() || "Sin área";
+  const esDiseno = Boolean(area) && coincideArea(area, "Diseno y Desarrollo");
   const bandejaId = idColumnaBandejaArea(area);
+  const [auxiliares, setAuxiliares] = useState<UsuarioPortal[]>([]);
+  const [nuevaLinea, setNuevaLinea] = useState<IdProyectoDiseno | "">("");
+  const [nuevoAuxiliar, setNuevoAuxiliar] = useState("");
 
   const [items, setItems] = useState<ItemGerencia[]>([]);
   const [columnas, setColumnas] = useState<ColumnaGerencia[]>([]);
@@ -102,6 +111,21 @@ function InicioLiderPage() {
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  useEffect(() => {
+    if (!esDiseno || !perfil?.id) return;
+    let vigente = true;
+    void listarRegistradosDelArea(area, perfil.id)
+      .then((lista) => {
+        if (vigente) setAuxiliares(lista.filter((persona) => persona.rol === "solicitante"));
+      })
+      .catch(() => {
+        if (vigente) setAuxiliares([]);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [area, esDiseno, perfil?.id]);
 
   useEffect(() => {
     if (!perfil?.id || !tablaOk) return;
@@ -209,6 +233,8 @@ function InicioLiderPage() {
     setNuevoTitulo("");
     setNuevasNotas("");
     setNuevosEncargados([""]);
+    setNuevaLinea("");
+    setNuevoAuxiliar("");
     setMostrarNuevo(true);
     setError(null);
     setMensaje(null);
@@ -220,6 +246,15 @@ function InicioLiderPage() {
       setError("Escribe un título.");
       return;
     }
+    if (esDiseno && !nuevaLinea) {
+      setError("Elige la línea: Alturas, Plásticos o Ingeniería.");
+      return;
+    }
+    if (esDiseno && !nuevoAuxiliar) {
+      setError("Elige el auxiliar que lleva el proyecto.");
+      return;
+    }
+    const auxiliar = auxiliares.find((persona) => persona.id === nuevoAuxiliar);
     setOcupado(true);
     setError(null);
     try {
@@ -229,7 +264,11 @@ function InicioLiderPage() {
         area,
         urgencia: nuevaUrgencia,
         notas: nuevasNotas,
-        encargados: normalizarListaEncargados(nuevosEncargados),
+        encargados: esDiseno
+          ? [auxiliar?.nombre || auxiliar?.usuario || "Auxiliar"]
+          : normalizarListaEncargados(nuevosEncargados),
+        linea_diseno: esDiseno ? nuevaLinea : null,
+        auxiliar_id: esDiseno ? nuevoAuxiliar : null,
         tablero: nuevoTablero || bandejaId,
         estado: "pendiente",
         origen: "solicitud",
@@ -243,6 +282,30 @@ function InicioLiderPage() {
       setError(e instanceof Error ? e.message : "No se pudo crear");
     } finally {
       setOcupado(false);
+    }
+  }
+
+  async function cambiarLinea(item: ItemGerencia, linea: IdProyectoDiseno | "") {
+    setError(null);
+    try {
+      const actualizado = await actualizarItemGerencia(item.id, { linea_diseno: linea || null });
+      setItems((prev) => prev.map((fila) => (fila.id === actualizado.id ? actualizado : fila)));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo cambiar la línea");
+    }
+  }
+
+  async function cambiarAuxiliar(item: ItemGerencia, auxiliarId: string) {
+    const persona = auxiliares.find((fila) => fila.id === auxiliarId);
+    setError(null);
+    try {
+      const actualizado = await actualizarItemGerencia(item.id, {
+        auxiliar_id: auxiliarId || null,
+        encargados: persona ? [persona.nombre || persona.usuario || "Auxiliar"] : [],
+      });
+      setItems((prev) => prev.map((fila) => (fila.id === actualizado.id ? actualizado : fila)));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo cambiar el auxiliar");
     }
   }
 
@@ -356,6 +419,42 @@ function InicioLiderPage() {
             </div>
             {formatoMontoCop(item.monto) && (
               <p className="gerencia__tarjeta-detalle">{formatoMontoCop(item.monto)}</p>
+            )}
+            {esDiseno && (
+              <div className="gerencia__tarjeta-linea">
+                <label>
+                  Línea
+                  <select
+                    value={item.linea_diseno ?? ""}
+                    onChange={(evento) => {
+                      void cambiarLinea(item, evento.target.value as IdProyectoDiseno | "");
+                    }}
+                  >
+                    <option value="">Sin línea</option>
+                    {PROYECTOS_DISENO.map((proyecto) => (
+                      <option key={proyecto.id} value={proyecto.id}>
+                        {proyecto.corto}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Auxiliar
+                  <select
+                    value={item.auxiliar_id ?? ""}
+                    onChange={(evento) => {
+                      void cambiarAuxiliar(item, evento.target.value);
+                    }}
+                  >
+                    <option value="">Sin auxiliar</option>
+                    {auxiliares.map((persona) => (
+                      <option key={persona.id} value={persona.id}>
+                        {persona.nombre || persona.usuario}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             )}
             {etiquetaEncargados(item) && (
               <p className="gerencia__tarjeta-detalle">
@@ -638,11 +737,46 @@ function InicioLiderPage() {
                   rows={3}
                 />
               </label>
-              <EncargadosCampos
-                valores={nuevosEncargados}
-                onChange={setNuevosEncargados}
-                etiqueta="Encargado(s) del proyecto"
-              />
+              {esDiseno ? (
+                <>
+                  <label className="gerencia__campo">
+                    Línea *
+                    <select
+                      value={nuevaLinea}
+                      onChange={(e) => setNuevaLinea(e.target.value as IdProyectoDiseno | "")}
+                      required
+                    >
+                      <option value="">Elige la tarjeta de inicio</option>
+                      {PROYECTOS_DISENO.map((proyecto) => (
+                        <option key={proyecto.id} value={proyecto.id}>
+                          {proyecto.titulo}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="gerencia__campo">
+                    Auxiliar *
+                    <select
+                      value={nuevoAuxiliar}
+                      onChange={(e) => setNuevoAuxiliar(e.target.value)}
+                      required
+                    >
+                      <option value="">Elige quién lo lleva</option>
+                      {auxiliares.map((persona) => (
+                        <option key={persona.id} value={persona.id}>
+                          {persona.nombre || persona.usuario}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              ) : (
+                <EncargadosCampos
+                  valores={nuevosEncargados}
+                  onChange={setNuevosEncargados}
+                  etiqueta="Encargado(s) del proyecto"
+                />
+              )}
               <p className="gerencia__modal-detalle">
                 Área: <strong>{area}</strong>
               </p>

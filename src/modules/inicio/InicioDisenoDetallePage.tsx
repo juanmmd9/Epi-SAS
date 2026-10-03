@@ -8,7 +8,26 @@ import "./inicio.css";
 function InicioDisenoDetallePage() {
   const { pasoId } = useParams();
   const ubicacion = useLocation();
-  const desdeUsuario = (ubicacion.state as { desdeUsuario?: string } | null)?.desdeUsuario;
+  const vuelta = ubicacion.state as {
+    desdeUsuario?: string;
+    desdeProyecto?: string;
+    desdeCard?: string;
+  } | null;
+  const desdeUsuario = vuelta?.desdeUsuario;
+  const desdeProyecto = vuelta?.desdeProyecto;
+  const desdeCard = vuelta?.desdeCard;
+  const volverA = desdeProyecto && desdeCard
+    ? `/diseno/proyectos/${desdeProyecto}/card/${desdeCard}`
+    : desdeProyecto
+      ? `/diseno/proyectos/${desdeProyecto}`
+      : desdeUsuario
+        ? `/equipo/usuario/${desdeUsuario}`
+        : "/";
+  const textoVolver = desdeProyecto
+    ? "Volver al flujograma"
+    : desdeUsuario
+      ? "Volver a las etapas"
+      : "Volver al plan";
   const { perfil, rol } = useAuth();
   const area = areaUsuario(perfil);
   const esDiseno = rol === "lider" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
@@ -21,11 +40,8 @@ function InicioDisenoDetallePage() {
   if (!paso) {
     return (
       <section className="inicio inicio-diseno">
-        <Link
-          to={desdeUsuario ? `/equipo/usuario/${desdeUsuario}` : "/"}
-          className="inicio-diseno__volver"
-        >
-          {desdeUsuario ? "Volver a las etapas" : "Volver al plan"}
+        <Link to={volverA} className="inicio-diseno__volver">
+          {textoVolver}
         </Link>
         <h1>Esta etapa no está en el plan</h1>
       </section>
@@ -34,11 +50,8 @@ function InicioDisenoDetallePage() {
 
   return (
     <section className="inicio inicio-diseno">
-      <Link
-        to={desdeUsuario ? `/equipo/usuario/${desdeUsuario}` : "/"}
-        className="inicio-diseno__volver"
-      >
-        {desdeUsuario ? "Volver a las etapas" : "Volver al plan"}
+      <Link to={volverA} className="inicio-diseno__volver">
+        {textoVolver}
       </Link>
       <div className="inicio__cabecera">
         <div>

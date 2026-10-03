@@ -120,6 +120,9 @@ function normalizar(fila: Record<string, unknown>): ItemGerencia {
     eliminado_en: fila.eliminado_en != null ? String(fila.eliminado_en) : null,
     eliminado_por_nombre:
       fila.eliminado_por_nombre != null ? String(fila.eliminado_por_nombre) : null,
+    linea_diseno: fila.linea_diseno != null ? String(fila.linea_diseno) : null,
+    auxiliar_id: fila.auxiliar_id != null ? String(fila.auxiliar_id) : null,
+    etapa_diseno: fila.etapa_diseno != null ? String(fila.etapa_diseno) : null,
     creado_en: String(fila.creado_en ?? ""),
     actualizado_en: String(fila.actualizado_en ?? ""),
   };
@@ -217,6 +220,9 @@ export async function crearItemGerencia(input: ItemGerenciaInput): Promise<ItemG
     fecha_compromiso: input.fecha_compromiso || null,
     responsable_nombre: encargados[0] ?? (input.responsable_nombre?.trim() || null),
     encargados,
+    linea_diseno: input.linea_diseno || null,
+    auxiliar_id: input.auxiliar_id || null,
+    etapa_diseno: input.etapa_diseno || null,
     actualizado_en: new Date().toISOString(),
   };
   const { data, error } = await supabase.from(TABLA).insert(payload).select("*").single();
@@ -259,6 +265,9 @@ export async function actualizarItemGerencia(
     payload.encargados = nombre ? [nombre] : [];
   }
   if (cambios.confirmado_area != null) payload.confirmado_area = cambios.confirmado_area;
+  if (cambios.linea_diseno !== undefined) payload.linea_diseno = cambios.linea_diseno || null;
+  if (cambios.auxiliar_id !== undefined) payload.auxiliar_id = cambios.auxiliar_id || null;
+  if (cambios.etapa_diseno !== undefined) payload.etapa_diseno = cambios.etapa_diseno || null;
 
   const { data, error } = await supabase
     .from(TABLA)
