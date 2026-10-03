@@ -1,0 +1,9 @@
+Dominio personalizado (revertido)
+=================================
+
+El portal volvió a GitHub Pages estándar:
+  https://juanmmd9.github.io/Epi-SAS/login
+
+Si en GitHub → Settings → Pages aún aparece
+mantenimiento.episafety.com, bórralo (Remove) para que
+no redirija al dominio personalizado.

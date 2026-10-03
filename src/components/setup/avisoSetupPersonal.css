@@ -1,0 +1,41 @@
+.aviso-setup-personal {
+  margin: 1rem 0 1.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.aviso-setup-personal h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+  color: #92400e;
+}
+
+.aviso-setup-personal ol {
+  margin: 0 0 0.85rem;
+  padding-left: 1.2rem;
+}
+
+.aviso-setup-personal li {
+  margin-bottom: 0.35rem;
+}
+
+.aviso-setup-personal__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.aviso-setup-personal__sql {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  overflow-x: auto;
+  max-height: 220px;
+}
