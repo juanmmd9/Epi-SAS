@@ -26,6 +26,8 @@ function Sidebar({ abierto, onCerrar }: Props) {
   const { perfil, salir } = useAuth();
   const area = areaUsuario(perfil);
   const esDiseno = perfil?.rol === "lider" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
+  const esAuxiliarDiseno =
+    perfil?.rol === "solicitante" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
   const esTejidos = Boolean(area && coincideArea(area, "Tejidos"));
   const esMantenimiento =
     Boolean(area && coincideArea(area, "Mantenimiento")) ||
@@ -68,8 +70,15 @@ function Sidebar({ abierto, onCerrar }: Props) {
           const avisoFirma = esAprobar && pendientesFirma > 0;
           const avisoSol = esSolicitudes && solicitudesAbiertas > 0;
           const avisoPerm = esPermisos && permisosPendientes > 0;
+          if (
+            esAuxiliarDiseno &&
+            (enlace.ruta === "/solicitudes" || enlace.ruta === "/hojas-de-vida")
+          ) {
+            return null;
+          }
           return (
             <Fragment key={enlace.ruta}>
+            {esAuxiliarDiseno && esInicio ? null : (
             <NavLink
               to={enlace.ruta}
               end={enlace.ruta === "/" || enlace.ruta === "/solicitudes"}
@@ -116,6 +125,21 @@ function Sidebar({ abierto, onCerrar }: Props) {
                 </span>
               ) : null}
             </NavLink>
+            )}
+            {esAuxiliarDiseno && esInicio ? (
+              <NavLink
+                to="/diseno/tablero"
+                className={() => {
+                  const activo =
+                    ubicacion.pathname === "/diseno/tablero" ||
+                    ubicacion.pathname.startsWith("/diseno/tablero/");
+                  return "sidebar__enlace" + (activo ? " sidebar__enlace--activo" : "");
+                }}
+                onClick={onCerrar}
+              >
+                <span className="sidebar__enlace-texto">Tablero</span>
+              </NavLink>
+            ) : null}
             {(!yaTieneFormatos || esMantenimiento) && esInicio ? (
               <NavLink
                 to={rutaFormatos}
@@ -145,7 +169,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
             </Fragment>
           );
         })}
-        {esDiseno ? (
+        {esDiseno || esAuxiliarDiseno ? (
           <>
             <p className="sidebar__grupo">Áreas</p>
             {AREAS_MENU_DISENO.map((areaMenu) => (

@@ -9,6 +9,7 @@ import {
   guardarCredencialesRecordadas,
   leerCredencialesRecordadas,
 } from "./credencialesRecordadas";
+import { coincideArea } from "../../lib/areas";
 import { rutaInicioParaRol, type RolPortal } from "./roles";
 import { etiquetaCargo } from "./cargosArea";
 import "./auth.css";
@@ -16,8 +17,12 @@ import "./auth.css";
 /** Destino tras login: el solicitante siempre entra al tablero de áreas. */
 function destinoSeguro(
   rol: RolPortal | null | undefined,
+  area: string | null | undefined,
   desde: string | null | undefined,
 ): string {
+  if (rol === "solicitante" && area && coincideArea(area, "Diseno y Desarrollo")) {
+    return "/diseno/tablero";
+  }
   if (rol === "solicitante") return "/solicitudes";
   if (rol === "lider") return "/";
   if (desde && desde !== "/login" && !desde.startsWith("/login")) return desde;
@@ -63,12 +68,12 @@ function LoginPage() {
       ? (ubicacion.state as { desde: string }).desde
       : null;
 
-  const destino = destinoSeguro(perfil?.rol, destinoExplicito);
+  const destino = destinoSeguro(perfil?.rol, perfil?.area, destinoExplicito);
 
   useEffect(() => {
     if (!pendienteEntrada || cargando || !session || !perfil) return;
     setPendienteEntrada(false);
-    navigate(destinoSeguro(perfil.rol, destinoExplicito), { replace: true });
+    navigate(destinoSeguro(perfil.rol, perfil.area, destinoExplicito), { replace: true });
   }, [pendienteEntrada, cargando, session, perfil, destinoExplicito, navigate]);
 
   async function manejarCerrarSesion() {

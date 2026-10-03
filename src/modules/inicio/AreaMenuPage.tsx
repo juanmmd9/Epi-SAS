@@ -9,7 +9,7 @@ function AreaMenuPage() {
   const { perfil, rol } = useAuth();
   const areaUsuarioActual = areaUsuario(perfil);
   const esDiseno =
-    rol === "lider" &&
+    (rol === "lider" || rol === "solicitante") &&
     Boolean(areaUsuarioActual) &&
     coincideArea(areaUsuarioActual ?? "", "Diseno y Desarrollo");
   const area = normalizarArea(areaNombre ? decodeURIComponent(areaNombre) : "");

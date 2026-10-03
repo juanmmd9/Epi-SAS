@@ -29,6 +29,7 @@ export interface ItemNav extends EnlaceNav {
 const ICONOS_POR_RUTA: Record<string, IconoNav> = {
   "/": "inicio",
   "/tablero": "tablero",
+  "/diseno/tablero": "tablero",
   "/gerencia": "gerencia",
   "/gerencia/pedir": "gerencia",
   "/preventivo": "preventivo",
@@ -51,6 +52,7 @@ const ICONOS_POR_RUTA: Record<string, IconoNav> = {
 const ETIQUETA_CORTA: Record<string, string> = {
   "/": "Inicio",
   "/tablero": "Tablero",
+  "/diseno/tablero": "Tablero",
   "/gerencia": "Gerencia",
   "/gerencia/pedir": "A Gerencia",
   "/preventivo": "Preventivo",
@@ -137,6 +139,20 @@ export function itemsNavParaRol(
   let todos = enlacesParaRol(rol)
     .map(enriquecer)
     .filter((item) => enlaceVisibleParaArea(rol, area, item.ruta));
+  const esAuxiliarDiseno =
+    rol === "solicitante" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
+  if (esAuxiliarDiseno) {
+    todos = todos.filter(
+      (item) =>
+        item.ruta !== "/" && item.ruta !== "/solicitudes" && item.ruta !== "/hojas-de-vida",
+    );
+  }
+  if (esAuxiliarDiseno && !todos.some((item) => item.ruta === "/diseno/tablero")) {
+    todos = [
+      enriquecer({ ruta: "/diseno/tablero", texto: "Tablero", permiso: "ver.inicio" }),
+      ...todos,
+    ];
+  }
   const esTejidos = Boolean(area && coincideArea(area, "Tejidos"));
   const esMantenimiento =
     Boolean(area && coincideArea(area, "Mantenimiento")) || (rol === "admin" && !area);
@@ -161,7 +177,9 @@ export function itemsNavParaRol(
   const porRuta = new Map(todos.map((i) => [i.ruta, i]));
   const tabs: ItemNav[] = [];
   const usados = new Set<string>();
-  const prioridadBase = esTejidos
+  const prioridadBase = esAuxiliarDiseno
+    ? (["/diseno/tablero", "/area/formatos"] as const)
+    : esTejidos
     ? rol === "lider"
       ? (["/", "/tejidos/formatos", "/preventivo/aprobaciones", "/tablero"] as const)
       : (["/", "/tejidos/formatos", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
@@ -172,8 +190,9 @@ export function itemsNavParaRol(
       : rol === "lider"
         ? PRIORIDAD_TABS_LIDER
         : PRIORIDAD_TABS;
-  const prioridad =
-    yaTieneFormatos && !esMantenimiento
+  const prioridad = esAuxiliarDiseno
+    ? prioridadBase
+    : yaTieneFormatos && !esMantenimiento
       ? prioridadBase
       : esTejidos || esMantenimiento
         ? prioridadBase
@@ -204,7 +223,11 @@ export function itemsNavParaRol(
 /** True si la ruta actual pertenece a este ítem (o a un submódulo). */
 export function rutaActiva(pathname: string, rutaItem: string): boolean {
   if (rutaItem === "/") {
-    return pathname === "/" || pathname === "" || pathname.startsWith("/diseno");
+    return (
+      pathname === "/" ||
+      pathname === "" ||
+      (pathname.startsWith("/diseno") && !pathname.startsWith("/diseno/tablero"))
+    );
   }
   if (rutaItem === "/preventivo") {
     return (
@@ -238,8 +261,8 @@ export function rutaActiva(pathname: string, rutaItem: string): boolean {
   if (rutaItem === "/personal") {
     return pathname === "/personal";
   }
-  if (rutaItem === "/tablero") {
-    return pathname === "/tablero" || pathname.startsWith("/tablero/");
+  if (rutaItem === "/tablero" || rutaItem === "/diseno/tablero") {
+    return pathname === rutaItem || pathname.startsWith(`${rutaItem}/`);
   }
   if (rutaItem === "/gerencia") {
     return pathname === "/gerencia";

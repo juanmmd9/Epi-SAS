@@ -96,7 +96,7 @@ function Pasar({
       ) : null}
       {esDecision ? (
         <>
-          <button type="button" className="flujo__pasar" disabled={guardando} onClick={() => onAvanzar(itemId, "salidas")}>
+          <button type="button" className="flujo__pasar flujo__pasar--sigue" disabled={guardando} onClick={() => onAvanzar(itemId, "salidas")}>
             Sí
           </button>
           <button type="button" className="flujo__pasar" disabled={guardando} onClick={() => onAvanzar(itemId, "cambios")}>
@@ -104,7 +104,7 @@ function Pasar({
           </button>
         </>
       ) : siguiente ? (
-        <button type="button" className="flujo__pasar" disabled={guardando} onClick={() => onAvanzar(itemId, siguiente)}>
+        <button type="button" className="flujo__pasar flujo__pasar--sigue" disabled={guardando} onClick={() => onAvanzar(itemId, siguiente)}>
           Siguiente etapa
         </button>
       ) : (

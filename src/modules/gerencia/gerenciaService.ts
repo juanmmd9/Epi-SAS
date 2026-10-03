@@ -182,6 +182,16 @@ export async function listarItemsGerencia(): Promise<ItemGerencia[]> {
     .filter((i) => !esTableroAreaLider(i.tablero));
 }
 
+export async function listarAsignadosAlAuxiliar(userId: string): Promise<ItemGerencia[]> {
+  const { data, error } = await supabase
+    .from(TABLA)
+    .select("*")
+    .eq("auxiliar_id", userId)
+    .order("creado_en", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((f) => normalizar(f as Record<string, unknown>));
+}
+
 export async function listarMisPedidosGerencia(userId: string): Promise<ItemGerencia[]> {
   const { data, error } = await supabase
     .from(TABLA)

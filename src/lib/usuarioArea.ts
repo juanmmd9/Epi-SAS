@@ -1,10 +1,19 @@
 import type { UsuarioPortal } from "../modules/auth/roles";
 import { coincideArea, esAreaValida, normalizarArea } from "./areas";
 
-/** El nombre «Portal Mantenimiento» queda para Mantenimiento y el resto del equipo. Los demás líderes no lo ven. */
+/** El nombre «Portal Mantenimiento» queda para Mantenimiento y el resto del equipo. Diseño no lo ve. */
 export function muestraPortalMantenimiento(perfil: UsuarioPortal | null | undefined): boolean {
-  if (!perfil || perfil.rol !== "lider") return true;
-  return coincideArea(areaUsuario(perfil) ?? "", "Mantenimiento");
+  if (!perfil) return true;
+  const area = areaUsuario(perfil);
+  if (
+    area &&
+    coincideArea(area, "Diseno y Desarrollo") &&
+    (perfil.rol === "lider" || perfil.rol === "solicitante")
+  ) {
+    return false;
+  }
+  if (perfil.rol !== "lider") return true;
+  return coincideArea(area ?? "", "Mantenimiento");
 }
 export function areaUsuario(perfil: UsuarioPortal | null | undefined): string | null {
   const area = perfil?.area?.trim();

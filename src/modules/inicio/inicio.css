@@ -1284,7 +1284,12 @@
 .flujo__bajo .flujo-proyectos__asignado {
   width: 100%;
   min-height: 84px;
-  padding: 0.75rem 0.55rem;
+  padding: 0.7rem 0.65rem 0.6rem;
+  border: 1px solid #fecdd3;
+  border-left: 4px solid #e11d48;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(225, 29, 72, 0.08);
 }
 
 .flujo__pasos {
@@ -1296,19 +1301,32 @@
 
 .flujo__pasar {
   margin-top: 0.35rem;
-  padding: 0.22rem 0.4rem;
-  border: 1px solid #111;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
   background: #fff;
-  color: inherit;
+  color: #1e293b;
   font: inherit;
   font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
 }
 
+.flujo__pasar--sigue {
+  border-color: transparent;
+  background: #2563eb;
+  color: #fff;
+}
+
 .flujo__pasar:hover {
-  border-color: #e11d48;
-  color: #e11d48;
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+
+.flujo__pasar--sigue:hover {
+  background: #1d4ed8;
+  border-color: transparent;
+  color: #fff;
 }
 
 .flujo__pasar:disabled {
@@ -1419,25 +1437,42 @@
   width: 100%;
   min-width: 0;
   min-height: 132px;
-  padding: 0.85rem 0.7rem;
+  padding: 0.85rem 0.75rem;
   cursor: pointer;
   justify-content: center;
-  border-radius: 2px;
-  border: 2px solid #111;
+  gap: 0.28rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.flujo--h .flujo__nodo:hover {
+  transform: translateY(-2px);
+  border-color: #93c5fd;
   background: #fff;
-  box-shadow: none;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.16);
 }
 
 .flujo--h .flujo__nodo span {
-  font-size: 0.85rem;
+  align-self: center;
+  min-width: 1.7rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.75rem;
 }
 
 .flujo--h .flujo__nodo strong {
   font-size: 1.02rem;
+  line-height: 1.2;
 }
 
 .flujo--h .flujo__nodo small {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
+  line-height: 1.25;
 }
 
 .flujo--h .flujo__flecha {
@@ -1461,9 +1496,30 @@
 }
 
 .flujo--h .flujo__nodo--va {
-  border-color: #e11d48;
-  background: #fff;
-  box-shadow: none;
+  border-color: #fda4af;
+  background: linear-gradient(180deg, #fff 0%, #fff1f2 100%);
+  box-shadow: 0 10px 22px rgba(225, 29, 72, 0.12);
+}
+
+.flujo--h .flujo__nodo--va span {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
+.flujo--h .flujo__nodo--decision {
+  border-color: #fcd34d;
+  background: linear-gradient(180deg, #fff 0%, #fffbeb 100%);
+}
+
+.flujo--h .flujo__nodo--si,
+.flujo--h .flujo__nodo--fin {
+  border-color: #a7f3d0;
+  background: linear-gradient(180deg, #fff 0%, #ecfdf5 100%);
+}
+
+.flujo--h .flujo__nodo--no {
+  border-color: #fed7aa;
+  background: linear-gradient(180deg, #fff 0%, #fff7ed 100%);
 }
 
 .flujo__va {

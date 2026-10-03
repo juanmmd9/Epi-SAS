@@ -1,3 +1,5 @@
+import { coincideArea } from "../../lib/areas";
+
 export type RolPortal = "admin" | "operador" | "consulta" | "solicitante" | "lider" | "gerencia";
 
 export interface UsuarioPortal {
@@ -145,8 +147,11 @@ export function etiquetaRol(rol: RolPortal | string | null | undefined): string 
 /** Ruta de inicio según rol (solicitante entra al tablero de áreas). */
 export function rutaInicioParaRol(
   rol: RolPortal | null | undefined,
-  _area?: string | null | undefined,
+  area?: string | null | undefined,
 ): string {
+  if (rol === "solicitante" && area && coincideArea(area, "Diseno y Desarrollo")) {
+    return "/diseno/tablero";
+  }
   if (rol === "solicitante") return "/solicitudes";
   if (rol === "lider") return "/";
   if (rol === "gerencia") return "/gerencia";

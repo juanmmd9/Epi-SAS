@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import CargaPantalla from "../../components/CargaPantalla";
 import { AREAS_CON_PM, coincideArea } from "../../lib/areas";
 import { NOMBRES_MESES } from "../../lib/fechas";
@@ -297,6 +297,11 @@ function InicioPage() {
 
   if (cargandoAuth || !perfil) {
     return <CargaPantalla mensaje="Preparando inicio..." />;
+  }
+
+  const areaPerfil = areaUsuario(perfil);
+  if (rol === "solicitante" && areaPerfil && coincideArea(areaPerfil, "Diseno y Desarrollo")) {
+    return <Navigate to="/diseno/tablero" replace />;
   }
 
   if (esLider && areaLider && coincideArea(areaLider, "Diseno y Desarrollo")) {
