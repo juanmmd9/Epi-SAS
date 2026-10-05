@@ -186,13 +186,15 @@
 
 .tj-carta__logo {
   background: #fff;
+  padding: 2px 4px;
 }
 
 .tj-carta__logo img {
   display: block;
-  width: 78px;
+  width: 92px;
   height: auto;
   margin: 0 auto;
+  background: #fff;
 }
 
 .tj-carta__titulo {

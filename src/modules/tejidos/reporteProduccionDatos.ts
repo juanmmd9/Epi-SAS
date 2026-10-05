@@ -48,7 +48,7 @@ export type ReporteProduccionDatos = {
 };
 
 export const CODIGO_FORMATO = "TJ-RE-004";
-export const VERSION_FORMATO = "6";
+export const VERSION_FORMATO = "7";
 
 export const MAQUINAS_TRENZADORA = ["C02", "C03", "C04", "C05", "C06", "C07", "C08"] as const;
 export const MAQUINAS_TELARES = ["T01", "T03", "T04", "T05", "T06"] as const;

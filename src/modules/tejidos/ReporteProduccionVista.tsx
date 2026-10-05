@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import logoEpi from "../../assets/epi-logo.png";
+import logoEpi from "../../lib/logoFormato";
 import {
   CAUSAS_NO_CONFORME,
   CAUSAS_PARADA,
@@ -159,7 +159,7 @@ function ReporteProduccionVista({
               <br />
               Fecha de elaboracion: Junio de 2019
               <br />
-              Fecha de modificacion: Octubre/01/2025
+              Fecha de modificacion: Octubre/01/2026
             </td>
           </tr>
         </tbody>
