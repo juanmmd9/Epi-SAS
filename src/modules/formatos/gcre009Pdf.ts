@@ -1,7 +1,8 @@
 /**
  * Rellena la plantilla oficial GC-RE-009 con pdf-lib.
  * Coordenadas calibradas sobre public/templates/GC-RE-009-v2.pdf (A4, 596 x 842 pt).
- * Los textos largos se ajustan en el mismo cuadro (fuente y interlineado más chicos).
+ * El texto se ajusta dentro del cuadro sin montar las líneas.
+ * Si no cabe a un tamaño legible, el texto completo va en una hoja anexa.
  */
 import { PDFDocument, StandardFonts, type PDFFont, type PDFPage } from "pdf-lib";
 import { textoCompatibleWinAnsi } from "../../lib/pdfTextoWinAnsi";
@@ -196,77 +197,166 @@ interface CajaAmpliable {
   /** Fuente preferida; se reduce hasta que quepa todo. */
   fontSizeMax?: number;
   fontSizeMin?: number;
+  /** Si el texto no cabe, la última línea avisa que sigue en la hoja anexa. */
+  avisarAnexo?: boolean;
+}
+
+const NOTA_ANEXO = "(Continua en la hoja anexa.)";
+
+interface AjusteCuadro {
+  fontSize: number;
+  lineHeight: number;
+  lineas: string[];
+  caben: number;
+  yBottom: number;
 }
 
 /**
- * Escribe TODO el texto en el mismo cuadro: reduce fuente e interlineado
- * y, si hace falta, amplía el alto usable del cuadro hasta yBottomMax.
+ * Escribe el texto en el cuadro. Baja la fuente, pero el interlineado
+ * nunca es menor que la letra: así las líneas no se montan.
+ * Devuelve true si parte del texto no cupo.
  */
 function escribirEnCuadroAmpliado(
   page: PDFPage,
   font: PDFFont,
   texto: string,
   caja: CajaAmpliable,
-) {
+): boolean {
   const textoLimpio = textoCompatibleWinAnsi(texto ?? "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
-  if (!textoLimpio) return;
+  if (!textoLimpio) return false;
 
-  const ancho = caja.width - 4;
+  const ancho = caja.width - 6;
   const fontMax = caja.fontSizeMax ?? 8;
-  const fontMin = caja.fontSizeMin ?? 4;
+  const fontMin = caja.fontSizeMin ?? 6.5;
   const yBottomLimite = caja.yBottomMax ?? caja.yBottom;
 
-  let yBottomUsado = caja.yBottom;
-  let elegido = {
-    fontSize: fontMin,
-    lineHeight: fontMin + 1,
-    lineas: partirTexto(textoLimpio, font, fontMin, ancho),
+  const medir = (fs: number, yBottom: number): AjusteCuadro => {
+    const alto = Math.max(8, yBottom - caja.yTop - 2);
+    const lineHeight = fs + 1.8;
+    const lineas = partirTexto(textoLimpio, font, fs, ancho);
+    const caben = Math.max(1, Math.floor(alto / lineHeight));
+    return { fontSize: fs, lineHeight, lineas, caben, yBottom };
   };
 
-  const intentar = (yBottom: number) => {
-    const alto = Math.max(8, yBottom - caja.yTop);
-    for (let fs = fontMax; fs >= fontMin - 0.01; fs -= 0.25) {
-      const lineHeight = Math.max(fs + 0.8, fs * 1.12);
-      const lineas = partirTexto(textoLimpio, font, fs, ancho);
-      if (lineas.length * lineHeight <= alto + 0.5) {
-        return { ok: true as const, fontSize: fs, lineHeight, lineas, yBottom };
-      }
-      elegido = { fontSize: fs, lineHeight, lineas };
-    }
-    const lineHeight = Math.max(elegido.fontSize * 0.92, alto / Math.max(1, elegido.lineas.length));
-    return {
-      ok: elegido.lineas.length * lineHeight <= alto + 0.5,
-      fontSize: elegido.fontSize,
-      lineHeight,
-      lineas: elegido.lineas,
-      yBottom,
-    };
-  };
-
-  let resultado = intentar(caja.yBottom);
-  if (!resultado.ok && yBottomLimite > caja.yBottom) {
-    // Ampliar el cuadro hacia abajo hasta lograr caber el texto.
-    for (let yb = caja.yBottom + 4; yb <= yBottomLimite; yb += 4) {
-      resultado = intentar(yb);
-      yBottomUsado = yb;
-      if (resultado.ok) break;
-    }
-  } else {
-    yBottomUsado = resultado.yBottom;
+  const alturas = [caja.yBottom];
+  if (yBottomLimite > caja.yBottom) {
+    for (let yb = caja.yBottom + 4; yb <= yBottomLimite; yb += 4) alturas.push(yb);
   }
 
-  resultado.lineas.forEach((linea, indice) => {
-    const yTopLinea = caja.yTop + indice * resultado.lineHeight;
-    if (yTopLinea + resultado.fontSize > yBottomUsado + 1.5) return;
+  let mejor = medir(fontMin, caja.yBottom);
+  let cupo = false;
+  for (const yBottom of alturas) {
+    for (let fs = fontMax; fs >= fontMin - 0.01; fs -= 0.25) {
+      const ajuste = medir(fs, yBottom);
+      mejor = ajuste;
+      if (ajuste.lineas.length <= ajuste.caben) {
+        cupo = true;
+        break;
+      }
+    }
+    if (cupo) break;
+  }
+
+  let visibles = mejor.lineas;
+  const sobro = visibles.length > mejor.caben;
+  if (sobro) {
+    const cupoTexto = caja.avisarAnexo ? Math.max(0, mejor.caben - 1) : mejor.caben;
+    visibles = mejor.lineas.slice(0, cupoTexto);
+    if (caja.avisarAnexo) visibles.push(NOTA_ANEXO);
+  }
+
+  visibles.forEach((linea, indice) => {
+    const yTopLinea = caja.yTop + 2 + indice * mejor.lineHeight;
+    if (yTopLinea + mejor.fontSize > mejor.yBottom + 1) return;
     drawTextSafe(page, linea || " ", {
-      x: caja.x + 2,
-      y: yDesdeArriba(yTopLinea, resultado.fontSize),
-      size: resultado.fontSize,
+      x: caja.x + 3,
+      y: yDesdeArriba(yTopLinea, mejor.fontSize),
+      size: mejor.fontSize,
       font,
     });
   });
+
+  return sobro;
+}
+
+interface SeccionAnexo {
+  titulo: string;
+  texto: string;
+}
+
+function agregarHojasAnexo(
+  pdfDoc: PDFDocument,
+  font: PDFFont,
+  fontBold: PDFFont,
+  numero: number,
+  secciones: SeccionAnexo[],
+) {
+  const pageW = 596;
+  const marginX = 48;
+  const headerTop = 36;
+  const cuerpoTop = 78;
+  const pieTop = PAGE_H - 36;
+  const ancho = pageW - marginX * 2;
+
+  const items: { text: string; size: number; bold: boolean; lh: number }[] = [];
+  for (const seccion of secciones) {
+    items.push({ text: seccion.titulo, size: 11, bold: true, lh: 16 });
+    const cuerpo = textoCompatibleWinAnsi(seccion.texto).replace(/\n{3,}/g, "\n\n").trim();
+    for (const linea of partirTexto(cuerpo, font, 10, ancho)) {
+      items.push({ text: linea, size: 10, bold: false, lh: linea === "" ? 8 : 13 });
+    }
+    items.push({ text: "", size: 10, bold: false, lh: 10 });
+  }
+
+  let indice = 0;
+  let hoja = 0;
+  while (indice < items.length) {
+    const page = pdfDoc.addPage([pageW, PAGE_H]);
+    hoja += 1;
+    drawTextSafe(page, "Equipos de Proteccion Individual", {
+      x: marginX,
+      y: yDesdeArriba(headerTop, 11),
+      size: 11,
+      font: fontBold,
+    });
+    drawTextSafe(page, `GC-RE-009 No. ${numero} - Continuacion`, {
+      x: marginX,
+      y: yDesdeArriba(headerTop + 16, 10),
+      size: 10,
+      font,
+    });
+    drawTextSafe(page, `Hoja anexa ${hoja}`, {
+      x: pageW - marginX - 70,
+      y: yDesdeArriba(headerTop + 16, 9),
+      size: 9,
+      font,
+    });
+
+    let yTop = cuerpoTop;
+    while (indice < items.length) {
+      const item = items[indice];
+      if (yTop + item.lh > pieTop) break;
+      if (item.text) {
+        drawTextSafe(page, item.text, {
+          x: marginX,
+          y: yDesdeArriba(yTop, item.size),
+          size: item.size,
+          font: item.bold ? fontBold : font,
+        });
+      }
+      yTop += item.lh;
+      indice += 1;
+    }
+
+    drawTextSafe(page, "CODIGO GC-RE-009 - VERSION 2 - MAYO 2026", {
+      x: marginX,
+      y: yDesdeArriba(PAGE_H - 28, 8),
+      size: 8,
+      font,
+    });
+  }
 }
 
 function marcarOrigen(page: PDFPage, font: PDFFont, origen: string) {
@@ -283,7 +373,13 @@ function marcarSiNo(page: PDFPage, font: PDFFont, valor: string, xSi: number, xN
   }
 }
 
-function escribirPagina1(page: PDFPage, font: PDFFont, registro: RegistroNcDatos, numero: number) {
+function escribirPagina1(
+  page: PDFPage,
+  font: PDFFont,
+  registro: RegistroNcDatos,
+  numero: number,
+  anexos: SeccionAnexo[],
+) {
   escribirEnCaja(page, font, registro.area, { x: 118, yTop: 136, width: 95, fontSize: 9, maxLines: 1 });
   escribirEnCaja(page, font, formatearFecha(registro.fechaDeteccion), {
     x: 342, yTop: 136, width: 80, fontSize: 9, maxLines: 1,
@@ -292,17 +388,25 @@ function escribirPagina1(page: PDFPage, font: PDFFont, registro: RegistroNcDatos
 
   marcarOrigen(page, font, registro.origen);
 
-  // Descripción: todo el bloque hasta "detectada por"
-  escribirEnCuadroAmpliado(page, font, registro.descripcion, {
-    x: 68, yTop: 220, yBottom: 298, width: 458, fontSizeMax: 8, fontSizeMin: 4.5,
-  });
+  // Descripción: el cuadro es bajo. Si el texto no cabe, sigue en la hoja anexa.
+  if (
+    escribirEnCuadroAmpliado(page, font, registro.descripcion, {
+      x: 68, yTop: 220, yBottom: 298, width: 458, fontSizeMax: 8, fontSizeMin: 7, avisarAnexo: true,
+    })
+  ) {
+    anexos.push({ titulo: "Descripcion de la no conformidad", texto: registro.descripcion });
+  }
 
   const detectada = [registro.detectadaPorNombre, registro.detectadaPorCargo].filter(Boolean).join(" - ");
   escribirEnCaja(page, font, detectada, { x: 258, yTop: 305, width: 268, fontSize: 8, maxLines: 1 });
 
-  escribirEnCuadroAmpliado(page, font, registro.tratamientoInmediato, {
-    x: 68, yTop: 338, yBottom: 392, width: 458, fontSizeMax: 8, fontSizeMin: 4.5,
-  });
+  if (
+    escribirEnCuadroAmpliado(page, font, registro.tratamientoInmediato, {
+      x: 68, yTop: 338, yBottom: 392, width: 458, fontSizeMax: 8, fontSizeMin: 7, avisarAnexo: true,
+    })
+  ) {
+    anexos.push({ titulo: "Tratamiento inmediato", texto: registro.tratamientoInmediato });
+  }
 
   escribirEnCaja(page, font, registro.tratamientoInmediatoPor, {
     x: 158, yTop: 399, width: 130, fontSize: 8, maxLines: 1,
@@ -315,16 +419,20 @@ function escribirPagina1(page: PDFPage, font: PDFFont, registro: RegistroNcDatos
     x: 187, yTop: 448, yBottom: 492, width: 340, fontSizeMax: 8, fontSizeMin: 5,
   });
 
-  // Resumen de causa: mismo cuadro; baja fuente y, si hace falta, amplía el alto
-  escribirEnCuadroAmpliado(page, font, registro.resumenCausa, {
-    x: 66,
-    yTop: 500,
-    yBottom: 576,
-    yBottomMax: 628,
-    width: 460,
-    fontSizeMax: 8,
-    fontSizeMin: 3.5,
-  });
+  // Resumen: cabe en su cuadro. No se baja sobre la fila de "Tratamiento ejecutado".
+  if (
+    escribirEnCuadroAmpliado(page, font, registro.resumenCausa, {
+      x: 66,
+      yTop: 508,
+      yBottom: 568,
+      width: 460,
+      fontSizeMax: 8,
+      fontSizeMin: 7,
+      avisarAnexo: true,
+    })
+  ) {
+    anexos.push({ titulo: "Resumen del analisis", texto: registro.resumenCausa });
+  }
 
   escribirEnCaja(page, font, registro.analisisPor, { x: 226, yTop: 580, width: 135, fontSize: 8, maxLines: 1 });
   escribirEnCaja(page, font, formatearFecha(registro.analisisFecha), {
@@ -381,16 +489,32 @@ function escribirFilaSeguimiento(
   });
 }
 
-function escribirPagina2(page: PDFPage, font: PDFFont, registro: RegistroNcDatos) {
-  // Tres filas de plan en el área de la tabla (antes solo 2 y se perdía texto).
+function escribirPagina2(
+  page: PDFPage,
+  font: PDFFont,
+  registro: RegistroNcDatos,
+  anexos: SeccionAnexo[],
+) {
+  // La plantilla trae dos filas de plan. La tercera se iba entre las tablas.
   const filasPlan = [
-    { yTop: 175, yBottom: 228 },
-    { yTop: 230, yBottom: 278 },
-    { yTop: 280, yBottom: 322 },
+    { yTop: 178, yBottom: 230 },
+    { yTop: 234, yBottom: 273 },
   ];
   registro.planAccion.slice(0, filasPlan.length).forEach((fila, indice) => {
     escribirFilaPlan(page, font, fila, filasPlan[indice].yTop, filasPlan[indice].yBottom);
   });
+  const planExtra = registro.planAccion.slice(filasPlan.length).filter((fila) =>
+    [fila.actividad, fila.responsable, fila.fechaEntrega, fila.evidencia].some((v) => v.trim()),
+  );
+  if (planExtra.length > 0) {
+    const texto = planExtra
+      .map(
+        (fila) =>
+          `${fila.actividad}\nResponsable: ${fila.responsable}\nFecha: ${formatearFecha(fila.fechaEntrega)}\nEvidencia: ${fila.evidencia}`,
+      )
+      .join("\n\n");
+    anexos.push({ titulo: "Plan de accion (continuacion)", texto });
+  }
 
   escribirEnCaja(page, font, registro.seguimientoCumplimiento, {
     x: 226, yTop: 336, width: 17, fontSize: 8, maxLines: 1,
@@ -417,9 +541,13 @@ function escribirPagina2(page: PDFPage, font: PDFFont, registro: RegistroNcDatos
 
   marcarSiNo(page, font, registro.tratamientoEficaz, 242, 287, 584);
 
-  escribirEnCuadroAmpliado(page, font, registro.tratamientoEficazPorque, {
-    x: 71, yTop: 620, yBottom: 720, width: 465, fontSizeMax: 8, fontSizeMin: 4.5,
-  });
+  if (
+    escribirEnCuadroAmpliado(page, font, registro.tratamientoEficazPorque, {
+      x: 71, yTop: 620, yBottom: 720, width: 465, fontSizeMax: 8, fontSizeMin: 7, avisarAnexo: true,
+    })
+  ) {
+    anexos.push({ titulo: "Por que el tratamiento fue o no eficaz", texto: registro.tratamientoEficazPorque });
+  }
 }
 
 export async function generarPdfGcRe009(datos: RegistroNcDatos, numero: number): Promise<Uint8Array> {
@@ -427,10 +555,13 @@ export async function generarPdfGcRe009(datos: RegistroNcDatos, numero: number):
   const plantillaBytes = await cargarPlantilla();
   const pdfDoc = await PDFDocument.load(plantillaBytes);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const paginas = pdfDoc.getPages();
+  const anexos: SeccionAnexo[] = [];
 
-  if (paginas[0]) escribirPagina1(paginas[0], font, datosPdf, numero);
-  if (paginas[1]) escribirPagina2(paginas[1], font, datosPdf);
+  if (paginas[0]) escribirPagina1(paginas[0], font, datosPdf, numero, anexos);
+  if (paginas[1]) escribirPagina2(paginas[1], font, datosPdf, anexos);
+  if (anexos.length > 0) agregarHojasAnexo(pdfDoc, font, fontBold, numero, anexos);
 
   return pdfDoc.save();
 }
