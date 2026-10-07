@@ -3,7 +3,7 @@ import { coincideArea } from "../../lib/areas";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import { pasoDisenoPorId, claveItemDiseno } from "./disenoPasos";
-import "./inicio.css";
+import "../inicio/inicio.css";
 
 function InicioDisenoDetallePage() {
   const { pasoId } = useParams();

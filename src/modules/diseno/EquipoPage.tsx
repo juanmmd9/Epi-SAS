@@ -5,8 +5,8 @@ import { areaUsuario } from "../../lib/usuarioArea";
 import { etiquetaCargo } from "../auth/cargosArea";
 import type { UsuarioPortal } from "../auth/roles";
 import { useAuth } from "../auth/AuthContext";
-import { listarRegistradosDelArea } from "./equipoRegistrados";
-import "./inicio.css";
+import { listarRegistradosDelArea } from "../inicio/equipoRegistrados";
+import "../inicio/inicio.css";
 
 function usuarioVisible(persona: UsuarioPortal): string {
   return persona.usuario || persona.email;

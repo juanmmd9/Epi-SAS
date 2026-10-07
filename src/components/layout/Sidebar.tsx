@@ -6,7 +6,7 @@ import { enlacesParaRol } from "../../modules/auth/roles";
 import { etiquetaCargo } from "../../modules/auth/cargosArea";
 import { areaUsuario, muestraPortalMantenimiento } from "../../lib/usuarioArea";
 import { enlaceVisibleParaArea } from "./navConfig";
-import { AREAS_MENU_DISENO, rutaMenuArea } from "../../modules/inicio/areasDiseno";
+import { AREAS_MENU_DISENO, rutaMenuArea } from "../../modules/diseno/areasDiseno";
 import { coincideArea } from "../../lib/areas";
 import { usePmAsignadosBadge } from "../../modules/preventivo/usePmAsignadosBadge";
 import { usePendientesAprobacionPm } from "../../modules/preventivo/usePendientesAprobacionPm";
@@ -140,7 +140,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
                 <span className="sidebar__enlace-texto">Tablero</span>
               </NavLink>
             ) : null}
-            {(!yaTieneFormatos || esMantenimiento) && esInicio ? (
+            {!yaTieneFormatos && esInicio ? (
               <NavLink
                 to={rutaFormatos}
                 className={() => {

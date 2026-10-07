@@ -2,7 +2,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { AREAS_MAPA_PROCESOS, coincideArea, normalizarArea } from "../../lib/areas";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
-import "./inicio.css";
+import "../inicio/inicio.css";
 
 function AreaMenuPage() {
   const { areaNombre } = useParams();

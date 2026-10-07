@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import "./formatos.css";
+import "../formatos/formatos.css";
 
 function FormatosMantenimientoPage() {
   return (

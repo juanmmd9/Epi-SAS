@@ -34,13 +34,15 @@ const datos: RegistroNcDatos = {
     mes: 9,
     anio: 2026,
     descripcion:
-      "En Tejidos, las horas perdidas por correctivo superaron la meta del 1%. En septiembre de 2026 el resultado fue 15,95%: se perdieron 148 horas de las 927,7 horas programadas. Se cerraron 16 solicitudes.\n\n" +
-      "La mayor parte (unas 70 h) son maquinas que estuvieron paradas 2 o 3 dias. Esas horas se cuentan completas:\n" +
+      "En septiembre de 2026, Tejidos perdio el 15,95% de las horas programadas por mantenimiento correctivo: 148 h de 927,7 h. La meta es 1%. Se cerraron 16 solicitudes. Casi todo ese tiempo es de reparacion o de espera de repuesto, no de demora en atender.\n\n" +
+      "Las 148 h se reparten asi:\n\n" +
+      "1) Unas 70 h en paradas de 2 o 3 dias. Esas horas se cuentan completas:\n" +
       "- C-02, solicitud 356: se solto la cadena del carreto (18,4 h).\n" +
       "- B-02, solicitudes 337 y 370: no hacia el recorrido y se aflojaron los tornillos de la resistencia (16,4 h y 10,3 h).\n" +
       "- C-08, solicitud 372: la maquina quedo frenada (12,8 h).\n" +
       "- C-07, solicitud 364: se partieron tornillos de las bailarinas (12,5 h).\n\n" +
-      "El resto (56 h) son 7 solicitudes abiertas mas de 3 dias por falta de repuesto. Cada una cuenta como maximo 8 h: A-05 (319), A-06 (321), A-07 (325), B-04 (331), C-06 (332) y A-03 (345 y 350).",
+      "2) 56 h en 7 solicitudes abiertas mas de 3 dias por falta de repuesto. Cada una cuenta como maximo 8 h: A-05 (319), A-06 (321), A-07 (325), B-04 (331), C-06 (332) y A-03 (345 y 350).\n\n" +
+      "3) Unas 22 h en paradas mas cortas: B-03 solicitud 371 (7,7 h), C-05 solicitudes 358 y 346 (6,5 h y 5 h) y A-04 solicitud 379 (2,5 h).",
   }),
   fechaDeteccion: "2026-10-05",
   detectadaPorNombre: "Coordinacion de Mantenimiento",
@@ -51,7 +53,7 @@ const datos: RegistroNcDatos = {
   tratamientoInmediatoFecha: "2026-10-05",
   herramientaCausa: "Revision de solicitudes del mes",
   resumenCausa:
-    "El porcentaje subio a 15.95% porque varias maquinas quedaron paradas 2 o 3 dias (C-02, B-02, C-08 y C-07) y siete solicitudes esperaron repuesto mas de 3 dias. El tiempo de respuesta no fue la causa: casi todo el tiempo es de reparacion o espera.",
+    "El 15,95% sale de 148 h. Unas 70 h son paradas de 2 o 3 dias (C-02, B-02, C-08 y C-07). Otras 56 h son siete esperas de repuesto de mas de 3 dias, topadas en 8 h cada una. Las 22 h restantes son paradas mas cortas (B-03, C-05 y A-04). No fue por demora en la respuesta.",
   analisisPor: "Coordinacion de Mantenimiento",
   analisisFecha: "2026-10-05",
   requiereAccionFormal: "si",

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { rutaPublica } from "../../lib/rutaPublica";
 import { PROYECTOS_DISENO } from "./proyectosDiseno";
-import "./inicio.css";
+import "../inicio/inicio.css";
 
 function InicioDisenoPage() {
   return (

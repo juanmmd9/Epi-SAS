@@ -4,7 +4,7 @@ import { useAuth } from "../../modules/auth/AuthContext";
 import { etiquetaCargo } from "../../modules/auth/cargosArea";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { coincideArea } from "../../lib/areas";
-import { AREAS_MENU_DISENO, rutaMenuArea } from "../../modules/inicio/areasDiseno";
+import { AREAS_MENU_DISENO, rutaMenuArea } from "../../modules/diseno/areasDiseno";
 import { usePmAsignadosBadge } from "../../modules/preventivo/usePmAsignadosBadge";
 import { usePendientesAprobacionPm } from "../../modules/preventivo/usePendientesAprobacionPm";
 import { usePermisosPendientesBadge } from "../../modules/permisos/usePermisosPendientesBadge";

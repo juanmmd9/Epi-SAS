@@ -6,7 +6,7 @@ import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import type { UsuarioPortal } from "../auth/roles";
 import { listarRegistradosDelArea } from "./equipoRegistrados";
-import { PROYECTOS_DISENO, type IdProyectoDiseno } from "./proyectosDiseno";
+import { PROYECTOS_DISENO, type IdProyectoDiseno } from "../diseno/proyectosDiseno";
 import EncargadosCampos from "../gerencia/EncargadosCampos";
 import GerenciaItemDetalle from "../gerencia/GerenciaItemDetalle";
 import {

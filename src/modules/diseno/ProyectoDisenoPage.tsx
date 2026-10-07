@@ -8,7 +8,7 @@ import { actualizarItemGerencia, listarMisPedidosGerencia } from "../gerencia/ge
 import type { ItemGerencia } from "../gerencia/types";
 import FlujogramaCasco from "./FlujogramaCasco";
 import { proyectoDisenoPorId } from "./proyectosDiseno";
-import "./inicio.css";
+import "../inicio/inicio.css";
 
 function ProyectoDisenoPage() {
   const { proyectoId } = useParams();

@@ -5,8 +5,8 @@ import { areaUsuario } from "../../lib/usuarioArea";
 import { etiquetaCargo } from "../auth/cargosArea";
 import { useAuth } from "../auth/AuthContext";
 import { PASOS_CASCO } from "./disenoPasos";
-import { listarRegistradosDelArea } from "./equipoRegistrados";
-import "./inicio.css";
+import { listarRegistradosDelArea } from "../inicio/equipoRegistrados";
+import "../inicio/inicio.css";
 
 function EquipoEtapasPage() {
   const { usuarioId } = useParams();

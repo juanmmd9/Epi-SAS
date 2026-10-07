@@ -13,7 +13,7 @@ import {
   type EstadoSeguimiento,
   type PersonaEquipo,
 } from "./equipoDiseno";
-import "./inicio.css";
+import "../inicio/inicio.css";
 
 function fechaHoy(): string {
   const ahora = new Date();

@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import "./formatos.css";
 
+/** Formatos que usan todas las áreas. Un documento de una sola área va en su carpeta: tejidos, mantenimiento o diseno. */
+
 function FormatosAreaPage() {
   return (
     <section className="formatos">

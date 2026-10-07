@@ -162,17 +162,15 @@ export function itemsNavParaRol(
     : esMantenimiento
       ? "/mantenimiento/formatos"
       : "/area/formatos";
-  if (!yaTieneFormatos || esMantenimiento) {
-    if (!todos.some((item) => item.ruta === rutaFormatosArea)) {
-      todos = [
-        ...todos,
-        enriquecer({
-          ruta: rutaFormatosArea,
-          texto: "Formatos",
-          permiso: "ver.inicio",
-        }),
-      ];
-    }
+  if (!yaTieneFormatos && !todos.some((item) => item.ruta === rutaFormatosArea)) {
+    todos = [
+      ...todos,
+      enriquecer({
+        ruta: rutaFormatosArea,
+        texto: "Formatos",
+        permiso: "ver.inicio",
+      }),
+    ];
   }
   const porRuta = new Map(todos.map((i) => [i.ruta, i]));
   const tabs: ItemNav[] = [];
@@ -185,8 +183,19 @@ export function itemsNavParaRol(
       : (["/", "/tejidos/formatos", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
     : esMantenimiento
       ? rol === "lider" || rol === "admin"
-        ? (["/", "/mantenimiento/formatos", "/preventivo/aprobaciones", "/tablero"] as const)
-        : (["/", "/mantenimiento/formatos", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
+        ? ([
+            "/",
+            yaTieneFormatos ? "/formatos" : "/mantenimiento/formatos",
+            "/preventivo/aprobaciones",
+            "/tablero",
+          ] as const)
+        : ([
+            "/",
+            yaTieneFormatos ? "/formatos" : "/mantenimiento/formatos",
+            "/solicitudes",
+            "/preventivo",
+            "/hojas-de-vida",
+          ] as const)
       : rol === "lider"
         ? PRIORIDAD_TABS_LIDER
         : PRIORIDAD_TABS;

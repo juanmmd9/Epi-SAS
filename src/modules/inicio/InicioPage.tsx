@@ -35,7 +35,7 @@ import BandejaTomarPanel from "../solicitudes/BandejaTomarPanel";
 import { solicitudAbierta } from "../solicitudes/solicitudesCalculo";
 import CitaPmItem from "./CitaPmItem";
 import { construirDatosArea } from "./inicioDatosArea";
-import InicioDisenoPage from "./InicioDisenoPage";
+import InicioDisenoPage from "../diseno/InicioDisenoPage";
 import MisPmPanel from "./MisPmPanel";
 import {
   contarPmSinAsignar,
