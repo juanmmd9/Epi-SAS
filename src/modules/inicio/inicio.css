@@ -1299,6 +1299,23 @@
   gap: 0.3rem;
 }
 
+.flujo__docs {
+  align-self: center;
+  margin-top: 0.4rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.flujo__docs:hover {
+  background: #be123c;
+  color: #fff;
+}
+
 .flujo__pasar {
   margin-top: 0.35rem;
   padding: 0.28rem 0.55rem;
@@ -1438,7 +1455,7 @@
   min-width: 0;
   min-height: 132px;
   padding: 0.85rem 0.75rem;
-  cursor: pointer;
+  cursor: default;
   justify-content: center;
   gap: 0.28rem;
   border-radius: 16px;
@@ -1449,10 +1466,32 @@
 }
 
 .flujo--h .flujo__nodo:hover {
-  transform: translateY(-2px);
-  border-color: #93c5fd;
-  background: #fff;
-  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.16);
+  transform: none;
+  border-color: #e2e8f0;
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+}
+
+.flujo--h .flujo__nodo--va:hover {
+  border-color: #fda4af;
+  background: linear-gradient(180deg, #fff 0%, #fff1f2 100%);
+  box-shadow: 0 10px 22px rgba(225, 29, 72, 0.12);
+}
+
+.flujo--h .flujo__nodo--decision:hover {
+  border-color: #fcd34d;
+  background: linear-gradient(180deg, #fff 0%, #fffbeb 100%);
+}
+
+.flujo--h .flujo__nodo--si:hover,
+.flujo--h .flujo__nodo--fin:hover {
+  border-color: #a7f3d0;
+  background: linear-gradient(180deg, #fff 0%, #ecfdf5 100%);
+}
+
+.flujo--h .flujo__nodo--no:hover {
+  border-color: #fed7aa;
+  background: linear-gradient(180deg, #fff 0%, #fff7ed 100%);
 }
 
 .flujo--h .flujo__nodo span {

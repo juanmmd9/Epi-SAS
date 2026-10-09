@@ -43,18 +43,14 @@ function Nodo({
   id,
   variante,
   conProyectos,
-  lineaId,
 }: {
   id: string;
   variante?: "decision" | "no" | "si" | "fin";
   conProyectos: boolean;
-  lineaId: string;
 }) {
   const item = paso(id);
   return (
-    <Link
-      to={`/diseno/${item.id}`}
-      state={{ desdeProyecto: lineaId }}
+    <div
       className={
         "flujo__nodo" +
         (variante ? ` flujo__nodo--${variante}` : "") +
@@ -64,7 +60,7 @@ function Nodo({
       <span>{item.numero}</span>
       <strong>{item.titulo}</strong>
       <small>{item.norma}</small>
-    </Link>
+    </div>
   );
 }
 
@@ -132,21 +128,31 @@ function Columna({
   const proyectos = enEtapa(items, id);
   return (
     <div className="flujo__columna">
-      <Nodo id={id} variante={variante} conProyectos={proyectos.length > 0} lineaId={lineaId} />
+      <Nodo id={id} variante={variante} conProyectos={proyectos.length > 0} />
       {proyectos.length > 0 ? <span className="flujo__baja" aria-hidden /> : null}
       <div className="flujo__bajo">
-        {proyectos.map((proyecto) => (
-          <div key={proyecto.id} className="flujo-proyectos__asignado">
-            <strong>{proyecto.titulo}</strong>
-            <span>{proyecto.encargados[0] || "Sin auxiliar"}</span>
-            <Pasar
-              etapaId={proyecto.etapa_diseno || ETAPA_INICIAL}
-              itemId={proyecto.id}
-              guardando={guardandoId === proyecto.id}
-              onAvanzar={onAvanzar}
-            />
-          </div>
-        ))}
+        {proyectos.map((proyecto) => {
+          const etapaId = proyecto.etapa_diseno || ETAPA_INICIAL;
+          return (
+            <div key={proyecto.id} className="flujo-proyectos__asignado">
+              <strong>{proyecto.titulo}</strong>
+              <span>{proyecto.encargados[0] || "Sin auxiliar"}</span>
+              <Link
+                to={`/diseno/${etapaId}`}
+                state={{ desdeProyecto: lineaId }}
+                className="flujo__docs"
+              >
+                Documentos
+              </Link>
+              <Pasar
+                etapaId={etapaId}
+                itemId={proyecto.id}
+                guardando={guardandoId === proyecto.id}
+                onAvanzar={onAvanzar}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

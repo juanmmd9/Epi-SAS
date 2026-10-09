@@ -22,6 +22,14 @@ export interface FilaSeguimiento {
   porque: string;
 }
 
+/** Foto o documento que demuestra que la acción correctiva se hizo. */
+export interface EvidenciaNc {
+  id: string;
+  nombre: string;
+  url: string;
+  subidoEn: string;
+}
+
 export interface OrigenIndicadorRef {
   anio: number;
   mes: number;
@@ -55,6 +63,7 @@ export interface RegistroNcDatos {
   verificadoPorCargo: string;
   tratamientoEficaz: "" | "si" | "no";
   tratamientoEficazPorque: string;
+  evidencias: EvidenciaNc[];
 }
 
 export interface RegistroNc {
@@ -109,6 +118,7 @@ export function formularioNcVacio(): RegistroNcDatos {
     verificadoPorCargo: "",
     tratamientoEficaz: "",
     tratamientoEficazPorque: "",
+    evidencias: [],
   };
 }
 
@@ -121,6 +131,9 @@ export function normalizarDatosNc(parcial: Partial<RegistroNcDatos>): RegistroNc
       parcial.planAccion?.length ? parcial.planAccion : base.planAccion,
     seguimientoFilas:
       parcial.seguimientoFilas?.length ? parcial.seguimientoFilas : base.seguimientoFilas,
+    evidencias: (Array.isArray(parcial.evidencias) ? parcial.evidencias : base.evidencias).filter(
+      (item) => item && item.url && item.nombre,
+    ),
   };
 }
 

@@ -98,6 +98,10 @@ function sanitizarDatosNc(datos: RegistroNcDatos): RegistroNcDatos {
     verificadoPorCargo: t(datos.verificadoPorCargo),
     tratamientoEficaz: datos.tratamientoEficaz,
     tratamientoEficazPorque: t(datos.tratamientoEficazPorque),
+    evidencias: (datos.evidencias ?? []).map((item) => ({
+      ...item,
+      nombre: t(item.nombre),
+    })),
   };
 }
 
@@ -561,6 +565,12 @@ export async function generarPdfGcRe009(datos: RegistroNcDatos, numero: number):
 
   if (paginas[0]) escribirPagina1(paginas[0], font, datosPdf, numero, anexos);
   if (paginas[1]) escribirPagina2(paginas[1], font, datosPdf, anexos);
+  if (datosPdf.evidencias.length > 0) {
+    anexos.push({
+      titulo: "Evidencias de la accion correctiva",
+      texto: datosPdf.evidencias.map((item, indice) => `${indice + 1}. ${item.nombre}`).join("\n"),
+    });
+  }
   if (anexos.length > 0) agregarHojasAnexo(pdfDoc, font, fontBold, numero, anexos);
 
   return pdfDoc.save();
