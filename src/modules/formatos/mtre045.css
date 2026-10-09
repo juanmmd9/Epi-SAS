@@ -1,0 +1,704 @@
+.mtre045-preview {
+  background: #fff;
+  border: 1px solid #333;
+  padding: 1rem 1.25rem 1.5rem;
+  max-width: 52rem;
+  margin: 0 auto;
+  font-size: 0.82rem;
+  color: #111;
+  line-height: 1.35;
+}
+
+/* Encabezado oficial (logo + proceso + código), alineado al MT-RE-045 real */
+.mtre045-preview__cabecera-oficial {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.65rem;
+  table-layout: fixed;
+}
+
+.mtre045-preview__cabecera-oficial td {
+  border: 1px solid #111;
+  padding: 0.35rem 0.45rem;
+  vertical-align: middle;
+  background: #fff;
+}
+
+.mtre045-preview__logo-celda {
+  width: 28%;
+  text-align: center;
+  padding: 0.35rem 0.4rem !important;
+  background: #fff !important;
+}
+
+.mtre045-preview__logo {
+  display: block;
+  max-width: 100%;
+  max-height: 4.25rem;
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+  background: #fff;
+}
+
+.mtre045-preview__proceso {
+  width: 36%;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.mtre045-preview__codigo-celda {
+  width: 36%;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.mtre045-preview__fecha-elab {
+  font-size: 0.72rem;
+  text-align: left;
+}
+
+.mtre045-preview__titulo-oficial {
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.4rem !important;
+  background: #fff !important;
+}
+
+.mtre045-preview__tabla--diagnostico-tipo th {
+  width: auto;
+  text-align: center;
+  background: #f3f4f6;
+  font-size: 0.82rem;
+}
+
+.mtre045-preview__tabla--diagnostico-tipo td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 0.55rem 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.mtre045-preview__casilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.mtre045-preview__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 1.5px solid #111;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.mtre045-preview__meta {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+}
+
+.mtre045-preview__meta td {
+  border: 1px solid #333;
+  padding: 0.35rem 0.5rem;
+  vertical-align: top;
+}
+
+.mtre045-preview__meta-derecha {
+  text-align: right;
+  width: 42%;
+}
+
+.mtre045-preview__procedimiento {
+  margin: 0.5rem 0 0.15rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mtre045-preview__titulo-principal {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.mtre045-preview__titulo {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.mtre045-preview__titulo h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.mtre045-preview__codigo {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.mtre045-preview__subtitulo {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.mtre045-preview__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.75rem;
+}
+
+.mtre045-preview__tabla th,
+.mtre045-preview__tabla td {
+  border: 1px solid #333;
+  padding: 0.4rem 0.5rem;
+  vertical-align: top;
+  text-align: left;
+}
+
+.mtre045-preview__tabla th {
+  background: #f3f4f6;
+  font-weight: 600;
+  width: 28%;
+}
+
+.mtre045-preview__tabla--cols3 th,
+.mtre045-preview__tabla--cols2 th {
+  width: auto;
+  text-align: center;
+  font-size: 0.72rem;
+}
+
+.mtre045-preview__tabla--cols2 {
+  table-layout: fixed;
+}
+
+.mtre045-preview__tabla--cols2 > tbody > tr > td:not([colspan]),
+.mtre045-preview__tabla--cols2 > tbody > tr > th:not([colspan]) {
+  width: 50%;
+}
+
+.mtre045-preview__fila-titulo {
+  background: #e5e7eb;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.mtre045-an {
+  display: inline-flex;
+  gap: 1.1rem;
+  font-weight: 600;
+  align-items: center;
+}
+
+.mtre045-an__opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.mtre045-an__caja {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 1.5px solid #334155;
+  border-radius: 2px;
+  font-size: 0.85rem;
+  line-height: 1;
+  font-weight: 700;
+  color: #0f172a;
+  background: #fff;
+}
+
+.mtre045-an__opcion--activa .mtre045-an__caja {
+  border-color: #1e3a5f;
+  background: #f8fafc;
+}
+
+.mtre045-preview__tabla--encabezado .mtre045-preview__th-num {
+  width: 22%;
+}
+
+.mtre045-preview__tabla--encabezado .mtre045-preview__th-fecha {
+  width: 10%;
+  text-align: center;
+}
+
+.mtre045-preview__td-fecha {
+  width: 28%;
+}
+
+.mtre045-preview__fecha-cajas {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  font-weight: 600;
+}
+
+.mtre045-preview__fecha-caja {
+  min-width: 1.75rem;
+  text-align: center;
+  border-bottom: 1px solid #333;
+  padding: 0 0.25rem;
+}
+
+.mtre045-preview__fecha-caja--anio {
+  min-width: 3rem;
+}
+
+.mtre045-preview__th-etiqueta {
+  width: 22%;
+}
+
+.mtre045-preview__celda-texto {
+  min-height: 1.75rem;
+  white-space: pre-wrap;
+}
+
+.mtre045-preview__celda-alta {
+  min-height: 3.5rem;
+}
+
+.mtre045-preview__celda-repuestos {
+  vertical-align: top;
+  min-height: 2.4rem;
+}
+
+.mtre045-preview__lista-num {
+  margin: 0;
+  padding-left: 1.35rem;
+  font-size: 0.78rem;
+}
+
+.mtre045-preview__lista-num li {
+  min-height: 0.95rem;
+}
+
+.mtre045-preview__lista-num--horizontal {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem 0.55rem;
+  list-style: none;
+  padding: 0.15rem 0.2rem;
+  counter-reset: repuesto;
+}
+
+.mtre045-preview__lista-num--horizontal li {
+  min-height: 1.15rem;
+  counter-increment: repuesto;
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  border-bottom: 1px dotted #94a3b8;
+  padding: 0.1rem 0.15rem 0.15rem;
+  font-size: 0.75rem;
+  overflow: hidden;
+}
+
+.mtre045-preview__lista-num--horizontal li::before {
+  content: counter(repuesto) ".";
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: #475569;
+}
+
+.mtre045-preview__celda-an {
+  vertical-align: top;
+  min-height: 4.5rem;
+}
+
+.mtre045-preview__celda-verificacion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 4.2rem;
+  text-align: left;
+}
+
+.mtre045-preview__detalle-verificacion {
+  margin: 0;
+  flex: 1;
+  white-space: pre-wrap;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.mtre045-preview__celda-verificacion .mtre045-an {
+  align-self: flex-end;
+}
+
+.mtre045-preview__nombre-firma {
+  min-height: 1.1rem;
+  font-weight: 600;
+}
+
+.mtre045-preview__tabla--encabezado {
+  margin-bottom: 0.75rem;
+}
+
+.mtre045-preview__tabla--encabezado .mtre045-preview__th-num {
+  width: 22%;
+}
+
+.mtre045-preview__td-valor {
+  font-weight: 600;
+  width: 28%;
+}
+
+.mtre045-filtros-pm {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.mtre045-filtros-pm label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+}
+
+.mtre045-filtros-pm select {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.mtre045-lista-pm__conteo {
+  font-size: 0.8rem;
+  color: var(--color-texto-suave);
+  margin: 0 0 0.5rem;
+}
+
+.mtre045-lista-pm__vacio {
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+  margin: 0;
+  padding: 0.5rem 0;
+}
+
+.mtre045-lista-pm {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.mtre045-lista-pm h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.mtre045-preview__leyenda {
+  font-size: 0.78rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.mtre045-preview__firmas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  align-items: end;
+}
+
+.mtre045-preview__zona-firma {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.mtre045-preview__img-firma {
+  display: block;
+  width: 100%;
+  max-height: 3.15rem;
+  object-fit: contain;
+  object-position: center bottom;
+  margin: 0 auto;
+}
+
+.mtre045-preview__linea-firma {
+  border-bottom: 1px solid #333;
+  width: 100%;
+  height: 0;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.mtre045-preview__firmas p {
+  margin: 0.15rem 0;
+}
+
+.mtre045-preview__firmas small {
+  color: #555;
+}
+
+.mtre045-page__layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .mtre045-page__layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mtre045-form {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.mtre045-form h2 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+}
+
+.mtre045-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.mtre045-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+}
+
+.mtre045-form input,
+.mtre045-form select,
+.mtre045-form textarea {
+  font: inherit;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+}
+
+.mtre045-form__ancho {
+  grid-column: 1 / -1;
+}
+
+.mtre045-form__solo-lectura {
+  background: #f1f5f9;
+  color: var(--color-texto-suave);
+}
+
+.mtre045-form__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.mtre045-panel-preview {
+  background: #f8fafc;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.mtre045-panel-preview__barra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.mtre045-panel-preview__scroll {
+  overflow: auto;
+  max-height: 75vh;
+  padding: 0.5rem;
+  background: #e2e8f0;
+  border-radius: 8px;
+}
+
+.mtre045-panel-preview__pdf {
+  margin-top: 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mtre045-panel-preview__pdf iframe {
+  width: 100%;
+  height: 50vh;
+  border: none;
+}
+
+.mtre045-lista-pm__items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 28rem;
+  overflow-y: auto;
+}
+
+.mtre045-item-pm {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  background: #fff;
+  flex-wrap: wrap;
+}
+
+.mtre045-item-pm__codigo {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: #e2e8f0;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.mtre045-item-pm__desc {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-texto-suave);
+}
+
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 12mm;
+  }
+
+  body.imprimiendo-formato aside,
+  body.imprimiendo-formato .formatos__cabecera,
+  body.imprimiendo-formato .mtre045-page__layout,
+  body.imprimiendo-formato .mtre045-form,
+  body.imprimiendo-formato .mtre045-lista-pm,
+  body.imprimiendo-formato .formatos__mensaje,
+  body.imprimiendo-formato .layout__topbar,
+  body.imprimiendo-formato .layout__cuerpo > .sidebar,
+  body.imprimiendo-formato .sidebar,
+  body.imprimiendo-formato .bottom-nav,
+  body.imprimiendo-formato .mas-sheet,
+  body.imprimiendo-formato .mas-sheet__backdrop,
+  body.imprimiendo-formato .permisos__preview-barra,
+  body.imprimiendo-formato .avisos-globales,
+  body.imprimiendo-formato [class*="Aviso"],
+  body.imprimiendo-formato .badge-flotante {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  body.imprimiendo-formato .mtre045-panel-preview,
+  body.imprimiendo-formato .mtre045-panel-preview__scroll {
+    display: block !important;
+  }
+
+  body.imprimiendo-formato .mtre045-panel-preview__barra {
+    display: none !important;
+  }
+
+  body.imprimiendo-formato,
+  body.imprimiendo-formato .layout__cuerpo,
+  body.imprimiendo-formato .layout__contenido,
+  body.imprimiendo-formato .mtre045-page,
+  body.imprimiendo-formato .mtre045-panel-preview,
+  body.imprimiendo-formato .mtre045-panel-preview__scroll {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  body.imprimiendo-formato .mtre045-preview {
+    border: none;
+    max-width: none;
+    width: 100%;
+    padding: 0;
+    font-size: 10pt;
+  }
+
+  body.imprimiendo-formato .mtre045-preview__tabla th,
+  body.imprimiendo-formato .mtre045-preview__tabla td,
+  body.imprimiendo-formato .mtre045-preview__cabecera-oficial td {
+    border-color: #000;
+  }
+
+  body.imprimiendo-formato .mtre045-preview__logo {
+    max-height: 3.6rem;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Evitar filas/bloques partidos y números de lista vacíos en la 2ª página */
+  body.imprimiendo-formato .mtre045-preview__cabecera-oficial,
+  body.imprimiendo-formato .mtre045-preview__firmas,
+  body.imprimiendo-formato .mtre045-preview__tabla--diagnostico-tipo,
+  body.imprimiendo-formato .mtre045-preview__tabla--encabezado {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body.imprimiendo-formato .mtre045-preview__tabla--cols3 tr,
+  body.imprimiendo-formato .mtre045-preview__tabla--cols2 tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body.imprimiendo-formato .mtre045-preview__lista-num--horizontal li {
+    display: flex !important;
+  }
+
+  body.imprimiendo-formato .mtre045-preview__lista-num li:empty {
+    display: none !important;
+  }
+
+  /* Si la lista queda sin ítems visibles, no dejes la celda empujando a otra página */
+  body.imprimiendo-formato .mtre045-preview__celda-repuestos {
+    min-height: 0;
+  }
+}

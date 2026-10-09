@@ -1,0 +1,5 @@
+-- NO ejecutes este archivo.
+-- En Supabase SQL Editor abre y ejecuta:
+--   supabase/migrations/gerencia_setup_completo.sql
+--
+-- Ese script crea gerencia_items (que faltaba) + historial + columnas + realtime.

@@ -1,0 +1,45 @@
+.selector-personal {
+  margin: 0.75rem 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.selector-personal legend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+  padding: 0 0.25rem;
+}
+
+.selector-personal__lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.selector-personal__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.selector-personal__vacio {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-texto-suave);
+}
+
+.selector-personal__resumen {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-texto-suave);
+}
+
+.preventivo-form .selector-personal,
+.correctivo-form .selector-personal {
+  grid-column: 1 / -1;
+}

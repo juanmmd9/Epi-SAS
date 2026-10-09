@@ -1,0 +1,321 @@
+{
+  "generadoEn": "2026-08-04T16:45:13.588Z",
+  "anio": 2026,
+  "mesHasta": 8,
+  "categorias": [
+    "Ene",
+    "Feb",
+    "Mar",
+    "Abr",
+    "May",
+    "Jun",
+    "Jul",
+    "Ago"
+  ],
+  "areas": [
+    "Tejidos",
+    "Confeccion",
+    "Locativos",
+    "Administrativa"
+  ],
+  "totals": {
+    "correctivoAnio": {
+      "Tejidos": 116,
+      "Confeccion": 90,
+      "Locativos": 15,
+      "Administrativa": 6
+    },
+    "preventivoAnio": {
+      "Tejidos": 20,
+      "Confeccion": 20,
+      "Locativos": 10,
+      "Administrativa": 0
+    },
+    "intervencionesAnio": {
+      "Tejidos": 136,
+      "Confeccion": 110,
+      "Locativos": 25,
+      "Administrativa": 6
+    },
+    "abiertasHoy": {
+      "Tejidos": 6,
+      "Confeccion": 1,
+      "Locativos": 3,
+      "Administrativa": 3
+    },
+    "personalActivoPorArea": {
+      "Tejidos": 0,
+      "Confeccion": 0,
+      "Locativos": 0,
+      "Administrativa": 0
+    }
+  },
+  "series": {
+    "correctivosPorMes": {
+      "Tejidos": [
+        13,
+        8,
+        8,
+        14,
+        22,
+        26,
+        25,
+        0
+      ],
+      "Confeccion": [
+        6,
+        9,
+        13,
+        7,
+        8,
+        9,
+        36,
+        2
+      ],
+      "Locativos": [
+        0,
+        0,
+        2,
+        0,
+        1,
+        3,
+        9,
+        0
+      ],
+      "Administrativa": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        5,
+        0
+      ]
+    },
+    "cerradosPorMes": {
+      "Tejidos": [
+        12,
+        8,
+        7,
+        14,
+        21,
+        25,
+        23,
+        0
+      ],
+      "Confeccion": [
+        6,
+        9,
+        13,
+        7,
+        8,
+        9,
+        35,
+        2
+      ],
+      "Locativos": [
+        0,
+        0,
+        2,
+        0,
+        1,
+        3,
+        6,
+        0
+      ],
+      "Administrativa": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        0
+      ]
+    },
+    "abiertosPorMes": {
+      "Tejidos": [
+        1,
+        0,
+        1,
+        0,
+        1,
+        1,
+        2,
+        0
+      ],
+      "Confeccion": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "Locativos": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        0
+      ],
+      "Administrativa": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        2,
+        0
+      ]
+    },
+    "intervencionesPorMes": {
+      "Tejidos": [
+        14,
+        10,
+        13,
+        17,
+        25,
+        29,
+        27,
+        1
+      ],
+      "Confeccion": [
+        7,
+        15,
+        17,
+        9,
+        11,
+        9,
+        39,
+        2
+      ],
+      "Locativos": [
+        0,
+        0,
+        8,
+        0,
+        1,
+        7,
+        9,
+        0
+      ],
+      "Administrativa": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        5,
+        0
+      ]
+    },
+    "pmPorMes": {
+      "Tejidos": [
+        1,
+        2,
+        5,
+        3,
+        3,
+        3,
+        2,
+        1
+      ],
+      "Confeccion": [
+        1,
+        6,
+        4,
+        2,
+        3,
+        0,
+        3,
+        0
+      ],
+      "Locativos": [
+        0,
+        0,
+        6,
+        0,
+        0,
+        4,
+        0,
+        0
+      ],
+      "Administrativa": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "mecanicaTejidos": [
+      12,
+      6,
+      8,
+      14,
+      19,
+      21,
+      17,
+      0
+    ]
+  },
+  "tiposTejidos": [
+    {
+      "tipo": "MECANICA",
+      "cantidad": 97
+    },
+    {
+      "tipo": "CORRECTIVO",
+      "cantidad": 92
+    },
+    {
+      "tipo": "ELECTRICA",
+      "cantidad": 13
+    },
+    {
+      "tipo": "NEUMATICA",
+      "cantidad": 3
+    },
+    {
+      "tipo": "APOYO PRODUCCION",
+      "cantidad": 2
+    },
+    {
+      "tipo": "HIDRAULICA",
+      "cantidad": 1
+    }
+  ],
+  "personalPorArea": {
+    "Tejidos": [],
+    "Confeccion": [],
+    "Locativos": [],
+    "Administrativa": []
+  },
+  "cargosRelevantes": [],
+  "topCarga": [],
+  "meta": {
+    "correctivoTotalRaw": 283,
+    "preventivoTotalRaw": 81,
+    "personalTotal": 0,
+    "corr2026": 282,
+    "prev2026": 81,
+    "areasPm": [
+      "Tejidos",
+      "Confeccion",
+      "Locativos"
+    ]
+  }
+}
