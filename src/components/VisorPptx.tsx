@@ -10,7 +10,7 @@ function VisorPptx({ url }: { url: string }) {
     const nodo = caja.current;
     if (!nodo) return;
     let cancelado = false;
-    let previewer: { destroy: () => void } | null = null;
+    let previewer: { preview: (archivo: ArrayBuffer) => Promise<unknown>; destroy: () => void } | null = null;
     nodo.replaceChildren();
     setEstado("cargando");
     setDetalle("");
