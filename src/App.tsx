@@ -6,6 +6,9 @@ import LoginPage from "./modules/auth/LoginPage";
 import RegistroPage from "./modules/auth/RegistroPage";
 import RequireAuth from "./modules/auth/RequireAuth";
 import InicioPage from "./modules/inicio/InicioPage";
+import PrincipalPage, { ProcedimientosPage } from "./modules/principal/PrincipalPage";
+import DireccionamientoPage from "./modules/principal/DireccionamientoPage";
+import EntradaPerfil from "./modules/principal/EntradaPerfil";
 import FlujogramaAuxiliarPage from "./modules/diseno/FlujogramaAuxiliarPage";
 import TableroAuxiliarPage from "./modules/diseno/TableroAuxiliarPage";
 import ProyectoDisenoPage from "./modules/diseno/ProyectoDisenoPage";
@@ -54,7 +57,11 @@ function App() {
         <Route path="/registro" element={<RegistroPage />} />
         <Route element={<RequireAuth />}>
           <Route element={<Layout />}>
-            <Route index element={<InicioPage />} />
+            <Route index element={<EntradaPerfil />} />
+            <Route path="inicio" element={<InicioPage />} />
+            <Route path="principal" element={<PrincipalPage />} />
+            <Route path="principal/procedimientos" element={<ProcedimientosPage />} />
+            <Route path="principal/direccionamiento" element={<DireccionamientoPage />} />
             <Route path="diseno/areas/:areaNombre" element={<AreaMenuPage />} />
             <Route path="diseno/tablero" element={<TableroAuxiliarPage />} />
             <Route path="diseno/proyectos/:proyectoId/card/:cardId" element={<FlujogramaAuxiliarPage />} />

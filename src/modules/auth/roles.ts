@@ -113,7 +113,8 @@ export interface EnlaceNav {
 }
 
 export const ENLACES_NAV: EnlaceNav[] = [
-  { ruta: "/", texto: "Inicio", permiso: "ver.inicio" },
+  { ruta: "/principal", texto: "Principal", permiso: "ver.inicio" },
+  { ruta: "/inicio", texto: "Inicio", permiso: "ver.inicio" },
   { ruta: "/tablero", texto: "Tablero", permiso: "ver.tablero.area" },
   { ruta: "/gerencia", texto: "Gerencia", permiso: "ver.gerencia" },
   { ruta: "/gerencia/pedir", texto: "Solicitar a Gerencia", permiso: "crear.gerencia" },
@@ -144,7 +145,7 @@ export function etiquetaRol(rol: RolPortal | string | null | undefined): string 
   return ETIQUETAS_ROL[rol as RolPortal] ?? String(rol);
 }
 
-/** Ruta de inicio según rol (solicitante entra al tablero de áreas). */
+/** Ruta de inicio según rol. El perfil de mantenimiento abre en Principal. */
 export function rutaInicioParaRol(
   rol: RolPortal | null | undefined,
   area?: string | null | undefined,
@@ -153,7 +154,7 @@ export function rutaInicioParaRol(
     return "/diseno/tablero";
   }
   if (rol === "solicitante") return "/solicitudes";
-  if (rol === "lider") return "/";
+  if (rol === "lider" && area && coincideArea(area, "Diseno y Desarrollo")) return "/inicio";
   if (rol === "gerencia") return "/gerencia";
-  return "/";
+  return "/principal";
 }

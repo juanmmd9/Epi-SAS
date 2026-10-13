@@ -4,6 +4,7 @@ import { coincideArea } from "../../lib/areas";
 
 export type IconoNav =
   | "inicio"
+  | "principal"
   | "preventivo"
   | "aprobar"
   | "correctivo"
@@ -27,7 +28,8 @@ export interface ItemNav extends EnlaceNav {
 }
 
 const ICONOS_POR_RUTA: Record<string, IconoNav> = {
-  "/": "inicio",
+  "/inicio": "inicio",
+  "/principal": "principal",
   "/tablero": "tablero",
   "/diseno/tablero": "tablero",
   "/gerencia": "gerencia",
@@ -50,7 +52,8 @@ const ICONOS_POR_RUTA: Record<string, IconoNav> = {
 };
 
 const ETIQUETA_CORTA: Record<string, string> = {
-  "/": "Inicio",
+  "/inicio": "Inicio",
+  "/principal": "Principal",
   "/tablero": "Tablero",
   "/diseno/tablero": "Tablero",
   "/gerencia": "Gerencia",
@@ -74,7 +77,8 @@ const ETIQUETA_CORTA: Record<string, string> = {
 
 /** Orden preferido de los 3 tabs fijos (el 4.º es siempre «Más»). */
 const PRIORIDAD_TABS = [
-  "/",
+  "/principal",
+  "/inicio",
   "/preventivo/aprobaciones",
   "/preventivo",
   "/solicitudes",
@@ -84,7 +88,8 @@ const PRIORIDAD_TABS = [
 
 /** Líder: Inicio (panel preventivo) + Tablero del área + Aprobar PM. */
 const PRIORIDAD_TABS_LIDER = [
-  "/",
+  "/principal",
+  "/inicio",
   "/tablero",
   "/preventivo/aprobaciones",
   "/gerencia/pedir",
@@ -103,6 +108,14 @@ export function rutaVisibleParaArea(
   area: string | null | undefined,
   ruta: string,
 ): boolean {
+  if (
+    (ruta === "/principal" || ruta.startsWith("/principal/")) &&
+    Boolean(area) &&
+    coincideArea(area ?? "", "Diseno y Desarrollo") &&
+    (rol === "lider" || rol === "solicitante")
+  ) {
+    return false;
+  }
   if (rol !== "lider" || !area || !coincideArea(area, "Diseno y Desarrollo")) return true;
   return !RUTAS_OCULTAS_DISENO.some(
     (oculta) => ruta === oculta || ruta.startsWith(`${oculta}/`),
@@ -144,7 +157,7 @@ export function itemsNavParaRol(
   if (esAuxiliarDiseno) {
     todos = todos.filter(
       (item) =>
-        item.ruta !== "/" && item.ruta !== "/solicitudes" && item.ruta !== "/hojas-de-vida",
+        item.ruta !== "/inicio" && item.ruta !== "/solicitudes" && item.ruta !== "/hojas-de-vida",
     );
   }
   if (esAuxiliarDiseno && !todos.some((item) => item.ruta === "/diseno/tablero")) {
@@ -162,7 +175,11 @@ export function itemsNavParaRol(
     : esMantenimiento
       ? "/mantenimiento/formatos"
       : "/area/formatos";
-  if (!yaTieneFormatos && !todos.some((item) => item.ruta === rutaFormatosArea)) {
+  if (
+    rol !== "operador" &&
+    !yaTieneFormatos &&
+    !todos.some((item) => item.ruta === rutaFormatosArea)
+  ) {
     todos = [
       ...todos,
       enriquecer({
@@ -179,18 +196,20 @@ export function itemsNavParaRol(
     ? (["/diseno/tablero", "/area/formatos"] as const)
     : esTejidos
     ? rol === "lider"
-      ? (["/", "/tejidos/formatos", "/preventivo/aprobaciones", "/tablero"] as const)
-      : (["/", "/tejidos/formatos", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
+      ? (["/principal", "/inicio", "/tejidos/formatos", "/preventivo/aprobaciones", "/tablero"] as const)
+      : (["/principal", "/inicio", "/tejidos/formatos", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
     : esMantenimiento
       ? rol === "lider" || rol === "admin"
         ? ([
-            "/",
+            "/principal",
+            "/inicio",
             yaTieneFormatos ? "/formatos" : "/mantenimiento/formatos",
             "/preventivo/aprobaciones",
             "/tablero",
           ] as const)
         : ([
-            "/",
+            "/principal",
+            "/inicio",
             yaTieneFormatos ? "/formatos" : "/mantenimiento/formatos",
             "/solicitudes",
             "/preventivo",
@@ -205,7 +224,7 @@ export function itemsNavParaRol(
       ? prioridadBase
       : esTejidos || esMantenimiento
         ? prioridadBase
-        : ["/", "/area/formatos", ...prioridadBase.filter((ruta) => ruta !== "/")];
+        : ["/principal", "/inicio", "/area/formatos", ...prioridadBase.filter((ruta) => ruta !== "/inicio" && ruta !== "/principal")];
 
   for (const ruta of prioridad) {
     if (tabs.length >= 3) break;
@@ -231,10 +250,12 @@ export function itemsNavParaRol(
 
 /** True si la ruta actual pertenece a este ítem (o a un submódulo). */
 export function rutaActiva(pathname: string, rutaItem: string): boolean {
-  if (rutaItem === "/") {
+  if (rutaItem === "/principal") {
+    return pathname === "/principal" || pathname.startsWith("/principal/");
+  }
+  if (rutaItem === "/inicio") {
     return (
-      pathname === "/" ||
-      pathname === "" ||
+      pathname === "/inicio" ||
       (pathname.startsWith("/diseno") && !pathname.startsWith("/diseno/tablero"))
     );
   }

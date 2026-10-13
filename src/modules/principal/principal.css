@@ -1,0 +1,120 @@
+.principal__cabecera h1 {
+  margin: 0.6rem 0 0.25rem;
+}
+
+.principal__cabecera p {
+  margin: 0 0 1rem;
+  color: var(--color-texto-suave);
+}
+
+.principal__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 320px));
+  gap: 1rem;
+}
+
+.principal__card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-borde);
+  border-radius: 14px;
+  background: var(--color-superficie);
+  text-decoration: none;
+  color: inherit;
+}
+
+.principal__card:hover {
+  border-color: #1f3864;
+}
+
+.principal__card img {
+  display: block;
+  width: 100%;
+  height: 168px;
+  object-fit: cover;
+}
+
+.principal__card-texto {
+  padding: 0.85rem 1rem 1rem;
+}
+
+.principal__card-texto h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.principal__card-texto p {
+  margin: 0;
+  color: var(--color-texto-suave);
+  font-size: 0.85rem;
+}
+
+.principal__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 760px;
+}
+
+.principal__doc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  background: var(--color-superficie);
+}
+
+.principal__doc strong {
+  display: block;
+}
+
+.principal__doc span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--color-texto-suave);
+}
+
+.principal__doc p {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+
+.principal__visor {
+  margin-top: 1rem;
+  height: min(78vh, 920px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.principal__visor-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.principal__visor-barra h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 640px) {
+  .principal__doc {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

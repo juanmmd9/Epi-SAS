@@ -56,7 +56,7 @@ function Layout() {
   const pathname = normalizarRuta(ubicacion.pathname);
   const area = areaUsuario(perfil);
   if (!rutaVisibleParaArea(rol, area, pathname)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={rutaInicioParaRol(rol, area)} replace />;
   }
   const permisoRuta = permisoParaRuta(pathname);
   const tienePermiso = !permisoRuta || puede(permisoRuta);

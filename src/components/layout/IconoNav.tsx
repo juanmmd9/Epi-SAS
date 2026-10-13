@@ -22,6 +22,15 @@ function IconoNavSvg({ nombre }: { nombre: IconoNav }) {
           <path d="M5 9.5V21h14V9.5" />
         </svg>
       );
+    case "principal":
+      return (
+        <svg {...props}>
+          <rect x="3" y="3" width="8" height="8" rx="1.5" />
+          <rect x="13" y="3" width="8" height="8" rx="1.5" />
+          <rect x="3" y="13" width="8" height="8" rx="1.5" />
+          <rect x="13" y="13" width="8" height="8" rx="1.5" />
+        </svg>
+      );
     case "preventivo":
       return (
         <svg {...props}>

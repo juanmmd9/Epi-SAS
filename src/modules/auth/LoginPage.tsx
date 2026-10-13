@@ -9,24 +9,20 @@ import {
   guardarCredencialesRecordadas,
   leerCredencialesRecordadas,
 } from "./credencialesRecordadas";
-import { coincideArea } from "../../lib/areas";
 import { rutaInicioParaRol, type RolPortal } from "./roles";
 import { etiquetaCargo } from "./cargosArea";
 import "./auth.css";
 
-/** Destino tras login: el solicitante siempre entra al tablero de áreas. */
+/** Destino tras abrir el perfil. La raíz entra a Principal; una ruta concreta se respeta. */
 function destinoSeguro(
   rol: RolPortal | null | undefined,
   area: string | null | undefined,
   desde: string | null | undefined,
 ): string {
-  if (rol === "solicitante" && area && coincideArea(area, "Diseno y Desarrollo")) {
-    return "/diseno/tablero";
-  }
-  if (rol === "solicitante") return "/solicitudes";
-  if (rol === "lider") return "/";
-  if (desde && desde !== "/login" && !desde.startsWith("/login")) return desde;
-  return rutaInicioParaRol(rol);
+  const inicio = rutaInicioParaRol(rol, area);
+  if (rol === "solicitante") return inicio;
+  if (!desde || desde === "/" || desde === "/login" || desde.startsWith("/login")) return inicio;
+  return desde;
 }
 
 function etiquetaPerfil(perfil: { nombre: string; usuario: string; email: string }): string {

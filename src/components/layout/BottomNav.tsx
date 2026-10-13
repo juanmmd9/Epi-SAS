@@ -95,7 +95,7 @@ function BottomNav() {
   }
 
   function badgePara(item: ItemNav) {
-    if (item.ruta === "/") {
+    if (item.ruta === "/inicio") {
       return (
         <BadgeNav
           cantidad={pmAsignados}
@@ -143,7 +143,7 @@ function BottomNav() {
             <NavLink
               key={item.ruta}
               to={item.ruta}
-              end={item.ruta === "/"}
+              end={item.ruta === "/inicio"}
               className={"bottom-nav__item" + (activo ? " bottom-nav__item--activo" : "")}
             >
               <span className="bottom-nav__icono-wrap">

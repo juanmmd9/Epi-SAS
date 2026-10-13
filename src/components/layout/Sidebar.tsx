@@ -62,7 +62,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
       </div>
       <nav className="sidebar__nav">
         {enlaces.map((enlace) => {
-          const esInicio = enlace.ruta === "/";
+          const esInicio = enlace.ruta === "/inicio";
           const esAprobar = enlace.ruta === "/preventivo/aprobaciones";
           const esSolicitudes = enlace.ruta === "/solicitudes";
           const esPermisos = enlace.ruta === "/personal/permisos";
@@ -81,7 +81,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
             {esAuxiliarDiseno && esInicio ? null : (
             <NavLink
               to={enlace.ruta}
-              end={enlace.ruta === "/" || enlace.ruta === "/solicitudes"}
+              end={enlace.ruta === "/inicio" || enlace.ruta === "/solicitudes"}
               className={({ isActive }) =>
                 "sidebar__enlace" +
                 (isActive ? " sidebar__enlace--activo" : "") +
@@ -140,7 +140,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
                 <span className="sidebar__enlace-texto">Tablero</span>
               </NavLink>
             ) : null}
-            {!yaTieneFormatos && esInicio ? (
+            {!yaTieneFormatos && esInicio && perfil?.rol !== "operador" ? (
               <NavLink
                 to={rutaFormatos}
                 className={() => {
