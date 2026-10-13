@@ -51,8 +51,14 @@ export async function guardarGestionCambio(
 }
 
 export async function eliminarGestionCambio(id: string, area: string): Promise<void> {
-  const { error } = await supabase.from(TABLA).delete().eq("id", id).eq("area", area);
+  const { data, error } = await supabase
+    .from(TABLA)
+    .delete()
+    .eq("id", id)
+    .eq("area", area)
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error("No se pudo eliminar el registro.");
 }
 
 export function esErrorTablaGestionCambio(mensaje: string): boolean {

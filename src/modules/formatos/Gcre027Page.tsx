@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { coincideArea } from "../../lib/areas";
+import { rutaFormatosPara } from "../../components/layout/navConfig";
 import { rutaPublica } from "../../lib/rutaPublica";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
@@ -55,16 +55,9 @@ function AvisoSetupGestionCambio() {
 }
 
 function Gcre027Page() {
-  const { rol, perfil, puede } = useAuth();
+  const { rol, perfil } = useAuth();
   const area = areaDeGestionCambio(areaUsuario(perfil), rol);
-  const volverFormatos =
-    area && coincideArea(area, "Tejidos")
-      ? "/tejidos/formatos"
-      : area && coincideArea(area, "Mantenimiento")
-        ? "/mantenimiento/formatos"
-        : puede("ver.formatos")
-          ? "/formatos"
-          : "/area/formatos";
+  const volverFormatos = rutaFormatosPara(rol, areaUsuario(perfil)) ?? "/principal";
   const [datos, setDatos] = useState<RegistroGc027Datos>(formularioGc027Vacio());
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [numeroActual, setNumeroActual] = useState<number | null>(null);
@@ -77,15 +70,35 @@ function Gcre027Page() {
   const [vista, setVista] = useState<{ datos: RegistroGc027Datos; numero: number | null } | null>(
     null,
   );
-
   useEffect(() => {
     if (!area) return;
+    let cancelado = false;
     listarGestionCambio(area)
-      .then(setRegistros)
+      .then(async (lista) => {
+        const conservar: RegistroGc027[] = [];
+        for (const registro of lista) {
+          const esRellenoAnterior = (registro.datos?.descripcion ?? "").includes(
+            "TRÍPODES Y RETRÁCTILES",
+          );
+          if (!esRellenoAnterior) {
+            conservar.push(registro);
+            continue;
+          }
+          try {
+            await eliminarGestionCambio(registro.id, area);
+          } catch {
+            conservar.push(registro);
+          }
+        }
+        if (!cancelado) setRegistros(conservar);
+      })
       .catch((e: Error) => {
         if (esErrorTablaGestionCambio(e.message)) setFaltaTabla(true);
         setError("No se pudieron cargar los registros: " + e.message);
       });
+    return () => {
+      cancelado = true;
+    };
   }, [area]);
 
   useEffect(() => {
@@ -122,6 +135,7 @@ function Gcre027Page() {
     setEditandoId(null);
     setNumeroActual(null);
     setDatos({ ...formularioGc027Vacio(), proceso: area ?? "" });
+    setVista(null);
     setMensaje(null);
     setError(null);
   }
@@ -156,17 +170,17 @@ function Gcre027Page() {
         throw new Error("La descripción del cambio es obligatoria.");
       }
       if (!area) throw new Error("Tu usuario no tiene área. No se puede guardar el registro.");
+      const eraEdicion = Boolean(editandoId);
       const guardado = await guardarGestionCambio(datos, editandoId, area);
-      setEditandoId(guardado.id);
-      setNumeroActual(guardado.numero);
       setRegistros((prev) => {
         const sin = prev.filter((r) => r.id !== guardado.id);
         return [guardado, ...sin].sort((a, b) => b.numero - a.numero);
       });
+      limpiarFormulario();
       setMensaje(
-        editandoId
-          ? `Registro GC-RE-027 No. ${guardado.numero} actualizado.`
-          : `Registro GC-RE-027 No. ${guardado.numero} guardado.`,
+        eraEdicion
+          ? `Registro GC-RE-027 No. ${guardado.numero} actualizado. El formulario quedó en blanco para crear uno nuevo.`
+          : `Registro GC-RE-027 No. ${guardado.numero} guardado. El formulario quedó en blanco para crear uno nuevo.`,
       );
       setFaltaTabla(false);
     } catch (e) {

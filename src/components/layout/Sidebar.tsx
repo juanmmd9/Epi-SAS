@@ -5,7 +5,7 @@ import { useAuth } from "../../modules/auth/AuthContext";
 import { enlacesParaRol } from "../../modules/auth/roles";
 import { etiquetaCargo } from "../../modules/auth/cargosArea";
 import { areaUsuario, muestraPortalMantenimiento } from "../../lib/usuarioArea";
-import { enlaceVisibleParaArea } from "./navConfig";
+import { enlaceVisibleParaArea, rutaFormatosPara, vePrincipal } from "./navConfig";
 import { AREAS_MENU_DISENO, rutaMenuArea } from "../../modules/diseno/areasDiseno";
 import { coincideArea } from "../../lib/areas";
 import { usePmAsignadosBadge } from "../../modules/preventivo/usePmAsignadosBadge";
@@ -28,19 +28,11 @@ function Sidebar({ abierto, onCerrar }: Props) {
   const esDiseno = perfil?.rol === "lider" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
   const esAuxiliarDiseno =
     perfil?.rol === "solicitante" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
-  const esTejidos = Boolean(area && coincideArea(area, "Tejidos"));
-  const esMantenimiento =
-    Boolean(area && coincideArea(area, "Mantenimiento")) ||
-    (perfil?.rol === "admin" && !area);
   const enlaces = enlacesParaRol(perfil?.rol).filter((enlace) =>
     enlaceVisibleParaArea(perfil?.rol, area, enlace.ruta),
   );
-  const yaTieneFormatos = enlaces.some((enlace) => enlace.ruta === "/formatos");
-  const rutaFormatos = esTejidos
-    ? "/tejidos/formatos"
-    : esMantenimiento
-      ? "/mantenimiento/formatos"
-      : "/area/formatos";
+  const destinoFormatos = rutaFormatosPara(perfil?.rol, area);
+  const formatosEnMenu = Boolean(destinoFormatos) && !vePrincipal(perfil?.rol, area);
   const pendientesFirma = usePendientesAprobacionPm();
   const pmAsignados = usePmAsignadosBadge();
   const solicitudesAbiertas = useSolicitudesAbiertasBadge();
@@ -140,13 +132,13 @@ function Sidebar({ abierto, onCerrar }: Props) {
                 <span className="sidebar__enlace-texto">Tablero</span>
               </NavLink>
             ) : null}
-            {!yaTieneFormatos && esInicio && perfil?.rol !== "operador" ? (
+            {formatosEnMenu && esInicio && destinoFormatos ? (
               <NavLink
-                to={rutaFormatos}
+                to={destinoFormatos}
                 className={() => {
                   const activo =
-                    ubicacion.pathname === rutaFormatos ||
-                    ubicacion.pathname.startsWith(`${rutaFormatos}/`) ||
+                    ubicacion.pathname === destinoFormatos ||
+                    ubicacion.pathname.startsWith(`${destinoFormatos}/`) ||
                     ubicacion.pathname.startsWith("/formatos/gc-re-027");
                   return "sidebar__enlace" + (activo ? " sidebar__enlace--activo" : "");
                 }}

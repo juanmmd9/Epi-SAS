@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import VisorWord from "../../components/VisorWord";
+import { rutaFormatosPara } from "../../components/layout/navConfig";
 import { AREAS_SISTEMA } from "../../lib/areas";
+import { areaUsuario } from "../../lib/usuarioArea";
+import { useAuth } from "../auth/AuthContext";
 import { imprimirPdf } from "../../lib/imprimirPdf";
 import { rutaPublica } from "../../lib/rutaPublica";
 import {
@@ -69,6 +72,8 @@ function etiquetaOrigen(clave: string): string {
 
 function Gcre009Page() {
   const ubicacion = useLocation();
+  const { rol, perfil } = useAuth();
+  const volverFormatos = rutaFormatosPara(rol, areaUsuario(perfil)) ?? "/principal";
   const [datos, setDatos] = useState<RegistroNcDatos>(formularioNcVacio());
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [numeroActual, setNumeroActual] = useState<number | null>(null);
@@ -171,10 +176,9 @@ function Gcre009Page() {
         const sinActual = previos.filter((r) => r.id !== registro.id);
         return [registro, ...sinActual];
       });
-      setEditandoId(registro.id);
-      setNumeroActual(registro.numero);
+      nuevoRegistro();
       setMensaje(
-        `Registro No. ${registro.numero} guardado. Use «Imprimir formato» y archive el papel en carpeta física.`,
+        `Registro No. ${registro.numero} guardado. El formulario quedó en blanco para crear uno nuevo.`,
       );
     } catch (e) {
       setError("No fue posible guardar: " + (e as Error).message);
@@ -288,7 +292,7 @@ function Gcre009Page() {
     <section className="formatos">
       <header className="formatos__cabecera">
         <div>
-          <Link to="/formatos" className="btn">← Volver a formatos</Link>
+          <Link to={volverFormatos} className="btn">← Volver a formatos</Link>
           <h1>GC-RE-009 — No conformidades y acciones correctivas</h1>
           <p className="formatos__descripcion">
             Complete el formulario y pulse <strong>Guardar</strong>. Los datos quedan en el

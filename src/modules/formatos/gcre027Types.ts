@@ -67,6 +67,89 @@ export function normalizarDatosGc027(
   };
 }
 
+/** Inspección de trípodes y retráctiles, con formulario de enlace para el cliente. */
+export function prefillInspeccionTripodesRetractiles(): RegistroGc027Datos {
+  return normalizarDatosGc027({
+    fechaDiligenciamiento: "2026-10-13",
+    fechaUltimaRevision: "2026-10-13",
+    proceso: "Mantenimiento",
+    responsable: "Coordinación de Mantenimiento",
+    descripcion:
+      "INSPECCIÓN, MANTENIMIENTO DE TRÍPODES Y RETRÁCTILES\n\n" +
+      "Se establece el seguimiento de trípodes y equipos retráctiles utilizados en trabajos en alturas y espacios confinados.\n\n" +
+      "Este formulario tiene como finalidad recopilar la información necesaria para la inspección, el mantenimiento y la reparación de esos equipos. Por este medio se hace el seguimiento del estado, la identificación de novedades y el registro de las actividades realizadas, para garantizar su correcto funcionamiento, la seguridad y el cumplimiento de las condiciones requeridas para su operación.\n\n" +
+      "Como parte del cambio se creó un formulario con enlace, para que lo diligencien los clientes que tienen el producto y necesitan la inspección del retráctil.",
+    riesgos:
+      "1) El cliente no diligencia el formulario y el retráctil o el trípode se usa sin inspección.\n" +
+      "2) La información llega incompleta y no permite identificar la novedad del equipo.\n" +
+      "3) Pasa tiempo entre la solicitud del cliente y la inspección, el mantenimiento o la reparación.\n" +
+      "4) Un equipo con novedad sigue en operación antes de ser revisado.\n" +
+      "5) El enlace se comparte sin identificar qué cliente diligenció la solicitud.",
+    oportunidades:
+      "1) Canal único para que el cliente que ya tiene el producto pida la inspección del retráctil.\n" +
+      "2) Seguimiento del estado de trípodes y retráctiles, con identificación de novedades.\n" +
+      "3) Registro de la inspección, el mantenimiento y la reparación realizados.\n" +
+      "4) El equipo vuelve a operación solo cuando cumple las condiciones de seguridad.",
+    requisitosLegales:
+      "Aplica la normativa de trabajo en alturas y de espacios confinados para equipos de protección contra caídas: inspección, mantenimiento y retiro de servicio de trípodes y retráctiles cuando no cumplan las condiciones de uso. Referencia: Resolución 4272 de 2021 del Ministerio del Trabajo y la norma aplicable a espacios confinados.\n" +
+      "El formulario con enlace inicia el seguimiento. No reemplaza la inspección física del equipo.",
+    impacto:
+      "Proceso: se recibe por enlace la solicitud de inspección del retráctil de los clientes que tienen el producto, y se registra la inspección, el mantenimiento o la reparación de trípodes y retráctiles.\n" +
+      "Personas: el cliente diligencia el formulario; Mantenimiento revisa la información, inspecciona el equipo y registra la actividad.\n" +
+      "Tecnología: formulario con enlace para el cliente.\n" +
+      "Seguridad: el equipo se usa cuando está en condiciones de operación.\n" +
+      "Documentación: este GC-RE-027 deja registrado el cambio.",
+    plan: [
+      {
+        actividad:
+          "Crear el formulario con enlace para que el cliente que tiene el producto solicite la inspección del retráctil.",
+        responsable: "Coordinación de Mantenimiento",
+        comunicar: "Clientes que tienen el producto y área comercial",
+        fechaEjecucion: "2026-10-13",
+        fechaSeguimiento: "2026-10-31",
+      },
+      {
+        actividad:
+          "Entregar el enlace a los clientes que tienen trípode o retráctil y necesitan inspección.",
+        responsable: "Comercial / Mantenimiento",
+        comunicar: "Clientes que tienen el producto",
+        fechaEjecucion: "2026-10-20",
+        fechaSeguimiento: "2026-10-31",
+      },
+      {
+        actividad: "Revisar cada formulario recibido: estado del equipo y novedades reportadas.",
+        responsable: "Mantenimiento",
+        comunicar: "Cliente y Coordinación de Mantenimiento",
+        fechaEjecucion: "2026-10-31",
+        fechaSeguimiento: "2026-11-15",
+      },
+      {
+        actividad:
+          "Ejecutar la inspección, el mantenimiento o la reparación del trípode o del retráctil según la novedad.",
+        responsable: "Mantenimiento",
+        comunicar: "Cliente",
+        fechaEjecucion: "2026-11-15",
+        fechaSeguimiento: "2026-11-30",
+      },
+      {
+        actividad: "Registrar la actividad realizada y el estado final del equipo.",
+        responsable: "Mantenimiento",
+        comunicar: "Cliente y SGC",
+        fechaEjecucion: "2026-11-30",
+        fechaSeguimiento: "2026-12-15",
+      },
+      {
+        actividad:
+          "Verificar que el equipo queda apto para operación o queda fuera de servicio si no cumple.",
+        responsable: "Coordinación de Mantenimiento",
+        comunicar: "Cliente",
+        fechaEjecucion: "2026-12-15",
+        fechaSeguimiento: "2026-12-31",
+      },
+    ],
+  });
+}
+
 /** Prefill con el cambio del Portal de Mantenimiento EPI. */
 export function prefillPortalMantenimiento(): RegistroGc027Datos {
   return normalizarDatosGc027({

@@ -138,6 +138,19 @@ export function esAreaValida(area: string): boolean {
   return AREAS_SISTEMA.includes(normalizarArea(area) as Area);
 }
 
+/** Tejidos, Plásticos y Confección no usan el catálogo de procedimientos de Mantenimiento. */
+export function esAreaProduccion(area: string | null | undefined): boolean {
+  if (!area) return false;
+  return (
+    coincideArea(area, "Tejidos") ||
+    coincideArea(area, "Plasticos") ||
+    coincideArea(area, "Confeccion") ||
+    coincideArea(area, "Produccion Textiles") ||
+    coincideArea(area, "Produccion Plasticos") ||
+    coincideArea(area, "Produccion Confeccion")
+  );
+}
+
 export function esAreaPlanta(area: string): boolean {
   const n = normalizarArea(area);
   return AREAS_PLANTA.some((a) => a === n);

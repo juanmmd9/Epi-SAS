@@ -163,8 +163,10 @@ function Mtre045Page() {
           r.id === datos.preventivoId ? { ...r, datos: datosGuardados } : r,
         ),
       );
-      setDatos((previos) => ({ ...previos, numeroReporte: numero }));
-      setMensaje("Datos del MT-RE-045 guardados en el registro preventivo.");
+      setDatos(formularioMtre045Vacio());
+      setMensaje(
+        "Datos del MT-RE-045 guardados. El formulario quedó en blanco para crear uno nuevo.",
+      );
     } catch (e) {
       setError("No se pudo guardar: " + (e as Error).message);
     } finally {

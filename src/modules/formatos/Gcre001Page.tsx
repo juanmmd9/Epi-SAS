@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { rutaFormatosPara } from "../../components/layout/navConfig";
 import { imprimirPdf } from "../../lib/imprimirPdf";
+import { areaUsuario } from "../../lib/usuarioArea";
+import { useAuth } from "../auth/AuthContext";
 import {
   generarPdfGcRe001,
   obtenerPdfRegistroAm,
@@ -29,6 +32,8 @@ interface EstadoNavegacion {
 
 function Gcre001Page() {
   const ubicacion = useLocation();
+  const { rol, perfil } = useAuth();
+  const volverFormatos = rutaFormatosPara(rol, areaUsuario(perfil)) ?? "/principal";
   const [datos, setDatos] = useState<RegistroAmDatos>(formularioAmVacio());
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [numeroActual, setNumeroActual] = useState<number | null>(null);
@@ -36,10 +41,9 @@ function Gcre001Page() {
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pdfPreview, setPdfPreview] = useState<string | null>(null);
+  const [vistaPdf, setVistaPdf] = useState<{ url: string; bytes: Uint8Array } | null>(null);
   const [cargandoPdfId, setCargandoPdfId] = useState<string | null>(null);
   const previewAnterior = useRef<string | null>(null);
-  const previewRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     listarAccionesMejora()
@@ -63,6 +67,15 @@ function Gcre001Page() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!vistaPdf) return;
+    function cerrarConEscape(evento: KeyboardEvent) {
+      if (evento.key === "Escape") cerrarVistaPrevia();
+    }
+    window.addEventListener("keydown", cerrarConEscape);
+    return () => window.removeEventListener("keydown", cerrarConEscape);
+  }, [vistaPdf]);
+
   function actualizarDatos(cambios: Partial<RegistroAmDatos>) {
     setDatos((previos) => ({ ...previos, ...cambios }));
   }
@@ -78,7 +91,7 @@ function Gcre001Page() {
   function cerrarVistaPrevia() {
     if (previewAnterior.current) URL.revokeObjectURL(previewAnterior.current);
     previewAnterior.current = null;
-    setPdfPreview(null);
+    setVistaPdf(null);
   }
 
   function nuevoRegistro() {
@@ -97,10 +110,7 @@ function Gcre001Page() {
     if (previewAnterior.current) URL.revokeObjectURL(previewAnterior.current);
     const url = urlVistaPreviaPdf(pdfBytes);
     previewAnterior.current = url;
-    setPdfPreview(url);
-    requestAnimationFrame(() => {
-      previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    setVistaPdf({ url, bytes: pdfBytes });
   }
 
   async function manejarGuardar(evento: FormEvent) {
@@ -120,10 +130,9 @@ function Gcre001Page() {
         const sinActual = previos.filter((r) => r.id !== registro.id);
         return [registro, ...sinActual];
       });
-      setEditandoId(registro.id);
-      setNumeroActual(registro.numero);
+      nuevoRegistro();
       setMensaje(
-        `Registro No. ${registro.numero} guardado. Use «Imprimir formato» y archive el documento firmado.`,
+        `Registro No. ${registro.numero} guardado. El formulario quedó en blanco para crear uno nuevo.`,
       );
     } catch (e) {
       setError("No fue posible guardar: " + (e as Error).message);
@@ -132,33 +141,32 @@ function Gcre001Page() {
     }
   }
 
-  async function manejarImprimir() {
+  async function visualizarFormulario() {
     setError(null);
-    if (!numeroActual) {
-      setError("Guarda el registro primero para obtener el número oficial antes de imprimir.");
-      return;
-    }
     setCargandoPdfId(editandoId ?? "formulario");
     try {
-      const pdfBytes = await generarPdfGcRe001(datos, numeroActual);
+      const pdfBytes = await generarPdfGcRe001(datos, numeroActual ?? 0);
       mostrarPreview(pdfBytes);
-      imprimirPdf(pdfBytes);
     } catch (e) {
-      setError("No se pudo generar el formato para imprimir: " + (e as Error).message);
+      setError("No se pudo mostrar el formato: " + (e as Error).message);
     } finally {
       setCargandoPdfId(null);
     }
   }
 
-  async function imprimirRegistro(registro: RegistroAm) {
+  function imprimirVista() {
+    if (!vistaPdf) return;
+    imprimirPdf(vistaPdf.bytes);
+  }
+
+  async function visualizarRegistro(registro: RegistroAm) {
     setError(null);
     setCargandoPdfId(registro.id);
     try {
       const pdfBytes = await obtenerPdfRegistroAm(registro);
       mostrarPreview(pdfBytes);
-      imprimirPdf(pdfBytes);
     } catch (e) {
-      setError("No se pudo generar el formato para imprimir: " + (e as Error).message);
+      setError("No se pudo mostrar el formato: " + (e as Error).message);
     } finally {
       setCargandoPdfId(null);
     }
@@ -176,31 +184,33 @@ function Gcre001Page() {
   }
 
   return (
-    <section className="formatos">
+    <section className="formatos gc001-pagina">
       <header className="formatos__cabecera">
         <div>
-          <Link to="/formatos" className="btn">← Volver a formatos</Link>
+          <Link to={volverFormatos} className="btn">← Volver a formatos</Link>
           <h1>GC-RE-001 — Acciones de mejora</h1>
           <p className="formatos__descripcion">
-            Complete el formulario y pulse <strong>Guardar</strong>. Los datos quedan en el
-            sistema; use <strong>Imprimir formato</strong> para obtener el documento oficial.
+            Completa el formulario y pulsa <strong>Visualizar</strong>. Desde ahí puedes imprimir o
+            cerrar. <strong>Guardar</strong> deja el registro en el sistema y el formulario en blanco.
           </p>
         </div>
-        <button type="button" className="btn" onClick={nuevoRegistro}>
-          Nuevo registro
-        </button>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => {
-            setEditandoId(null);
-            setNumeroActual(null);
-            setDatos(prefillDesdeProyectoPortal());
-            setMensaje("Presentación del Portal de Mantenimiento cargada. Revise, guarde e imprima.");
-          }}
-        >
-          Cargar presentación proyecto
-        </button>
+        <div className="formatos__cabecera-acciones">
+          <button type="button" className="btn" onClick={nuevoRegistro}>
+            Nuevo registro
+          </button>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setEditandoId(null);
+              setNumeroActual(null);
+              setDatos(prefillDesdeProyectoPortal());
+              setMensaje("Presentación del Portal de Mantenimiento cargada. Revísala y guárdala.");
+            }}
+          >
+            Cargar presentación proyecto
+          </button>
+        </div>
       </header>
 
       {datos.origenRiesgo && (
@@ -210,7 +220,7 @@ function Gcre001Page() {
         </p>
       )}
 
-      <div className="formatos__layout">
+      <div className="formatos__layout formatos__layout--formulario">
         <div className="formatos__formulario">
           <form className="gcre-form" onSubmit={(e) => void manejarGuardar(e)}>
             <h3 className="gcre-form__seccion">Información general</h3>
@@ -437,6 +447,7 @@ function Gcre001Page() {
 
             <fieldset>
               <legend>Plan de acción</legend>
+              <div className="gc001-tabla">
               <table className="gcre-form__tabla">
                 <thead>
                   <tr>
@@ -494,6 +505,7 @@ function Gcre001Page() {
                   ))}
                 </tbody>
               </table>
+              </div>
               <button
                 type="button"
                 className="btn"
@@ -546,18 +558,16 @@ function Gcre001Page() {
             </fieldset>
 
             <div className="gcre-form__acciones">
-              <button type="submit" className="btn btn--primario" disabled={guardando}>
-                {guardando ? "Guardando..." : editandoId ? "Guardar cambios" : "Guardar"}
-              </button>
               <button
                 type="button"
-                className="btn"
+                className="btn btn--primario"
                 disabled={guardando || cargandoPdfId === (editandoId ?? "formulario")}
-                onClick={() => void manejarImprimir()}
+                onClick={() => void visualizarFormulario()}
               >
-                {cargandoPdfId === (editandoId ?? "formulario")
-                  ? "Generando..."
-                  : "Imprimir formato"}
+                {cargandoPdfId === (editandoId ?? "formulario") ? "Abriendo..." : "Visualizar"}
+              </button>
+              <button type="submit" className="btn" disabled={guardando}>
+                {guardando ? "Guardando..." : editandoId ? "Guardar cambios" : "Guardar"}
               </button>
             </div>
           </form>
@@ -566,7 +576,7 @@ function Gcre001Page() {
           {error && <p className="formatos__mensaje formatos__mensaje--error">{error}</p>}
         </div>
 
-        <aside className="formatos__lista">
+        <aside className="formatos__lista gc001-registros">
           <h2>Registros guardados</h2>
           {registros.length === 0 && (
             <p className="formatos__vacio">Aún no hay registros GC-RE-001.</p>
@@ -584,11 +594,11 @@ function Gcre001Page() {
               </div>
               <div className="item-nc__acciones">
                 <button
-                  className="btn"
+                  className="btn btn--primario"
                   disabled={cargandoPdfId === registro.id}
-                  onClick={() => void imprimirRegistro(registro)}
+                  onClick={() => void visualizarRegistro(registro)}
                 >
-                  {cargandoPdfId === registro.id ? "Generando..." : "Imprimir"}
+                  {cargandoPdfId === registro.id ? "Abriendo..." : "Visualizar"}
                 </button>
                 <button className="btn" onClick={() => cargarRegistro(registro)}>
                   Editar
@@ -602,28 +612,25 @@ function Gcre001Page() {
         </aside>
       </div>
 
-      {pdfPreview && (
-        <section className="formatos__preview" ref={previewRef}>
-          <div className="formatos__preview-cabecera">
-            <h2>Vista previa para impresión</h2>
-            <a className="btn" href={pdfPreview} target="_blank" rel="noreferrer">
-              Abrir en pestaña nueva
-            </a>
+      {vistaPdf && (
+        <div className="gc001-vista" role="dialog" aria-modal="true" aria-label="Vista del GC-RE-001">
+          <div className="gc001-vista__barra">
+            <h2>GC-RE-001</h2>
+            <div className="gc001-vista__acciones">
+              <button type="button" className="btn btn--primario" onClick={imprimirVista}>
+                Imprimir
+              </button>
+              <button type="button" className="btn" onClick={cerrarVistaPrevia}>
+                Cerrar
+              </button>
+            </div>
           </div>
-          <object
-            data={pdfPreview}
-            type="application/pdf"
-            className="formatos__preview-doc"
-          >
-            <p>
-              Tu navegador no puede mostrar el PDF aquí.{" "}
-              <a href={pdfPreview} target="_blank" rel="noreferrer">
-                Ábrelo en una pestaña nueva
-              </a>
-              .
-            </p>
-          </object>
-        </section>
+          <div className="gc001-vista__hoja">
+            <object data={vistaPdf.url} type="application/pdf" className="gc001-vista__pdf">
+              <p>No se pudo mostrar el formato en esta pantalla.</p>
+            </object>
+          </div>
+        </div>
       )}
     </section>
   );

@@ -706,6 +706,69 @@
   background: #fff;
 }
 
+.gc001-pagina .formatos__layout {
+  grid-template-columns: 1fr;
+}
+
+.gc001-registros {
+  margin-top: 1.25rem;
+  position: static;
+  max-height: none;
+}
+
+.gc001-tabla {
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+
+.gc001-vista {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.55);
+  padding: 1rem;
+}
+
+.gc001-vista__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: #fff;
+  border-radius: 12px 12px 0 0;
+  padding: 0.75rem 1rem;
+}
+
+.gc001-vista__barra h2 {
+  margin: 0;
+}
+
+.gc001-vista__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.gc001-vista__hoja {
+  flex: 1;
+  min-height: 0;
+  background: #e2e8f0;
+  border-radius: 0 0 12px 12px;
+  padding: 0.75rem;
+}
+
+.gc001-vista__pdf {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 70vh;
+  border: 0;
+  background: #fff;
+}
+
 .evidencia-visor {
   position: fixed;
   inset: 0;

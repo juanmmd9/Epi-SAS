@@ -250,19 +250,12 @@ function Ghre030Page() {
         const filtrados = previos.filter((p) => p.id !== registro.id);
         return [registro, ...filtrados];
       });
-      if (puedeAprobar) {
-        setEditandoId(registro.id);
-        setNumeroActual(registro.numero);
-        setEstado(registro.estado);
-        setDatos(registro.datos);
-        setMensaje(`Permiso GH-RE-030 No. ${registro.numero} guardado.`);
-      } else {
-        // Operador: tras enviar no queda en edición; solo puede crear otra o anular la pendiente.
-        limpiarFormulario();
-        setMensaje(
-          `Solicitud No. ${registro.numero} enviada. Ya no puedes modificarla; si te equivocaste, anúlala mientras esté pendiente.`,
-        );
-      }
+      limpiarFormulario();
+      setMensaje(
+        puedeAprobar
+          ? `Permiso GH-RE-030 No. ${registro.numero} guardado. El formulario quedó en blanco para crear uno nuevo.`
+          : `Solicitud No. ${registro.numero} enviada. El formulario quedó en blanco para crear otra. Si te equivocaste, anúlala mientras esté pendiente.`,
+      );
     } catch (e) {
       const msg = (e as Error).message;
       if (/permisos_personal_estado_check|check constraint/i.test(msg)) {

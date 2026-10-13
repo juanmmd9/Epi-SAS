@@ -14,7 +14,9 @@ function FormatosTejidosPage() {
   return (
     <section className="formatos">
       <h1>Formatos</h1>
-      <p className="tj-formatos__descripcion">Formatos del área de Tejidos.</p>
+      <p className="tj-formatos__descripcion">
+        Formatos generales del SGC y los propios de Tejidos.
+      </p>
 
       <article className="formato-card">
         <h2>Reporte de producción</h2>
@@ -28,10 +30,26 @@ function FormatosTejidosPage() {
       </article>
 
       <article className="formato-card">
-        <h2>Gestión del cambio</h2>
-        <p>GC-RE-027. Registra el cambio, revísalo en vista previa, modifícalo e imprímelo.</p>
+        <h2>GC-RE-001</h2>
+        <p>Acciones de mejora del SGC. Oportunidades de mejora, evaluación y plan de acción.</p>
+        <Link to="/formatos/gc-re-001" className="btn btn--primario">
+          Abrir formato GC-RE-001
+        </Link>
+      </article>
+
+      <article className="formato-card">
+        <h2>GC-RE-009</h2>
+        <p>No conformidades y acciones correctivas.</p>
+        <Link to="/formatos/gc-re-009" className="btn btn--primario">
+          Abrir formato GC-RE-009
+        </Link>
+      </article>
+
+      <article className="formato-card">
+        <h2>GC-RE-027</h2>
+        <p>Gestión del cambio. Registra el cambio, revísalo, modifícalo e imprímelo.</p>
         <Link to="/formatos/gc-re-027" className="btn btn--primario">
-          Abrir gestión del cambio
+          Abrir formato GC-RE-027
         </Link>
       </article>
     </section>

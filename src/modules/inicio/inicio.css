@@ -547,16 +547,16 @@
 .cita__asignar-btn {
   font-size: 0.72rem;
   font-weight: 600;
-  max-width: 9.5rem;
+  max-width: 16rem;
   padding: 0.2rem 0.45rem;
   border-radius: 6px;
   border: 1px solid var(--color-borde);
   background: #fff;
   color: var(--color-texto-suave);
   cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
 }
 
 .cita__asignar-btn--activo {
@@ -627,11 +627,10 @@
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--color-primario);
-  white-space: nowrap;
-  flex-shrink: 0;
-  max-width: 9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  line-height: 1.25;
+  flex-shrink: 1;
+  max-width: 16rem;
 }
 
 .cita {

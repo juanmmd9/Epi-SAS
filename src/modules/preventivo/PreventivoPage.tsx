@@ -497,7 +497,7 @@ function PreventivoPage() {
         );
         setRegistros(ordenarRegistrosPreventivo(listaFinal));
         setMensaje(
-          "Registro actualizado y enviado al líder de área para firmar el MT-RE-045. El cronograma se marcará cumplido al aprobar.",
+          "Registro actualizado y enviado al líder de área para firmar el MT-RE-045. El formulario quedó en blanco para crear uno nuevo.",
         );
         cancelarEdicion();
       } else {
@@ -531,10 +531,9 @@ function PreventivoPage() {
           calcularMapaNumerosReporte(listaFinal),
         );
         setRegistros(ordenarRegistrosPreventivo(listaFinal));
-        setEditandoId(actualizado.id);
-        setFirmaOperador(actualizado.datos.mtre045?.firmaMantenimiento ?? firmaOperador);
+        cancelarEdicion();
         setMensaje(
-          "Registro enviado al líder de área para aprobar/firmar el MT-RE-045. Hasta que lo apruebe, el cronograma lo verá pendiente.",
+          "Registro enviado al líder de área para aprobar/firmar el MT-RE-045. El formulario quedó en blanco para crear uno nuevo.",
         );
       }
     } catch (e) {

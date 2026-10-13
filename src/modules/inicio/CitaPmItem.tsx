@@ -57,11 +57,7 @@ function CitaPmItem({
     .map((id) => mapaNombres.get(id))
     .filter(Boolean) as string[];
   const etiquetaAsignados =
-    nombresAsignados.length === 0
-      ? "Sin asignar"
-      : nombresAsignados.length === 1
-        ? nombresAsignados[0]
-        : `${nombresAsignados.length} operarios`;
+    nombresAsignados.length === 0 ? "Sin asignar" : nombresAsignados.join(", ");
 
   function actualizarPosicion() {
     const btn = btnRef.current;

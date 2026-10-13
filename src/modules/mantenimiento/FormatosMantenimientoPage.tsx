@@ -8,10 +8,26 @@ function FormatosMantenimientoPage() {
       <p className="formatos__descripcion">Formatos del área de Mantenimiento.</p>
 
       <article className="formato-card">
-        <h2>Gestión del cambio</h2>
-        <p>GC-RE-027. Registra el cambio, revísalo en vista previa, modifícalo e imprímelo.</p>
+        <h2>GC-RE-001</h2>
+        <p>Acciones de mejora del SGC.</p>
+        <Link to="/formatos/gc-re-001" className="btn btn--primario">
+          Abrir formato GC-RE-001
+        </Link>
+      </article>
+
+      <article className="formato-card">
+        <h2>GC-RE-009</h2>
+        <p>No conformidades y acciones correctivas.</p>
+        <Link to="/formatos/gc-re-009" className="btn btn--primario">
+          Abrir formato GC-RE-009
+        </Link>
+      </article>
+
+      <article className="formato-card">
+        <h2>GC-RE-027</h2>
+        <p>Gestión del cambio.</p>
         <Link to="/formatos/gc-re-027" className="btn btn--primario">
-          Abrir gestión del cambio
+          Abrir formato GC-RE-027
         </Link>
       </article>
     </section>

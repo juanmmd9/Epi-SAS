@@ -94,7 +94,7 @@ function escribirPagina1(
     font: bold,
   });
   y += 22;
-  drawText(page, `No. ${numero}  ·  Fecha de registro: ${formatearFecha(datos.fechaRegistro)}`, {
+  drawText(page, `No. ${numero > 0 ? numero : "—"}  ·  Fecha de registro: ${formatearFecha(datos.fechaRegistro)}`, {
     x: MARGIN,
     y: yTop(y, 8),
     size: 8,

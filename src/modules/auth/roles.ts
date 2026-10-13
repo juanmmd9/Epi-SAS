@@ -129,7 +129,6 @@ export const ENLACES_NAV: EnlaceNav[] = [
   { ruta: "/hojas-de-vida", texto: "Hojas de vida", permiso: "ver.hojas" },
   { ruta: "/computadores", texto: "Computadores", permiso: "ver.computadores" },
   { ruta: "/indicadores", texto: "Indicadores", permiso: "ver.indicadores" },
-  { ruta: "/formatos", texto: "Formatos", permiso: "ver.formatos" },
   { ruta: "/personal", texto: "Personal", permiso: "ver.personal" },
   { ruta: "/personal/usuarios", texto: "Usuarios portal", permiso: "gestionar.usuarios" },
   { ruta: "/personal/permisos", texto: "Permisos", permiso: "ver.permisos" },

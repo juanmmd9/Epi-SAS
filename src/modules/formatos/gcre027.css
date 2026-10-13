@@ -133,7 +133,8 @@
 }
 
 .gc027-carta__cuerpo {
-  height: 58px;
+  height: auto;
+  min-height: 72px;
   vertical-align: top;
   white-space: pre-wrap;
   font-weight: 400;

@@ -122,6 +122,28 @@ export function rutaVisibleParaArea(
   );
 }
 
+/** El perfil abre Principal y por eso Formatos vive ahí, no en el menú. */
+export function vePrincipal(
+  rol: RolPortal | null | undefined,
+  area?: string | null,
+): boolean {
+  return puede(rol, "ver.inicio") && rutaVisibleParaArea(rol, area, "/principal");
+}
+
+/** Página de formatos según el perfil. Los operarios no tienen este acceso. */
+export function rutaFormatosPara(
+  rol: RolPortal | null | undefined,
+  area?: string | null,
+): string | null {
+  if (!rol || rol === "operador") return null;
+  if (puede(rol, "ver.formatos")) return "/formatos";
+  if (area && coincideArea(area, "Tejidos")) return "/tejidos/formatos";
+  if ((area && coincideArea(area, "Mantenimiento")) || (rol === "admin" && !area)) {
+    return "/mantenimiento/formatos";
+  }
+  return "/area/formatos";
+}
+
 export function enlaceVisibleParaArea(
   rol: RolPortal | null | undefined,
   area: string | null | undefined,
@@ -169,21 +191,16 @@ export function itemsNavParaRol(
   const esTejidos = Boolean(area && coincideArea(area, "Tejidos"));
   const esMantenimiento =
     Boolean(area && coincideArea(area, "Mantenimiento")) || (rol === "admin" && !area);
-  const yaTieneFormatos = todos.some((item) => item.ruta === "/formatos");
-  const rutaFormatosArea = esTejidos
-    ? "/tejidos/formatos"
-    : esMantenimiento
-      ? "/mantenimiento/formatos"
-      : "/area/formatos";
+  const destinoFormatos = rutaFormatosPara(rol, area);
   if (
-    rol !== "operador" &&
-    !yaTieneFormatos &&
-    !todos.some((item) => item.ruta === rutaFormatosArea)
+    destinoFormatos &&
+    !vePrincipal(rol, area) &&
+    !todos.some((item) => item.ruta === destinoFormatos)
   ) {
     todos = [
       ...todos,
       enriquecer({
-        ruta: rutaFormatosArea,
+        ruta: destinoFormatos,
         texto: "Formatos",
         permiso: "ver.inicio",
       }),
@@ -196,35 +213,16 @@ export function itemsNavParaRol(
     ? (["/diseno/tablero", "/area/formatos"] as const)
     : esTejidos
     ? rol === "lider"
-      ? (["/principal", "/inicio", "/tejidos/formatos", "/preventivo/aprobaciones", "/tablero"] as const)
-      : (["/principal", "/inicio", "/tejidos/formatos", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
+      ? (["/principal", "/inicio", "/preventivo/aprobaciones", "/tablero"] as const)
+      : (["/principal", "/inicio", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
     : esMantenimiento
       ? rol === "lider" || rol === "admin"
-        ? ([
-            "/principal",
-            "/inicio",
-            yaTieneFormatos ? "/formatos" : "/mantenimiento/formatos",
-            "/preventivo/aprobaciones",
-            "/tablero",
-          ] as const)
-        : ([
-            "/principal",
-            "/inicio",
-            yaTieneFormatos ? "/formatos" : "/mantenimiento/formatos",
-            "/solicitudes",
-            "/preventivo",
-            "/hojas-de-vida",
-          ] as const)
+        ? (["/principal", "/inicio", "/preventivo/aprobaciones", "/tablero"] as const)
+        : (["/principal", "/inicio", "/solicitudes", "/preventivo", "/hojas-de-vida"] as const)
       : rol === "lider"
         ? PRIORIDAD_TABS_LIDER
         : PRIORIDAD_TABS;
-  const prioridad = esAuxiliarDiseno
-    ? prioridadBase
-    : yaTieneFormatos && !esMantenimiento
-      ? prioridadBase
-      : esTejidos || esMantenimiento
-        ? prioridadBase
-        : ["/principal", "/inicio", "/area/formatos", ...prioridadBase.filter((ruta) => ruta !== "/inicio" && ruta !== "/principal")];
+  const prioridad = prioridadBase;
 
   for (const ruta of prioridad) {
     if (tabs.length >= 3) break;
