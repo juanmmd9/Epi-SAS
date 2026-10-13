@@ -40,6 +40,8 @@ export interface OrigenIndicadorRef {
 }
 
 export interface RegistroNcDatos {
+  /** Área del portal que creó el registro. No es el área del hallazgo. */
+  areaPortal?: string;
   area: string;
   fechaDeteccion: string;
   origen: OrigenNc;
@@ -127,6 +129,7 @@ export function normalizarDatosNc(parcial: Partial<RegistroNcDatos>): RegistroNc
   return {
     ...base,
     ...parcial,
+    areaPortal: parcial.areaPortal || undefined,
     planAccion:
       parcial.planAccion?.length ? parcial.planAccion : base.planAccion,
     seguimientoFilas:

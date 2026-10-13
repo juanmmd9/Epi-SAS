@@ -1,25 +1,25 @@
+import { coincideArea } from "../../lib/areas";
 import { supabase } from "../../services/supabase";
 import type { RegistroGc027, RegistroGc027Datos } from "./gcre027Types";
 
 const TABLA = "gestion_cambio";
 
-/** El administrador del portal, sin área propia, trabaja los registros de Mantenimiento. */
+/** El administrador de mantenimiento ve y guarda sus registros solo en Mantenimiento. */
 export function areaDeGestionCambio(
   area: string | null,
   rol: string | null | undefined,
 ): string | null {
-  if (area) return area;
   if (rol === "admin") return "Mantenimiento";
-  return null;
+  return area;
 }
 
 export async function listarGestionCambio(area: string | null): Promise<RegistroGc027[]> {
   if (!area) return [];
-  const { data, error } = await supabase
-    .from(TABLA)
-    .select("*")
-    .eq("area", area)
-    .order("numero", { ascending: false });
+  let consulta = supabase.from(TABLA).select("*").order("numero", { ascending: false });
+  consulta = coincideArea(area, "Mantenimiento")
+    ? consulta.or(`area.eq.${area},area.is.null`)
+    : consulta.eq("area", area);
+  const { data, error } = await consulta;
   if (error) throw new Error(error.message);
   return (data ?? []) as RegistroGc027[];
 }

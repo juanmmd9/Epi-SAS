@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import VisorWord from "../../components/VisorWord";
 import { rutaFormatosPara } from "../../components/layout/navConfig";
 import { AREAS_SISTEMA } from "../../lib/areas";
-import { areaUsuario } from "../../lib/usuarioArea";
+import { areaPortalDelPerfil, areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import { imprimirPdf } from "../../lib/imprimirPdf";
 import { rutaPublica } from "../../lib/rutaPublica";
@@ -73,6 +73,7 @@ function etiquetaOrigen(clave: string): string {
 function Gcre009Page() {
   const ubicacion = useLocation();
   const { rol, perfil } = useAuth();
+  const area = areaPortalDelPerfil(perfil);
   const volverFormatos = rutaFormatosPara(rol, areaUsuario(perfil)) ?? "/principal";
   const [datos, setDatos] = useState<RegistroNcDatos>(formularioNcVacio());
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -89,10 +90,14 @@ function Gcre009Page() {
   const previewRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    listarNoConformidades()
+    if (!area) {
+      setRegistros([]);
+      return;
+    }
+    listarNoConformidades(area)
       .then(setRegistros)
       .catch((e: Error) => setError("No se pudieron cargar los registros: " + e.message));
-  }, []);
+  }, [area]);
 
   useEffect(() => {
     const estado = ubicacion.state as EstadoNavegacion | null;
@@ -164,6 +169,10 @@ function Gcre009Page() {
     setError(null);
     setMensaje(null);
 
+    if (!area) {
+      setError("No hay un área para guardar este formato.");
+      return;
+    }
     if (!datos.area || !datos.fechaDeteccion || !datos.descripcion.trim()) {
       setError("Completa área, fecha de detección y descripción.");
       return;
@@ -171,7 +180,7 @@ function Gcre009Page() {
 
     setGuardando(true);
     try {
-      const registro = await guardarNoConformidad(datos, editandoId);
+      const registro = await guardarNoConformidad(datos, editandoId, area);
       setRegistros((previos) => {
         const sinActual = previos.filter((r) => r.id !== registro.id);
         return [registro, ...sinActual];
@@ -222,7 +231,8 @@ function Gcre009Page() {
   async function guardarEvidencias(registro: RegistroNc, evidencias: EvidenciaNc[]) {
     const base =
       editandoId === registro.id ? datos : normalizarDatosNc(registro.datos);
-    const actualizado = await guardarNoConformidad({ ...base, evidencias }, registro.id);
+    if (!area) throw new Error("No hay un área para guardar este formato.");
+    const actualizado = await guardarNoConformidad({ ...base, evidencias }, registro.id, area);
     setRegistros((previos) =>
       previos.map((item) => (item.id === actualizado.id ? actualizado : item)),
     );

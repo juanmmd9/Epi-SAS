@@ -1,3 +1,4 @@
+import { registroPerteneceAlArea } from "../../lib/usuarioArea";
 import { supabase } from "../../services/supabase";
 import { normalizarDatosNc, type RegistroNc, type RegistroNcDatos } from "./types";
 
@@ -9,13 +10,16 @@ function normalizarRegistro(fila: RegistroNc): RegistroNc {
   return { ...fila, datos: normalizarDatosNc(fila.datos ?? {}) };
 }
 
-export async function listarNoConformidades(): Promise<RegistroNc[]> {
+export async function listarNoConformidades(area: string | null): Promise<RegistroNc[]> {
+  if (!area) return [];
   const { data, error } = await supabase
     .from(TABLA)
     .select("*")
     .order("numero", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((fila) => normalizarRegistro(fila as RegistroNc));
+  return (data ?? [])
+    .map((fila) => normalizarRegistro(fila as RegistroNc))
+    .filter((registro) => registroPerteneceAlArea(registro.datos.areaPortal, area));
 }
 
 export async function subirEvidenciaNc(archivo: File): Promise<string> {
@@ -43,11 +47,13 @@ export async function subirEvidenciaNc(archivo: File): Promise<string> {
 export async function guardarNoConformidad(
   datos: RegistroNcDatos,
   editandoId: string | null,
+  areaPortal: string,
 ): Promise<RegistroNc> {
+  const conArea = { ...datos, areaPortal };
   if (editandoId) {
     const { data, error } = await supabase
       .from(TABLA)
-      .update({ datos })
+      .update({ datos: conArea })
       .eq("id", editandoId)
       .select()
       .single();
@@ -55,7 +61,7 @@ export async function guardarNoConformidad(
     return normalizarRegistro(data as RegistroNc);
   }
 
-  const { data, error } = await supabase.from(TABLA).insert({ datos }).select().single();
+  const { data, error } = await supabase.from(TABLA).insert({ datos: conArea }).select().single();
   if (error) throw new Error(error.message);
   return normalizarRegistro(data as RegistroNc);
 }

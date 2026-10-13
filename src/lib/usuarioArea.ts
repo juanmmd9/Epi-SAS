@@ -22,6 +22,21 @@ export function areaUsuario(perfil: UsuarioPortal | null | undefined): string | 
   return esAreaValida(canonica) ? canonica : null;
 }
 
+/** Área dueña de un formato. El administrador de mantenimiento siempre queda en Mantenimiento. */
+export function areaPortalDelPerfil(perfil: UsuarioPortal | null | undefined): string | null {
+  if (perfil?.rol === "admin") return "Mantenimiento";
+  return areaUsuario(perfil);
+}
+
+/** Un registro sin área queda en Mantenimiento: lo llenó el administrador. */
+export function registroPerteneceAlArea(
+  areaGuardada: string | null | undefined,
+  areaVista: string,
+): boolean {
+  const dueno = areaGuardada?.trim() || "Mantenimiento";
+  return coincideArea(dueno, areaVista);
+}
+
 /** Todos los roles autenticados ven el tablero de áreas. */
 export function usuarioVeTodasLasAreas(perfil: UsuarioPortal | null | undefined): boolean {
   return Boolean(perfil);

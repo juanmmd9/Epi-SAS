@@ -25,6 +25,8 @@ export interface OrigenRiesgoRef {
 }
 
 export interface RegistroAmDatos {
+  /** Área del portal que creó el registro. */
+  areaPortal?: string;
   fechaRegistro: string;
   proceso: string;
   responsableProceso: string;
@@ -110,6 +112,7 @@ export function normalizarDatosAm(parcial: Partial<RegistroAmDatos>): RegistroAm
   return {
     ...base,
     ...parcial,
+    areaPortal: parcial.areaPortal || undefined,
     planAccion: parcial.planAccion?.length ? parcial.planAccion : base.planAccion,
   };
 }

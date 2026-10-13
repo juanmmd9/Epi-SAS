@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { rutaFormatosPara } from "../../components/layout/navConfig";
 import { imprimirPdf } from "../../lib/imprimirPdf";
-import { areaUsuario } from "../../lib/usuarioArea";
+import { areaPortalDelPerfil, areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import {
   generarPdfGcRe001,
@@ -33,6 +33,7 @@ interface EstadoNavegacion {
 function Gcre001Page() {
   const ubicacion = useLocation();
   const { rol, perfil } = useAuth();
+  const area = areaPortalDelPerfil(perfil);
   const volverFormatos = rutaFormatosPara(rol, areaUsuario(perfil)) ?? "/principal";
   const [datos, setDatos] = useState<RegistroAmDatos>(formularioAmVacio());
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -46,10 +47,14 @@ function Gcre001Page() {
   const previewAnterior = useRef<string | null>(null);
 
   useEffect(() => {
-    listarAccionesMejora()
+    if (!area) {
+      setRegistros([]);
+      return;
+    }
+    listarAccionesMejora(area)
       .then(setRegistros)
       .catch((e: Error) => setError("No se pudieron cargar los registros: " + e.message));
-  }, []);
+  }, [area]);
 
   useEffect(() => {
     const estado = ubicacion.state as EstadoNavegacion | null;
@@ -118,6 +123,10 @@ function Gcre001Page() {
     setError(null);
     setMensaje(null);
 
+    if (!area) {
+      setError("No hay un área para guardar este formato.");
+      return;
+    }
     if (!datos.proceso || !datos.fechaRegistro || !datos.descripcion.trim()) {
       setError("Completa proceso, fecha de registro y descripción.");
       return;
@@ -125,7 +134,7 @@ function Gcre001Page() {
 
     setGuardando(true);
     try {
-      const registro = await guardarAccionMejora(datos, editandoId);
+      const registro = await guardarAccionMejora(datos, editandoId, area);
       setRegistros((previos) => {
         const sinActual = previos.filter((r) => r.id !== registro.id);
         return [registro, ...sinActual];

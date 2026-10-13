@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { areaUsuario } from "../../lib/usuarioArea";
+import { areaPortalDelPerfil } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
 import { listarAccionesMejora } from "./gcre001Service";
 import type { RegistroAm } from "./gcre001Types";
-import { areaDeGestionCambio, listarGestionCambio } from "./gcre027Service";
+import { listarGestionCambio } from "./gcre027Service";
 import type { RegistroGc027 } from "./gcre027Types";
 import { listarNoConformidades } from "./formatosService";
 import type { RegistroNc } from "./types";
 import "./formatos.css";
 
 function FormatosPage() {
-  const { perfil, rol } = useAuth();
-  const area = areaDeGestionCambio(areaUsuario(perfil), rol);
+  const { perfil } = useAuth();
+  const area = areaPortalDelPerfil(perfil);
   const [registros, setRegistros] = useState<RegistroNc[]>([]);
   const [mejoras, setMejoras] = useState<RegistroAm[]>([]);
   const [cambios, setCambios] = useState<RegistroGc027[]>([]);
@@ -20,8 +20,8 @@ function FormatosPage() {
 
   useEffect(() => {
     Promise.all([
-      listarNoConformidades(),
-      listarAccionesMejora(),
+      listarNoConformidades(area),
+      listarAccionesMejora(area),
       listarGestionCambio(area).catch(() => [] as RegistroGc027[]),
     ])
       .then(([nc, am, gc]) => {
