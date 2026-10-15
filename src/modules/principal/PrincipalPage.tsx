@@ -15,7 +15,7 @@ import { PROCEDIMIENTOS_REALIZADOS, type ProcedimientoPortal } from "./procedimi
 import "./principal.css";
 
 function PrincipalPage() {
-  const { perfil } = useAuth();
+  const { perfil, esAdmin } = useAuth();
   const area = areaUsuario(perfil);
   const rutaFormatos = rutaFormatosPara(perfil?.rol, area);
   const esProduccion = esAreaProduccion(area);
@@ -50,13 +50,15 @@ function PrincipalPage() {
             </div>
           </Link>
         ) : null}
-        <Link to="/principal/caracterizacion" className="principal__card">
-          <img src={imagenCaracterizacion} alt="" />
-          <div className="principal__card-texto">
-            <h2>Caracterización</h2>
-            <p>Proceso de mantenimiento y sus requisitos normativos.</p>
-          </div>
-        </Link>
+        {esAdmin ? (
+          <Link to="/principal/caracterizacion" className="principal__card">
+            <img src={imagenCaracterizacion} alt="" />
+            <div className="principal__card-texto">
+              <h2>Caracterización</h2>
+              <p>Proceso de mantenimiento y sus requisitos normativos.</p>
+            </div>
+          </Link>
+        ) : null}
         <Link to="/principal/direccionamiento" className="principal__card">
           <img src={imagenDireccionamiento} alt="" />
           <div className="principal__card-texto">

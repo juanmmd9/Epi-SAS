@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import {
   CARACTERIZACION,
   FLUJO,
@@ -9,7 +10,12 @@ import {
 import "./principal.css";
 
 function CaracterizacionPage() {
+  const { esAdmin } = useAuth();
   const [requisito, setRequisito] = useState<RequisitoNormativo | null>(null);
+
+  if (!esAdmin) {
+    return <Navigate to="/principal" replace />;
+  }
 
   function elegir(siguiente: RequisitoNormativo) {
     setRequisito(siguiente);
