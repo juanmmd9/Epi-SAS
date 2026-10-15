@@ -289,6 +289,12 @@
   min-height: 2.4rem;
 }
 
+.mtre045-preview__subtitulo-bloque {
+  margin: 0.45rem 0 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .mtre045-preview__lista-num {
   margin: 0;
   padding-left: 1.35rem;

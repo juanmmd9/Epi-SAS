@@ -140,51 +140,57 @@ export async function generarPdfMtre045(datos: Mtre045Datos): Promise<Uint8Array
   });
   y += 20;
 
-  const dibujarBloque3Col = (titulo: string, v1: string, v2: string, v3: string, alto: number) => {
+  const textoSinMarcaVacia = (valor: string | undefined): string => {
+    const limpio = (valor ?? "").trim();
+    const plano = limpio
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+    if (!limpio || plano === "na" || plano === "noaplica") return "";
+    return limpio;
+  };
+  const unirBloque = (principal: string, extra: string) => {
+    const segundo = textoSinMarcaVacia(extra);
+    if (!segundo) return principal || "";
+    if (!(principal || "").trim()) return `Correctivo: ${segundo}`;
+    return `${principal}\nCorrectivo: ${segundo}`;
+  };
+  const dibujarBloqueAncho = (titulo: string, texto: string) => {
+    const ancho = PAGE_W - MARGIN * 2;
+    const lineas = (texto || "").slice(0, 900).match(/.{1,92}/g) ?? [];
+    const alto = Math.max(28, lineas.length * 11 + 8);
     rectBorde(page, {
       x: MARGIN,
       y: yTop(y + 14),
-      width: PAGE_W - MARGIN * 2,
+      width: ancho,
       height: 14,
     });
     page.drawText(titulo, { x: MARGIN + 4, y: yTop(y + 9, 7), size: 7, font: bold });
     y += 16;
-    [v1, v2, v3].forEach((texto, i) => {
-      const x = MARGIN + i * colW;
-      rectBorde(page, {
-        x,
-        y: yTop(y + alto),
-        width: colW,
-        height: alto,
-      });
-      const lineas = (texto || "").slice(0, 200).match(/.{1,38}/g) ?? [];
-      lineas.slice(0, 4).forEach((linea, li) => {
-        page.drawText(linea, { x: x + 4, y: yTop(y + 10 + li * 10, 8), size: 8, font });
-      });
+    rectBorde(page, {
+      x: MARGIN,
+      y: yTop(y + alto),
+      width: ancho,
+      height: alto,
+    });
+    lineas.forEach((linea, li) => {
+      page.drawText(linea, { x: MARGIN + 4, y: yTop(y + 12 + li * 11, 8), size: 8, font });
     });
     y += alto + 4;
   };
 
-  dibujarBloque3Col(
+  dibujarBloqueAncho(
     "ACTIVIDAD REALIZADA",
-    datos.actividadRealizada,
-    datos.actividadCorrectivo,
-    "",
-    52,
+    unirBloque(datos.actividadRealizada, datos.actividadCorrectivo),
   );
-  dibujarBloque3Col(
+  dibujarBloqueAncho(
     "CAMBIO DE REPUESTOS O INSUMOS",
-    datos.cambioRepuestos,
-    datos.cambioRepuestosCorrectivo,
-    "",
-    40,
+    unirBloque(datos.cambioRepuestos, datos.cambioRepuestosCorrectivo),
   );
-  dibujarBloque3Col(
+  dibujarBloqueAncho(
     "VERIFICACIÓN DEL EQUIPO",
-    datos.verificacionEquipoPm,
-    datos.verificacionCorrectivo,
-    "",
-    40,
+    unirBloque(datos.verificacionEquipoPm, datos.verificacionCorrectivo),
   );
 
   // Inspección visual / pruebas

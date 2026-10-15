@@ -54,10 +54,23 @@ function Casilla({ marcada, etiqueta }: { marcada: boolean; etiqueta: string }) 
   );
 }
 
+/** "n/a" no abre la columna de correctivo: esa raya partía el formato por la mitad. */
+function textoAporta(valor: string | undefined): string {
+  const limpio = (valor ?? "").trim();
+  if (!limpio) return "";
+  const plano = limpio
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  if (plano === "na" || plano === "noaplica") return "";
+  return limpio;
+}
+
 function lineasRepuestos(texto: string): string[] {
   const lineas = (texto || "")
     .split(/\n/)
-    .map((l) => l.trim())
+    .map((l) => textoAporta(l))
     .filter(Boolean);
   while (lineas.length < 8) lineas.push("");
   return lineas.slice(0, 8);
@@ -66,11 +79,14 @@ function lineasRepuestos(texto: string): string[] {
 function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) {
   const { dia, mes, anio } = fechaPartes(datos.fecha);
   const repuestosPm = lineasRepuestos(datos.cambioRepuestos);
-  const repuestosCorr = lineasRepuestos(datos.cambioRepuestosCorrectivo);
+  const actividadCorrectivo = textoAporta(datos.actividadCorrectivo);
+  const repuestosCorr = (datos.cambioRepuestosCorrectivo || "")
+    .split(/\n/)
+    .map((linea) => textoAporta(linea))
+    .filter(Boolean);
+  const verificacionCorrectivo = textoAporta(datos.verificacionCorrectivo);
   const marcaCorrectivo = Boolean(
-    (datos.actividadCorrectivo || "").trim() ||
-      (datos.cambioRepuestosCorrectivo || "").trim() ||
-      (datos.verificacionCorrectivo || "").trim(),
+    actividadCorrectivo || repuestosCorr.length > 0 || verificacionCorrectivo,
   );
   const marcaVerificacion = Boolean(
     datos.inspeccionVisual ||
@@ -187,17 +203,10 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
             </td>
           </tr>
           <tr>
-            <td
-              className="mtre045-preview__celda-texto mtre045-preview__celda-alta"
-              colSpan={marcaCorrectivo ? 1 : 2}
-            >
+            <td className="mtre045-preview__celda-texto mtre045-preview__celda-alta" colSpan={2}>
               {datos.actividadRealizada || ""}
+              {actividadCorrectivo ? `\n\nCorrectivo: ${actividadCorrectivo}` : ""}
             </td>
-            {marcaCorrectivo ? (
-              <td className="mtre045-preview__celda-texto mtre045-preview__celda-alta">
-                {datos.actividadCorrectivo || ""}
-              </td>
-            ) : null}
           </tr>
           <tr>
             <td colSpan={2} className="mtre045-preview__fila-titulo">
@@ -205,25 +214,23 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
             </td>
           </tr>
           <tr>
-            <td
-              className="mtre045-preview__celda-repuestos"
-              colSpan={marcaCorrectivo ? 1 : 2}
-            >
+            <td className="mtre045-preview__celda-repuestos" colSpan={2}>
               <ol className="mtre045-preview__lista-num mtre045-preview__lista-num--horizontal">
                 {repuestosPm.map((linea, i) => (
                   <li key={`pm-${i}`}>{linea || "\u00a0"}</li>
                 ))}
               </ol>
+              {repuestosCorr.length > 0 ? (
+                <>
+                  <p className="mtre045-preview__subtitulo-bloque">Correctivo</p>
+                  <ol className="mtre045-preview__lista-num mtre045-preview__lista-num--horizontal">
+                    {repuestosCorr.map((linea, i) => (
+                      <li key={`corr-${i}`}>{linea}</li>
+                    ))}
+                  </ol>
+                </>
+              ) : null}
             </td>
-            {marcaCorrectivo ? (
-              <td className="mtre045-preview__celda-repuestos">
-                <ol className="mtre045-preview__lista-num mtre045-preview__lista-num--horizontal">
-                  {repuestosCorr.map((linea, i) => (
-                    <li key={`corr-${i}`}>{linea || "\u00a0"}</li>
-                  ))}
-                </ol>
-              </td>
-            ) : null}
           </tr>
           <tr>
             <td colSpan={2} className="mtre045-preview__fila-titulo">
@@ -231,15 +238,10 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
             </td>
           </tr>
           <tr>
-            <td
-              className="mtre045-preview__celda-texto"
-              colSpan={marcaCorrectivo ? 1 : 2}
-            >
+            <td className="mtre045-preview__celda-texto" colSpan={2}>
               {datos.verificacionEquipoPm || ""}
+              {verificacionCorrectivo ? `\n\nCorrectivo: ${verificacionCorrectivo}` : ""}
             </td>
-            {marcaCorrectivo ? (
-              <td className="mtre045-preview__celda-texto">{datos.verificacionCorrectivo || ""}</td>
-            ) : null}
           </tr>
           <tr>
             <th>INSPECCIÓN VISUAL</th>
