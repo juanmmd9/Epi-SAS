@@ -1,0 +1,71 @@
+.buscador-maquina__campo {
+  position: relative;
+}
+
+.buscador-maquina input.buscador-maquina__requerido {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.buscador-maquina__ayuda {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-texto-suave);
+}
+
+.buscador-maquina__lista {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.2rem);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.buscador-maquina__lista button {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.buscador-maquina__lista button:hover {
+  background: #eff6ff;
+}
+
+.buscador-maquina__lista strong {
+  color: var(--color-primario, #1d4ed8);
+}
+
+.buscador-maquina__lista em {
+  font-style: normal;
+  font-size: 0.72rem;
+  color: #b45309;
+}
+
+.buscador-maquina__vacio {
+  padding: 0.45rem 0.5rem;
+  color: var(--color-texto-suave);
+  font-size: 0.82rem;
+}

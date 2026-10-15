@@ -44,6 +44,7 @@ import Mtre045CamposFormulario, {
 import type { Mtre045Datos } from "../formatos/mtre045Types";
 import { listarExcepciones } from "../cronograma/cronogramaService";
 import type { ExcepcionCronograma } from "../cronograma/types";
+import BuscadorMaquina from "../../components/BuscadorMaquina";
 import { ContadorListaMensual } from "../../components/ContadorListaMensual";
 import BarraBusquedaLista from "../../components/BarraBusquedaLista";
 import {
@@ -601,40 +602,26 @@ function PreventivoPage() {
             </select>
           </label>
 
-          <label>
-            Máquina *
-            <select
-              required
-              value={campos.maquinaId}
-              onChange={(e) => {
-                setFechaProgramada(null);
-                setCampos((c) => ({ ...c, maquinaId: e.target.value }));
-              }}
-            >
-              <option value="">
-                {campos.area
-                  ? maquinasDelArea.length
-                    ? "Selecciona una máquina"
-                    : "No hay máquinas en esta área"
-                  : "Selecciona primero un área"}
-              </option>
-              {maquinasDelArea.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nombre} ({m.codigo ?? "sin código"})
-                  {!hojaEstaActiva(m) ? " — inactiva" : ""}
-                </option>
-              ))}
-            </select>
-            {campos.area && maquinasDelArea.length === 0 && (
-              <span className="preventivo-form__ayuda">
-                {maquinas.length === 0
-                  ? "No hay máquinas en hojas de vida. Regístralas primero."
-                  : maquinasInactivasEnArea > 0
-                    ? `Hay ${maquinasInactivasEnArea} máquina(s) inactiva(s) en esta área. Reactívalas en Hojas de vida.`
-                    : `No hay máquinas activas en ${campos.area}. Revisa el área asignada en Hojas de vida.`}
-              </span>
-            )}
-          </label>
+          <BuscadorMaquina
+            maquinas={maquinasDelArea}
+            valorId={campos.maquinaId}
+            requerido
+            onElegir={(maquinaId) => {
+              setFechaProgramada(null);
+              setCampos((c) => ({ ...c, maquinaId }));
+            }}
+            avisoVacio={
+              !campos.area
+                ? "Selecciona primero un área."
+                : campos.area && maquinasDelArea.length === 0
+                  ? maquinas.length === 0
+                    ? "No hay máquinas en hojas de vida. Regístralas primero."
+                    : maquinasInactivasEnArea > 0
+                      ? `Hay ${maquinasInactivasEnArea} máquina(s) inactiva(s) en esta área. Reactívalas en Hojas de vida.`
+                      : `No hay máquinas activas en ${campos.area}. Revisa el área asignada en Hojas de vida.`
+                  : undefined
+            }
+          />
 
           <SelectorPersonal
             personal={personal}
@@ -754,9 +741,10 @@ function PreventivoPage() {
 
       <BarraBusquedaLista
         titulo="Registros"
+        etiquetaBusqueda="Filtrar registros"
         busqueda={busquedaLista}
         onBusqueda={setBusquedaLista}
-        placeholder="Buscar máquina, código, técnico, descripción, Nº reporte…"
+        placeholder="Filtra esta lista del mes. No elige la máquina del formulario."
         total={registrosFiltrados.length}
         pagina={paginaLista}
         onPagina={setPaginaLista}

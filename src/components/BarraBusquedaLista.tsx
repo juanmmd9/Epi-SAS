@@ -19,6 +19,7 @@ type Props = {
   onAnio: (anio: number) => void;
   extraAcciones?: ReactNode;
   children?: ReactNode;
+  etiquetaBusqueda?: string;
 };
 
 function BarraBusquedaLista({
@@ -36,6 +37,7 @@ function BarraBusquedaLista({
   onAnio,
   extraAcciones,
   children,
+  etiquetaBusqueda = "Buscar",
 }: Props) {
   const paginas = totalPaginas(total, porPagina);
   const paginaSegura = Math.min(Math.max(1, pagina), paginas);
@@ -55,7 +57,7 @@ function BarraBusquedaLista({
 
       <div className="barra-busqueda-lista__controles">
         <label className="barra-busqueda-lista__buscar">
-          Buscar
+          {etiquetaBusqueda}
           <input
             type="search"
             value={busqueda}

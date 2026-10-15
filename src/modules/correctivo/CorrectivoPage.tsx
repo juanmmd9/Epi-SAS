@@ -43,6 +43,7 @@ import {
   type FiltroEstadoCorrectivoMes,
 } from "./correctivoConteo";
 import BarraBusquedaLista from "../../components/BarraBusquedaLista";
+import BuscadorMaquina from "../../components/BuscadorMaquina";
 import { ContadorListaMensual, etiquetaPeriodoContador } from "../../components/ContadorListaMensual";
 import { coincideBusqueda, paginarLista } from "../../lib/listaRegistros";
 import {
@@ -504,18 +505,12 @@ function CorrectivoPage() {
               ))}
             </select>
           </label>
-          <label>
-            Máquina registrada (opcional)
-            <select value={campos.maquinaId}
-              onChange={(e) => seleccionarMaquina(e.target.value)}>
-              <option value="">Selección manual abajo</option>
-              {maquinasDelArea.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nombre} ({m.codigo ?? "sin código"})
-                </option>
-              ))}
-            </select>
-          </label>
+          <BuscadorMaquina
+            maquinas={maquinasDelArea}
+            valorId={campos.maquinaId}
+            onElegir={seleccionarMaquina}
+            avisoVacio={campos.area ? undefined : "Selecciona primero el área."}
+          />
           <label>
             Máquina / Equipo / Locación *
             <input required value={campos.maquinaEquipoLocacion}
@@ -655,9 +650,10 @@ function CorrectivoPage() {
 
       <BarraBusquedaLista
         titulo="Solicitudes"
+        etiquetaBusqueda="Filtrar solicitudes"
         busqueda={busquedaLista}
         onBusqueda={setBusquedaLista}
-        placeholder="Buscar No., máquina, código, solicitante, descripción…"
+        placeholder="Filtra esta lista del mes. No elige la máquina del formulario."
         total={registrosFiltrados.length}
         pagina={paginaLista}
         onPagina={setPaginaLista}
