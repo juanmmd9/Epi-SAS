@@ -20,6 +20,12 @@ export async function listarPersonal(): Promise<Persona[]> {
   return (data ?? []) as Persona[];
 }
 
+export async function obtenerPersona(id: string): Promise<Persona | null> {
+  const { data, error } = await supabase.from(TABLA).select("*").eq("id", id).maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as Persona | null) ?? null;
+}
+
 export async function listarPersonalActivo(): Promise<Persona[]> {
   const { data, error } = await supabase
     .from(TABLA)

@@ -8,6 +8,7 @@ import RequireAuth from "./modules/auth/RequireAuth";
 import InicioPage from "./modules/inicio/InicioPage";
 import PrincipalPage, { ProcedimientosPage } from "./modules/principal/PrincipalPage";
 import DireccionamientoPage from "./modules/principal/DireccionamientoPage";
+import CaracterizacionPage from "./modules/principal/CaracterizacionPage";
 import EntradaPerfil from "./modules/principal/EntradaPerfil";
 import FlujogramaAuxiliarPage from "./modules/diseno/FlujogramaAuxiliarPage";
 import TableroAuxiliarPage from "./modules/diseno/TableroAuxiliarPage";
@@ -43,6 +44,7 @@ import Mtre045Page from "./modules/formatos/Mtre045Page";
 import FormatosTejidosPage from "./modules/tejidos/FormatosTejidosPage";
 import ReporteProduccionPage from "./modules/tejidos/ReporteProduccionPage";
 import PersonalPage from "./modules/personal/PersonalPage";
+import PersonaFichaPage from "./modules/personal/PersonaFichaPage";
 import UsuariosPage from "./modules/auth/UsuariosPage";
 import MatrizPage from "./modules/matriz/MatrizPage";
 import PermisosPage from "./modules/permisos/PermisosPage";
@@ -62,6 +64,7 @@ function App() {
             <Route path="principal" element={<PrincipalPage />} />
             <Route path="principal/procedimientos" element={<ProcedimientosPage />} />
             <Route path="principal/direccionamiento" element={<DireccionamientoPage />} />
+            <Route path="principal/caracterizacion" element={<CaracterizacionPage />} />
             <Route path="diseno/areas/:areaNombre" element={<AreaMenuPage />} />
             <Route path="diseno/tablero" element={<TableroAuxiliarPage />} />
             <Route path="diseno/proyectos/:proyectoId/card/:cardId" element={<FlujogramaAuxiliarPage />} />
@@ -97,6 +100,7 @@ function App() {
             <Route path="formatos/gh-re-030" element={<Ghre030Page />} />
             <Route path="formatos/mt-re-045" element={<Mtre045Page />} />
             <Route path="personal" element={<PersonalPage />} />
+            <Route path="personal/ficha/:personaId" element={<PersonaFichaPage />} />
             <Route path="personal/usuarios" element={<UsuariosPage />} />
             <Route path="personal/matriz" element={<MatrizPage />} />
             <Route path="personal/permisos" element={<PermisosPage />} />

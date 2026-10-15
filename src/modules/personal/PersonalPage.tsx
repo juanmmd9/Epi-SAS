@@ -28,6 +28,16 @@ import "./personal.css";
 
 const formularioVacio = { nombre: "", cargo: "", area: "", cedula: "" };
 
+function inicialesPersona(nombre: string): string {
+  return nombre
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 function PersonalPage() {
   const { puede } = useAuth();
   const [personas, setPersonas] = useState<Persona[]>([]);
@@ -295,63 +305,64 @@ function PersonalPage() {
           </p>
         )}
         {!cargando && personas.length > 0 && (
-          <div className="personal__tabla-contenedor">
-            <table className="personal__tabla">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Cédula</th>
-                  <th>Cargo</th>
-                  <th>Área</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {personas.map((persona) => (
-                  <tr key={persona.id} className={persona.activo ? "" : "inactiva"}>
-                    <td>{persona.nombre}</td>
-                    <td>{persona.cedula ?? "—"}</td>
-                    <td>{persona.cargo ?? "—"}</td>
-                    <td>{persona.area ?? "—"}</td>
-                    <td>
-                      {persona.activo ? (
-                        <span className="personal__chip personal__chip--ok">Activo</span>
-                      ) : (
-                        <span className="personal__chip personal__chip--inactivo">Inactivo</span>
-                      )}
-                    </td>
-                    <td className="personal__acciones">
-                      <Link
-                        className="btn"
-                        to="/formatos/gh-re-030"
-                        state={{
-                          permiso: {
-                            personalId: persona.id,
-                            nombre: persona.nombre,
-                            cedula: persona.cedula ?? "",
-                          },
-                        }}
-                      >
-                        Permiso
-                      </Link>
-                      <button className="btn" onClick={() => iniciarEdicion(persona)}>
-                        Editar
-                      </button>
-                      <button className="btn" onClick={() => manejarCambioEstado(persona)}>
-                        {persona.activo ? "Desactivar" : "Activar"}
-                      </button>
-                      <button
-                        className="btn btn--peligro"
-                        onClick={() => manejarEliminar(persona)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="personal__fichas">
+            {personas.map((persona) => (
+              <article
+                key={persona.id}
+                className={`personal-card${persona.activo ? "" : " personal-card--inactiva"}`}
+              >
+                <Link to={`/personal/ficha/${persona.id}`} className="personal-card__cuerpo">
+                  <span className="personal-card__iniciales" aria-hidden="true">
+                    {inicialesPersona(persona.nombre)}
+                  </span>
+                  <div>
+                    <h3>{persona.nombre}</h3>
+                    <p>{persona.cargo ?? "Sin cargo"}</p>
+                    <p>
+                      {persona.area ?? "Sin área"} · {persona.cedula ?? "Sin cédula"}
+                    </p>
+                  </div>
+                </Link>
+                <div className="personal-card__pie">
+                  {persona.activo ? (
+                    <span className="personal__chip personal__chip--ok">Activo</span>
+                  ) : (
+                    <span className="personal__chip personal__chip--inactivo">Inactivo</span>
+                  )}
+                  <div className="personal__acciones">
+                    <Link className="btn btn--primario" to={`/personal/ficha/${persona.id}`}>
+                      Ficha
+                    </Link>
+                    <Link
+                      className="btn"
+                      to="/formatos/gh-re-030"
+                      state={{
+                        permiso: {
+                          personalId: persona.id,
+                          nombre: persona.nombre,
+                          cedula: persona.cedula ?? "",
+                        },
+                      }}
+                    >
+                      Permiso
+                    </Link>
+                    <button type="button" className="btn" onClick={() => iniciarEdicion(persona)}>
+                      Editar
+                    </button>
+                    <button type="button" className="btn" onClick={() => manejarCambioEstado(persona)}>
+                      {persona.activo ? "Desactivar" : "Activar"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--peligro"
+                      onClick={() => manejarEliminar(persona)}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         )}
       </div>

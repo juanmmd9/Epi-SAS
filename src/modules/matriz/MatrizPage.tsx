@@ -274,7 +274,8 @@ function MatrizPage() {
         </div>
         <p>
           <strong>I</strong> situación inicial · <strong>D</strong> meta · <strong>H</strong>{" "}
-          desarrollo actual. El semáforo de fila es H÷D del equipo (verde ≥ 100%).
+          desarrollo actual. El porcentaje es el cumplimiento de la meta: si H alcanza o
+          supera D, queda en 100%. Verde al 100%.
         </p>
       </section>
 

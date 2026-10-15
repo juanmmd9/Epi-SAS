@@ -36,9 +36,15 @@ export function obtenerValorCelda(
   };
 }
 
+/** Lo que aporta H a la meta. Superar D no suma más del 100%. */
+function cumplimientoH(nivelH: number, nivelD: number): number {
+  if (nivelD <= 0) return 0;
+  return Math.min(Math.max(nivelH, 0), nivelD);
+}
+
 export function porcentajeHsobreD(nivelH: number, nivelD: number): number | null {
   if (nivelD === 0) return null;
-  return nivelH / nivelD;
+  return cumplimientoH(nivelH, nivelD) / nivelD;
 }
 
 export function formatearPorcentajeMatriz(ratio: number | null): string {
@@ -62,18 +68,20 @@ export function calcularResumenPersona(
   let sumaD = 0;
   let sumaH = 0;
 
+  let sumaCumplida = 0;
   competencias.forEach((competencia) => {
     const celda = obtenerValorCelda(mapa, personalId, competencia);
     sumaI += celda.nivel_i;
     sumaD += celda.nivel_d;
     sumaH += celda.nivel_h;
+    sumaCumplida += cumplimientoH(celda.nivel_h, celda.nivel_d);
   });
 
   if (sumaD === 0) {
     return { sumaI, sumaD, sumaH, semaforo: null, claseSemaforo: "" };
   }
 
-  const semaforo = sumaH / sumaD;
+  const semaforo = sumaCumplida / sumaD;
   return { sumaI, sumaD, sumaH, semaforo, claseSemaforo: claseSemaforoRatio(semaforo) };
 }
 
@@ -86,18 +94,20 @@ export function calcularResumenFila(
   let sumaD = 0;
   let sumaH = 0;
 
+  let sumaCumplida = 0;
   personalIds.forEach((personalId) => {
     const celda = obtenerValorCelda(mapa, personalId, competencia);
     sumaI += celda.nivel_i;
     sumaD += celda.nivel_d;
     sumaH += celda.nivel_h;
+    sumaCumplida += cumplimientoH(celda.nivel_h, celda.nivel_d);
   });
 
   if (sumaD === 0) {
     return { sumaI, sumaD, sumaH, semaforo: null, claseSemaforo: "" };
   }
 
-  const semaforo = sumaH / sumaD;
+  const semaforo = sumaCumplida / sumaD;
   return { sumaI, sumaD, sumaH, semaforo, claseSemaforo: claseSemaforoRatio(semaforo) };
 }
 

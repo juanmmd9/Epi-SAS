@@ -7,6 +7,7 @@ import { areaUsuario } from "../../lib/usuarioArea";
 import { rutaPublica } from "../../lib/rutaPublica";
 import { useAuth } from "../auth/AuthContext";
 import imagenProcedimientos from "../../assets/card-procedimientos.jpg";
+import imagenCaracterizacion from "../../assets/card-caracterizacion.jpg";
 import imagenDireccionamiento from "../../assets/card-direccionamiento.jpg";
 import imagenFormatos from "../../assets/card-formatos.jpg";
 import { PRESENTACIONES_SGC } from "./direccionamiento";
@@ -49,6 +50,13 @@ function PrincipalPage() {
             </div>
           </Link>
         ) : null}
+        <Link to="/principal/caracterizacion" className="principal__card">
+          <img src={imagenCaracterizacion} alt="" />
+          <div className="principal__card-texto">
+            <h2>Caracterización</h2>
+            <p>Proceso de mantenimiento y sus requisitos normativos.</p>
+          </div>
+        </Link>
         <Link to="/principal/direccionamiento" className="principal__card">
           <img src={imagenDireccionamiento} alt="" />
           <div className="principal__card-texto">
