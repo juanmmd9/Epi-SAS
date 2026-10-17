@@ -150,7 +150,7 @@ function BottomNav() {
                 <IconoNavSvg nombre={item.icono} />
                 {badgePara(item)}
               </span>
-              <span>{item.etiquetaCorta}</span>
+              <span className="bottom-nav__etiqueta">{item.etiquetaCorta}</span>
             </NavLink>
           );
           if (!(esDiseno && item.ruta === "/tablero")) return tab;
@@ -164,7 +164,7 @@ function BottomNav() {
                 <span className="bottom-nav__icono-wrap">
                   <IconoNavSvg nombre="personal" />
                 </span>
-                <span>Equipo</span>
+                <span className="bottom-nav__etiqueta">Equipo</span>
               </NavLink>
             </Fragment>
           );
@@ -189,7 +189,7 @@ function BottomNav() {
               />
             ) : null}
           </span>
-          <span>Más</span>
+          <span className="bottom-nav__etiqueta">Más</span>
         </button>
       </nav>
 

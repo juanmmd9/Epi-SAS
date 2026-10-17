@@ -12,7 +12,7 @@ export const PROCEDIMIENTOS_REALIZADOS: ProcedimientoPortal[] = [
     codigo: "MT-PR-001",
     titulo: "Mantenimiento preventivo",
     version: "6",
-    archivo: "/procedimientos/MT-PR-001-mantenimiento-preventivo-v6.docx",
+    archivo: "/procedimientos/MT-PR-001-mantenimiento-preventivo-v6.pdf",
     resumen:
       "Programar la cita, asignar al operario, ejecutar el preventivo y dejar el MT-RE-045 para la firma del líder.",
   },
@@ -20,7 +20,7 @@ export const PROCEDIMIENTOS_REALIZADOS: ProcedimientoPortal[] = [
     codigo: "MT-PR-002",
     titulo: "Mantenimiento correctivo",
     version: "5",
-    archivo: "/procedimientos/MT-PR-002-mantenimiento-correctivo-v5.docx",
+    archivo: "/procedimientos/MT-PR-002-mantenimiento-correctivo-v5.pdf",
     resumen:
       "Recibir la solicitud, atender la falla, registrar el correctivo y cerrar cuando el equipo queda operando.",
   },

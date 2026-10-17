@@ -235,8 +235,9 @@ body.layout-mas-abierto {
     z-index: 1000;
     align-items: stretch;
     justify-content: space-around;
-    gap: 0.15rem;
-    padding: 0.35rem 0.35rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
+    gap: 0.2rem;
+    padding: 0.4rem 0.55rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
+    overflow: visible;
     background: #0f172a;
     border-top: 1px solid #1e293b;
     box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.25);
@@ -250,7 +251,8 @@ body.layout-mas-abierto {
     justify-content: center;
     gap: 0.15rem;
     min-width: 0;
-    padding: 0.4rem 0.2rem;
+    overflow: visible;
+    padding: 0.35rem 0.15rem 0.3rem;
     border: none;
     border-radius: 10px;
     background: transparent;
@@ -264,7 +266,7 @@ body.layout-mas-abierto {
     -webkit-tap-highlight-color: transparent;
   }
 
-  .bottom-nav__item span {
+  .bottom-nav__etiqueta {
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -276,24 +278,36 @@ body.layout-mas-abierto {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    overflow: visible;
+    flex-shrink: 0;
   }
 
-  .nav-badge {
+  .bottom-nav .nav-badge,
+  .mas-sheet .nav-badge {
     position: absolute;
-    top: -0.35rem;
-    right: -0.55rem;
-    min-width: 1.05rem;
-    height: 1.05rem;
-    padding: 0 0.28rem;
+    top: -0.15rem;
+    right: -0.2rem;
+    z-index: 1;
+    min-width: 1rem;
+    height: 1rem;
+    padding: 0 0.22rem;
     border-radius: 999px;
     background: #22c55e;
     color: #052e16;
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     font-weight: 800;
-    line-height: 1.05rem;
+    line-height: 1rem;
     text-align: center;
+    pointer-events: none;
     box-shadow: 0 0 0 2px #0f172a;
     animation: nav-badge-pulso 1.6s ease-in-out infinite;
+  }
+
+  .mas-sheet .nav-badge {
+    top: -0.3rem;
+    right: -0.3rem;
   }
 
   .nav-badge--naranja {
@@ -333,11 +347,9 @@ body.layout-mas-abierto {
     0%,
     100% {
       transform: scale(1);
-      box-shadow: 0 0 0 2px #0f172a, 0 0 0 0 rgba(34, 197, 94, 0.5);
     }
     50% {
-      transform: scale(1.08);
-      box-shadow: 0 0 0 2px #0f172a, 0 0 0 5px rgba(34, 197, 94, 0);
+      transform: scale(1.06);
     }
   }
 
@@ -345,11 +357,9 @@ body.layout-mas-abierto {
     0%,
     100% {
       transform: scale(1);
-      box-shadow: 0 0 0 2px #0f172a, 0 0 0 0 rgba(245, 158, 11, 0.5);
     }
     50% {
-      transform: scale(1.08);
-      box-shadow: 0 0 0 2px #0f172a, 0 0 0 5px rgba(245, 158, 11, 0);
+      transform: scale(1.06);
     }
   }
 
@@ -357,11 +367,9 @@ body.layout-mas-abierto {
     0%,
     100% {
       transform: scale(1);
-      box-shadow: 0 0 0 2px #0f172a, 0 0 0 0 rgba(56, 189, 248, 0.5);
     }
     50% {
-      transform: scale(1.08);
-      box-shadow: 0 0 0 2px #0f172a, 0 0 0 5px rgba(56, 189, 248, 0);
+      transform: scale(1.06);
     }
   }
 
@@ -369,11 +377,9 @@ body.layout-mas-abierto {
     0%,
     100% {
       transform: scale(1);
-      box-shadow: 0 0 0 2px #0f172a, 0 0 0 0 rgba(251, 191, 36, 0.5);
     }
     50% {
-      transform: scale(1.08);
-      box-shadow: 0 0 0 2px #0f172a, 0 0 0 5px rgba(251, 191, 36, 0);
+      transform: scale(1.06);
     }
   }
 

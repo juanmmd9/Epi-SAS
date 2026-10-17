@@ -7,6 +7,7 @@ import RegistroPage from "./modules/auth/RegistroPage";
 import RequireAuth from "./modules/auth/RequireAuth";
 import InicioPage from "./modules/inicio/InicioPage";
 import PrincipalPage, { ProcedimientosPage } from "./modules/principal/PrincipalPage";
+import IndicadoresConsultaPage from "./modules/principal/IndicadoresConsultaPage";
 import DireccionamientoPage from "./modules/principal/DireccionamientoPage";
 import CaracterizacionPage from "./modules/principal/CaracterizacionPage";
 import EntradaPerfil from "./modules/principal/EntradaPerfil";
@@ -62,6 +63,7 @@ function App() {
             <Route index element={<EntradaPerfil />} />
             <Route path="inicio" element={<InicioPage />} />
             <Route path="principal" element={<PrincipalPage />} />
+            <Route path="principal/indicadores" element={<IndicadoresConsultaPage />} />
             <Route path="principal/procedimientos" element={<ProcedimientosPage />} />
             <Route path="principal/direccionamiento" element={<DireccionamientoPage />} />
             <Route path="principal/caracterizacion" element={<CaracterizacionPage />} />

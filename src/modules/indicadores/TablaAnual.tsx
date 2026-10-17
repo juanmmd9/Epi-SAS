@@ -54,6 +54,8 @@ interface Props {
   horas: HorasProgramadas[];
   horarios: HorarioLaboral[];
   festivos: Festivo[];
+  /** Consulta: colores y valores, sin abrir formatos. */
+  soloLectura?: boolean;
 }
 
 function claseDeEstado(estado: EstadoMeta): string {
@@ -80,6 +82,7 @@ function TablaAnual({
   horas,
   horarios,
   festivos,
+  soloLectura = false,
 }: Props) {
   const navegar = useNavigate();
 
@@ -202,7 +205,7 @@ function TablaAnual({
                     {fila.valores.map((valor, indiceMes) => {
                       const estado = fila.estadoMeta(valor);
                       const texto = valor === null ? "—" : fila.formatear(valor);
-                      const clicable = estado === "fail" || estado === "alerta";
+                      const clicable = !soloLectura && (estado === "fail" || estado === "alerta");
                       return (
                         <td
                           key={indiceMes}
@@ -235,9 +238,13 @@ function TablaAnual({
         <span className="leyenda leyenda--alerta">Amarillo</span> cerca del límite —{" "}
         <span className="leyenda leyenda--fail">Rojo</span> fuera de meta. Horas perdidas
         requieren horas programadas guardadas por área y mes.{" "}
-        <strong>
-          Haz clic en una celda roja o amarilla para llenar el formato GC-RE-009 de ese mes.
-        </strong>
+        {soloLectura ? (
+          <strong>Solo consulta: así van los indicadores del año.</strong>
+        ) : (
+          <strong>
+            Haz clic en una celda roja o amarilla para llenar el formato GC-RE-009 de ese mes.
+          </strong>
+        )}
       </p>
     </div>
   );
