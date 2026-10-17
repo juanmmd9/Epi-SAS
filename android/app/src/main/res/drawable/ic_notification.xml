@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icono pequeño de notificación: silueta blanca del pinwheel EPI (Android lo tiñe con iconColor). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,2.5 L14.2,8.8 L12,11 L9.8,8.8 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M14.2,8.8 L20.5,11 L14.2,13.2 L12,11 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,11 L14.2,13.2 L12,20.5 L9.8,13.2 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M9.8,8.8 L12,11 L9.8,13.2 L3.5,11 Z" />
+</vector>

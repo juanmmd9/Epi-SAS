@@ -1,0 +1,17 @@
+.visor-pptx {
+  height: 100%;
+  overflow: auto;
+  background: #111827;
+}
+
+.visor-pptx__aviso {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  background: #fff;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.visor-pptx__lienzo {
+  min-height: 280px;
+}
