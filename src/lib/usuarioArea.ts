@@ -22,6 +22,14 @@ export function areaUsuario(perfil: UsuarioPortal | null | undefined): string | 
   return esAreaValida(canonica) ? canonica : null;
 }
 
+/** Inventario de herramientas: personal de Mantenimiento y el administrador. */
+export function veInventarioMantenimiento(perfil: UsuarioPortal | null | undefined): boolean {
+  if (!perfil) return false;
+  if (perfil.rol === "admin") return true;
+  const area = areaUsuario(perfil);
+  return Boolean(area && coincideArea(area, "Mantenimiento"));
+}
+
 /** Área dueña de un formato. El administrador de mantenimiento siempre queda en Mantenimiento. */
 export function areaPortalDelPerfil(perfil: UsuarioPortal | null | undefined): string | null {
   if (perfil?.rol === "admin") return "Mantenimiento";

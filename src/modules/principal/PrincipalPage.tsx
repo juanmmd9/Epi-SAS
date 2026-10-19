@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { rutaFormatosPara } from "../../components/layout/navConfig";
 import { coincideArea, esAreaProduccion } from "../../lib/areas";
-import { areaUsuario } from "../../lib/usuarioArea";
+import { areaUsuario, veInventarioMantenimiento } from "../../lib/usuarioArea";
 import { rutaPublica } from "../../lib/rutaPublica";
 import { useAuth } from "../auth/AuthContext";
 import imagenProcedimientos from "../../assets/card-procedimientos.jpg";
@@ -10,6 +10,7 @@ import imagenCaracterizacion from "../../assets/card-caracterizacion.jpg";
 import imagenDireccionamiento from "../../assets/card-direccionamiento.jpg";
 import imagenFormatos from "../../assets/card-formatos.jpg";
 import imagenIndicadores from "../../assets/card-indicadores.jpg";
+import imagenInventario from "../../assets/card-inventario.jpg";
 import { PRESENTACIONES_SGC } from "./direccionamiento";
 import { PROCEDIMIENTOS_REALIZADOS, type ProcedimientoPortal } from "./procedimientos";
 import "./principal.css";
@@ -50,6 +51,15 @@ function PrincipalPage() {
             <div className="principal__card-texto">
               <h2>Procedimientos</h2>
               <p>{PROCEDIMIENTOS_REALIZADOS.length} procedimientos listos para consultar.</p>
+            </div>
+          </Link>
+        ) : null}
+        {veInventarioMantenimiento(perfil) ? (
+          <Link to="/principal/inventario" className="principal__card">
+            <img src={imagenInventario} alt="" />
+            <div className="principal__card-texto">
+              <h2>Inventario</h2>
+              <p>Lo que hay, lo que entra, lo que sale y lo pedido a Compras.</p>
             </div>
           </Link>
         ) : null}

@@ -108,6 +108,9 @@ export function rutaVisibleParaArea(
   area: string | null | undefined,
   ruta: string,
 ): boolean {
+  if (ruta === "/principal/inventario" || ruta.startsWith("/principal/inventario/")) {
+    return rol === "admin" || Boolean(area && coincideArea(area, "Mantenimiento"));
+  }
   if (
     (ruta === "/principal" || ruta.startsWith("/principal/")) &&
     Boolean(area) &&
