@@ -472,25 +472,63 @@ function escribirFilaPlan(
   });
 }
 
+function escribirCortoCentrado(
+  page: PDFPage,
+  font: PDFFont,
+  texto: string,
+  x: number,
+  width: number,
+  yTop: number,
+  yBottom: number,
+) {
+  const limpio = textoCompatibleWinAnsi(texto).trim();
+  if (!limpio) return;
+  const fontSize = 8;
+  const ancho = anchoSeguro(font, limpio, fontSize);
+  const xTexto = x + Math.max(2, (width - ancho) / 2);
+  const alto = yBottom - yTop;
+  const yLinea = yTop + Math.max(2, (alto - fontSize) / 2);
+  drawTextSafe(page, limpio, {
+    x: xTexto,
+    y: yDesdeArriba(yLinea, fontSize),
+    size: fontSize,
+    font,
+  });
+}
+
 function escribirFilaSeguimiento(
   page: PDFPage,
   font: PDFFont,
   fila: RegistroNcDatos["seguimientoFilas"][number],
   yTop: number,
   yBottom: number,
-) {
-  const columnas = [
-    { x: 56, width: 134 },
-    { x: 198, width: 42 },
-    { x: 248, width: 118 },
-    { x: 374, width: 165 },
-  ];
-  const valores = [fila.actividad, textoSiNo(fila.cumplido), textoSiNo(fila.fueEficaz), fila.porque];
-  columnas.forEach((col, indice) => {
-    escribirEnCuadroAmpliado(page, font, valores[indice], {
-      x: col.x, yTop, yBottom, width: col.width, fontSizeMax: 7, fontSizeMin: 4.5,
-    });
+): string | null {
+  const actividad = { x: 56, width: 133 };
+  const porque = { x: 374, width: 164 };
+  const sobraActividad = escribirEnCuadroAmpliado(page, font, fila.actividad, {
+    x: actividad.x,
+    yTop,
+    yBottom,
+    width: actividad.width,
+    fontSizeMax: 7,
+    fontSizeMin: 6,
+    avisarAnexo: true,
   });
+  escribirCortoCentrado(page, font, textoSiNo(fila.cumplido), 196, 46, yTop, yBottom);
+  escribirCortoCentrado(page, font, textoSiNo(fila.fueEficaz), 248, 118, yTop, yBottom);
+  const sobraPorque = escribirEnCuadroAmpliado(page, font, fila.porque, {
+    x: porque.x,
+    yTop,
+    yBottom,
+    width: porque.width,
+    fontSizeMax: 7,
+    fontSizeMin: 6,
+    avisarAnexo: true,
+  });
+  if (!sobraActividad && !sobraPorque) return null;
+  return [fila.actividad, textoSiNo(fila.cumplido), textoSiNo(fila.fueEficaz), fila.porque]
+    .filter(Boolean)
+    .join(" | ");
 }
 
 function escribirPagina2(
@@ -527,14 +565,29 @@ function escribirPagina2(
     x: 290, yTop: 337, width: 245, fontSize: 8, maxLines: 1,
   });
 
+  // Rayas reales de la plantilla: 382.5, 438.5, 481.5 y 524.5.
   const filasSeg = [
-    { yTop: 382, yBottom: 430 },
-    { yTop: 432, yBottom: 475 },
-    { yTop: 477, yBottom: 518 },
+    { yTop: 386, yBottom: 435 },
+    { yTop: 442, yBottom: 478 },
+    { yTop: 485, yBottom: 521 },
   ];
+  const seguimientoExtra: string[] = [];
   registro.seguimientoFilas.slice(0, filasSeg.length).forEach((fila, indice) => {
-    escribirFilaSeguimiento(page, font, fila, filasSeg[indice].yTop, filasSeg[indice].yBottom);
+    const extra = escribirFilaSeguimiento(
+      page,
+      font,
+      fila,
+      filasSeg[indice].yTop,
+      filasSeg[indice].yBottom,
+    );
+    if (extra) seguimientoExtra.push(extra);
   });
+  if (seguimientoExtra.length > 0) {
+    anexos.push({
+      titulo: "Seguimiento (texto completo)",
+      texto: seguimientoExtra.join("\n\n"),
+    });
+  }
 
   const verificado = [registro.verificadoPorNombre, registro.verificadoPorCargo]
     .filter(Boolean)
