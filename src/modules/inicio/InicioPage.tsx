@@ -348,6 +348,7 @@ function InicioPage() {
               <span className="inicio__leyenda-item inicio__leyenda-item--reprogramada">Reprogramado</span>
               <span className="inicio__leyenda-item inicio__leyenda-item--vencida">Vencido (activa)</span>
               <span className="inicio__leyenda-item inicio__leyenda-item--de-baja">De baja</span>
+              <span className="inicio__formato">MT-RE-025 V3 · julio 09 2026</span>
             </div>
           )}
         </div>

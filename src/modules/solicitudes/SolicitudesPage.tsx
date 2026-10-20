@@ -202,6 +202,7 @@ function SolicitudesPage() {
               Elige un área arriba. Gestiona tiempos, asignaciones, edición y repuestos por
               sección. Cerradas en {mesActual}: <strong>{totales.cerradasMes}</strong>.
             </p>
+            <span className="solicitudes__formato">MT-RE-011 V7 · julio 09 2026</span>
           </div>
           <div className="sol-tablero-totales">
             <span className="sol-tablero-totales__item sol-tablero-totales__item--alerta">
@@ -296,6 +297,7 @@ function SolicitudesPage() {
               ? "La lista se actualiza sola al crear solicitudes en cualquier área."
               : "Los avisos de nuevas solicitudes llegan en toda la app (toast + notificación)."}
           </p>
+          <span className="solicitudes__formato">MT-RE-011 V7 · julio 09 2026</span>
         </div>
       </div>
 

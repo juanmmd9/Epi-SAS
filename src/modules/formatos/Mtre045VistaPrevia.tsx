@@ -115,14 +115,14 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
                 <strong>CODIGO:</strong> MT-RE-045
               </div>
               <div>
-                <strong>VERSION:</strong> 1
+                <strong>VERSION:</strong> 2
               </div>
             </td>
           </tr>
           <tr>
             <td className="mtre045-preview__proceso">MANTENIMIENTO</td>
             <td className="mtre045-preview__fecha-elab">
-              <strong>FECHA DE ELABORACIÓN:</strong> ABRIL 2025
+              <strong>FECHA DE ELABORACIÓN:</strong> JULIO 09 2026
             </td>
           </tr>
           <tr>
