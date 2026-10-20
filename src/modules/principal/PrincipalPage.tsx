@@ -21,7 +21,7 @@ function PrincipalPage() {
   const esOperario = perfil?.rol === "operador";
   const rutaFormatos = rutaFormatosPara(perfil?.rol, area);
   const esProduccion = esAreaProduccion(area);
-  const muestraProcedimientos = !esProduccion;
+  const muestraProcedimientos = esAdmin;
   const esTejidos = Boolean(area && coincideArea(area, "Tejidos"));
   const esPlasticos = Boolean(
     area && (coincideArea(area, "Plasticos") || coincideArea(area, "Produccion Plasticos")),
@@ -103,9 +103,9 @@ function PrincipalPage() {
 }
 
 export function ProcedimientosPage() {
-  const { perfil } = useAuth();
+  const { perfil, esAdmin } = useAuth();
   const [visto, setVisto] = useState<ProcedimientoPortal | null>(null);
-  if (esAreaProduccion(areaUsuario(perfil))) {
+  if (!esAdmin || esAreaProduccion(areaUsuario(perfil))) {
     return <Navigate to="/principal" replace />;
   }
 
