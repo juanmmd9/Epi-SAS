@@ -85,17 +85,9 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
     .map((linea) => textoAporta(linea))
     .filter(Boolean);
   const verificacionCorrectivo = textoAporta(datos.verificacionCorrectivo);
-  const marcaCorrectivo = Boolean(
-    actividadCorrectivo || repuestosCorr.length > 0 || verificacionCorrectivo,
-  );
-  const marcaVerificacion = Boolean(
-    datos.inspeccionVisual ||
-      datos.pruebasFuncionamiento ||
-      (datos.detalleInspeccionVisual || "").trim() ||
-      (datos.detallePruebasFuncionamiento || "").trim() ||
-      (datos.firmaVerificacion || "").trim() ||
-      (datos.responsableVerificacion || "").trim(),
-  );
+  // La firma, la inspección A/NA y el nombre del líder cierran el preventivo.
+  // No son otro tipo de trabajo, así que no marcan CORRECTIVO ni VERIFICACIÓN.
+  const marcaCorrectivo = Boolean(actividadCorrectivo || repuestosCorr.length > 0);
 
   return (
     <article id={id} className="mtre045-preview">
@@ -189,7 +181,7 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
               <Casilla marcada={marcaCorrectivo} etiqueta="MANTENIMIENTO CORRECTIVO" />
             </td>
             <td>
-              <Casilla marcada={marcaVerificacion} etiqueta="VERIFICACIÓN" />
+              <Casilla marcada={false} etiqueta="VERIFICACIÓN" />
             </td>
           </tr>
         </tbody>
@@ -240,7 +232,9 @@ function Mtre045VistaPrevia({ datos, id = "mtre045-formato-impresion" }: Props) 
           <tr>
             <td className="mtre045-preview__celda-texto" colSpan={2}>
               {datos.verificacionEquipoPm || ""}
-              {verificacionCorrectivo ? `\n\nCorrectivo: ${verificacionCorrectivo}` : ""}
+              {marcaCorrectivo && verificacionCorrectivo
+                ? `\n\nCorrectivo: ${verificacionCorrectivo}`
+                : ""}
             </td>
           </tr>
           <tr>
