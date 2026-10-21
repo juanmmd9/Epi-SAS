@@ -3,6 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import { rutaFormatosPara } from "../../components/layout/navConfig";
 import { coincideArea, esAreaProduccion } from "../../lib/areas";
 import { areaUsuario, veInventarioMantenimiento } from "../../lib/usuarioArea";
+import { CODIGO_MATRIZ } from "./matrizRiesgos";
 import { rutaPublica } from "../../lib/rutaPublica";
 import { useAuth } from "../auth/AuthContext";
 import imagenProcedimientos from "../../assets/card-procedimientos.jpg";
@@ -11,6 +12,7 @@ import imagenDireccionamiento from "../../assets/card-direccionamiento.jpg";
 import imagenFormatos from "../../assets/card-formatos.jpg";
 import imagenIndicadores from "../../assets/card-indicadores.jpg";
 import imagenInventario from "../../assets/card-inventario.jpg";
+import imagenMatriz from "../../assets/card-matriz-riesgos.jpg";
 import { PRESENTACIONES_SGC } from "./direccionamiento";
 import { PROCEDIMIENTOS_REALIZADOS, type ProcedimientoPortal } from "./procedimientos";
 import "./principal.css";
@@ -60,6 +62,17 @@ function PrincipalPage() {
             <div className="principal__card-texto">
               <h2>Inventario</h2>
               <p>Lo que hay, lo que entra, lo que sale y lo pedido a Compras.</p>
+            </div>
+          </Link>
+        ) : null}
+        {veInventarioMantenimiento(perfil) ? (
+          <Link to="/principal/matriz-riesgos" className="principal__card">
+            <img src={imagenMatriz} alt="" />
+            <div className="principal__card-texto">
+              <h2>Matriz de riesgos y oportunidades</h2>
+              <p>
+                {CODIGO_MATRIZ} de mantenimiento. Se edita, se agregan filas y se descarga el Excel.
+              </p>
             </div>
           </Link>
         ) : null}

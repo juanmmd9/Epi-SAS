@@ -555,3 +555,124 @@
     border-bottom: 0;
   }
 }
+
+.matriz-riesgo__barra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: end;
+  margin-bottom: 0.75rem;
+}
+
+.matriz-riesgo__barra label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.matriz-riesgo__barra input {
+  font: inherit;
+  font-weight: 500;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.matriz-riesgo__aviso {
+  color: var(--color-texto-suave);
+  font-size: 0.85rem;
+}
+
+.matriz-riesgo__leyenda {
+  display: flex;
+  gap: 0.45rem;
+  margin: 0 0 0.75rem;
+}
+
+.matriz-riesgo__error {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+}
+
+.matriz-riesgo__scroll {
+  overflow: auto;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.matriz-riesgo__tabla {
+  border-collapse: collapse;
+  min-width: 2200px;
+  font-size: 0.82rem;
+}
+
+.matriz-riesgo__tabla th,
+.matriz-riesgo__tabla td {
+  border: 1px solid #cbd5e1;
+  padding: 0.35rem;
+  vertical-align: top;
+}
+
+.matriz-riesgo__tabla th {
+  background: #d9e2f3;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.matriz-riesgo__tabla input,
+.matriz-riesgo__tabla select,
+.matriz-riesgo__tabla textarea {
+  width: 100%;
+  min-width: 4.5rem;
+  box-sizing: border-box;
+  font: inherit;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: #fff;
+  padding: 0.3rem;
+}
+
+.matriz-riesgo__tabla textarea {
+  min-width: 16rem;
+  resize: vertical;
+}
+
+.matriz-riesgo__tabla input:focus,
+.matriz-riesgo__tabla select:focus,
+.matriz-riesgo__tabla textarea:focus {
+  border-color: #1f3864;
+  outline: none;
+}
+
+.matriz-riesgo__ancho {
+  min-width: 18rem;
+}
+
+.matriz-riesgo__valor {
+  text-align: center;
+  font-weight: 800;
+  min-width: 5.5rem;
+}
+
+.matriz-riesgo__valor--alto {
+  background: #ff0000;
+  color: #fff;
+}
+
+.matriz-riesgo__valor--medio {
+  background: #ffff00;
+  color: #111;
+}
+
+.matriz-riesgo__valor--bajo {
+  background: #4a86e8;
+  color: #fff;
+}

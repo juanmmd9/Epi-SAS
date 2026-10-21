@@ -11,6 +11,7 @@ import IndicadoresConsultaPage from "./modules/principal/IndicadoresConsultaPage
 import InventarioPage from "./modules/principal/InventarioPage";
 import DireccionamientoPage from "./modules/principal/DireccionamientoPage";
 import CaracterizacionPage from "./modules/principal/CaracterizacionPage";
+import MatrizRiesgosPage from "./modules/principal/MatrizRiesgosPage";
 import EntradaPerfil from "./modules/principal/EntradaPerfil";
 import FlujogramaAuxiliarPage from "./modules/diseno/FlujogramaAuxiliarPage";
 import TableroAuxiliarPage from "./modules/diseno/TableroAuxiliarPage";
@@ -69,6 +70,7 @@ function App() {
             <Route path="principal/inventario" element={<InventarioPage />} />
             <Route path="principal/direccionamiento" element={<DireccionamientoPage />} />
             <Route path="principal/caracterizacion" element={<CaracterizacionPage />} />
+            <Route path="principal/matriz-riesgos" element={<MatrizRiesgosPage />} />
             <Route path="diseno/areas/:areaNombre" element={<AreaMenuPage />} />
             <Route path="diseno/tablero" element={<TableroAuxiliarPage />} />
             <Route path="diseno/proyectos/:proyectoId/card/:cardId" element={<FlujogramaAuxiliarPage />} />
