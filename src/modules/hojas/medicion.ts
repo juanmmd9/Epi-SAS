@@ -1,5 +1,5 @@
 import { AREAS_PLANTA } from "../../lib/areas";
-import type { HojaVida, VerificacionMedicion } from "./types";
+import type { DocumentoMedicionHoja, HojaVida, VerificacionMedicion } from "./types";
 
 export type EstadoMedicion = "sin-registro" | "vigente" | "vencida" | "no-apto";
 
@@ -24,6 +24,12 @@ export function esEquipoMedicion(hoja: HojaVida): boolean {
 
 export function verificacionesDe(hoja: HojaVida): VerificacionMedicion[] {
   const lista = hoja.datos?.verificaciones;
+  if (!Array.isArray(lista)) return [];
+  return [...lista].sort((a, b) => b.fecha.localeCompare(a.fecha));
+}
+
+export function documentosMedicionDe(hoja: HojaVida): DocumentoMedicionHoja[] {
+  const lista = hoja.datos?.documentosMedicion;
   if (!Array.isArray(lista)) return [];
   return [...lista].sort((a, b) => b.fecha.localeCompare(a.fecha));
 }

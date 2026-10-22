@@ -4,6 +4,7 @@ import { AREAS_PLANTA } from "../../lib/areas";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
 import {
   areasSinInstrumento,
+  documentosMedicionDe,
   esEquipoMedicion,
   estadoMedicion,
   etiquetaEstado,
@@ -12,8 +13,13 @@ import {
   verificacionesDe,
   type EstadoMedicion,
 } from "./medicion";
-import { actualizarHoja, crearHoja, listarHojas } from "./hojasService";
-import type { HojaVida, HojaVidaDatos, VerificacionMedicion } from "./types";
+import { actualizarHoja, crearHoja, listarHojas, subirDocumentoMedicion } from "./hojasService";
+import type {
+  DocumentoMedicionHoja,
+  HojaVida,
+  HojaVidaDatos,
+  VerificacionMedicion,
+} from "./types";
 import "./hojas.css";
 
 const FORMULARIO_VACIO = {
@@ -35,6 +41,7 @@ function MedicionPage() {
   const [indice, setIndice] = useState(0);
   const [formulario, setFormulario] = useState(FORMULARIO_VACIO);
   const [guardando, setGuardando] = useState(false);
+  const [archivoVerificacion, setArchivoVerificacion] = useState<File | null>(null);
   const [alta, setAlta] = useState({
     area: "Confeccion",
     codigo: "",
@@ -81,6 +88,7 @@ function MedicionPage() {
       return siguiente;
     });
     setFormulario({ ...FORMULARIO_VACIO, fecha: fechaIso(new Date()) });
+    setArchivoVerificacion(null);
     setAviso(null);
   }
 
@@ -92,22 +100,67 @@ function MedicionPage() {
     }
     setGuardando(true);
     setError(null);
-    const registro: VerificacionMedicion = {
-      id: crypto.randomUUID(),
-      ...formulario,
-    };
-    const datos: HojaVidaDatos = {
-      ...actual.datos,
-      esMedicion: true,
-      verificaciones: [registro, ...verificacionesDe(actual)],
-    };
     try {
+      let documentoUrl: string | undefined;
+      let documentoNombre: string | undefined;
+      let documentos = documentosMedicionDe(actual);
+      if (archivoVerificacion) {
+        documentoUrl = await subirDocumentoMedicion(actual.id, archivoVerificacion);
+        documentoNombre = archivoVerificacion.name;
+        const adjunto: DocumentoMedicionHoja = {
+          id: crypto.randomUUID(),
+          nombre: documentoNombre,
+          url: documentoUrl,
+          fecha: formulario.fecha,
+        };
+        documentos = [adjunto, ...documentos];
+      }
+      const registro: VerificacionMedicion = {
+        id: crypto.randomUUID(),
+        ...formulario,
+        documentoUrl,
+        documentoNombre,
+      };
+      const datos: HojaVidaDatos = {
+        ...actual.datos,
+        esMedicion: true,
+        documentosMedicion: documentos,
+        verificaciones: [registro, ...verificacionesDe(actual)],
+      };
       const guardada = await actualizarHoja(actual.id, { datos });
       setHojas((previas) => previas.map((hoja) => (hoja.id === guardada.id ? guardada : hoja)));
       setFormulario({ ...FORMULARIO_VACIO, fecha: fechaIso(new Date()) });
+      setArchivoVerificacion(null);
       setAviso("Verificación guardada en la hoja de vida.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function subirDocumento(archivo: File) {
+    if (!actual) return;
+    setGuardando(true);
+    setError(null);
+    try {
+      const url = await subirDocumentoMedicion(actual.id, archivo);
+      const adjunto: DocumentoMedicionHoja = {
+        id: crypto.randomUUID(),
+        nombre: archivo.name,
+        url,
+        fecha: fechaIso(new Date()),
+      };
+      const datos: HojaVidaDatos = {
+        ...actual.datos,
+        esMedicion: true,
+        documentosMedicion: [adjunto, ...documentosMedicionDe(actual)],
+      };
+      const guardada = await actualizarHoja(actual.id, { datos });
+      setHojas((previas) => previas.map((hoja) => (hoja.id === guardada.id ? guardada : hoja)));
+      setAviso(`Documento cargado en ${guardada.codigo || guardada.nombre}.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo subir el documento.");
     } finally {
       setGuardando(false);
     }
@@ -210,6 +263,7 @@ function MedicionPage() {
                       onClick={() => {
                         setIndice(i);
                         setFormulario({ ...FORMULARIO_VACIO, fecha: fechaIso(new Date()) });
+                        setArchivoVerificacion(null);
                       }}
                     >
                       <strong>
@@ -229,9 +283,12 @@ function MedicionPage() {
               <Revision
                 hoja={actual}
                 formulario={formulario}
+                archivo={archivoVerificacion}
                 guardando={guardando}
                 onChange={setFormulario}
+                onArchivo={setArchivoVerificacion}
                 onGuardar={() => void guardarVerificacion()}
+                onSubirDocumento={(archivo) => void subirDocumento(archivo)}
               />
             ) : (
               <p>Agrega el primer instrumento de esta área.</p>
@@ -313,17 +370,24 @@ function MedicionPage() {
 function Revision({
   hoja,
   formulario,
+  archivo,
   guardando,
   onChange,
+  onArchivo,
   onGuardar,
+  onSubirDocumento,
 }: {
   hoja: HojaVida;
   formulario: typeof FORMULARIO_VACIO;
+  archivo: File | null;
   guardando: boolean;
   onChange: (valor: typeof FORMULARIO_VACIO) => void;
+  onArchivo: (archivo: File | null) => void;
   onGuardar: () => void;
+  onSubirDocumento: (archivo: File) => void;
 }) {
   const historial = verificacionesDe(hoja);
+  const documentos = documentosMedicionDe(hoja);
   const ultima = ultimaVerificacion(hoja);
   const estado: EstadoMedicion = estadoMedicion(hoja);
 
@@ -348,6 +412,37 @@ function Revision({
         )}
         <Link to={`/hojas-de-vida/${hoja.id}`}>Abrir hoja de vida</Link>
       </header>
+
+      <h3>Documentos de este instrumento</h3>
+      {documentos.length === 0 ? (
+        <p>Todavía no hay un formato o informe cargado.</p>
+      ) : (
+        <ul className="medicion__documentos">
+          {documentos.map((doc) => (
+            <li key={doc.id}>
+              <a href={doc.url} target="_blank" rel="noreferrer">
+                {doc.nombre}
+              </a>
+              <span>{doc.fecha}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <SoloConPermiso permiso="editar.hojas">
+        <label className="medicion__archivo">
+          Subir documento (PDF o imagen)
+          <input
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx"
+            disabled={guardando}
+            onChange={(e) => {
+              const elegido = e.target.files?.[0] ?? null;
+              e.target.value = "";
+              if (elegido) onSubirDocumento(elegido);
+            }}
+          />
+        </label>
+      </SoloConPermiso>
 
       <SoloConPermiso permiso="editar.hojas">
       <h3>Nueva verificación</h3>
@@ -415,6 +510,16 @@ function Revision({
           onChange={(e) => onChange({ ...formulario, observacion: e.target.value })}
         />
       </label>
+      <label className="medicion__archivo">
+        Adjuntar informe de esta verificación
+        <input
+          type="file"
+          accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx"
+          disabled={guardando}
+          onChange={(e) => onArchivo(e.target.files?.[0] ?? null)}
+        />
+        {archivo && <span>{archivo.name}</span>}
+      </label>
       <button type="button" className="btn btn--primario" disabled={guardando} onClick={onGuardar}>
         Guardar verificación
       </button>
@@ -434,6 +539,11 @@ function Revision({
               <p>{item.patron}</p>
               <p>{item.puntos}</p>
               {item.observacion && <p>{item.observacion}</p>}
+              {item.documentoUrl && (
+                <a href={item.documentoUrl} target="_blank" rel="noreferrer">
+                  {item.documentoNombre || "Ver documento"}
+                </a>
+              )}
             </li>
           ))}
         </ul>

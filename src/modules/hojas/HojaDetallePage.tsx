@@ -10,7 +10,13 @@ import HojaVidaFormatoImpresion, {
 } from "./HojaVidaFormatoImpresion";
 import { obtenerHistorialMaquina, obtenerHojaPorId } from "./hojasService";
 import type { HistorialMaquina } from "./hojasService";
-import { esEquipoMedicion, estadoMedicion, etiquetaEstado, verificacionesDe } from "./medicion";
+import {
+  documentosMedicionDe,
+  esEquipoMedicion,
+  estadoMedicion,
+  etiquetaEstado,
+  verificacionesDe,
+} from "./medicion";
 import type { HojaVida } from "./types";
 import "./hojas.css";
 
@@ -227,6 +233,18 @@ function HojaDetallePage() {
               <p>
                 <Link to="/hojas-de-vida/medicion">Registrar la siguiente verificación</Link>
               </p>
+              {documentosMedicionDe(hoja).length > 0 && (
+                <ul className="medicion__documentos">
+                  {documentosMedicionDe(hoja).map((doc) => (
+                    <li key={doc.id}>
+                      <a href={doc.url} target="_blank" rel="noreferrer">
+                        {doc.nombre}
+                      </a>
+                      <span>{doc.fecha}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {verificacionesDe(hoja).length === 0 ? (
                 <p className="hoja-detalle__vacio">
                   Todavía no hay un informe de verificación para este instrumento.
@@ -243,6 +261,11 @@ function HojaDetallePage() {
                       <p>{item.patron}</p>
                       <p>{item.puntos}</p>
                       {item.observacion && <p>{item.observacion}</p>}
+                      {item.documentoUrl && (
+                        <a href={item.documentoUrl} target="_blank" rel="noreferrer">
+                          {item.documentoNombre || "Ver documento"}
+                        </a>
+                      )}
                     </li>
                   ))}
                 </ul>

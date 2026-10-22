@@ -94,6 +94,33 @@ export async function subirFotoMaquina(archivo: File): Promise<string> {
   return supabase.storage.from(BUCKET).getPublicUrl(ruta).data.publicUrl;
 }
 
+const CARPETA_MEDICION = "documentos-medicion";
+const TAMANO_MAX_DOC_MEDICION = 20 * 1024 * 1024;
+
+/** Sube el formato o informe de verificación de un equipo de medición. */
+export async function subirDocumentoMedicion(hojaId: string, archivo: File): Promise<string> {
+  if (archivo.size > TAMANO_MAX_DOC_MEDICION) {
+    throw new Error(`"${archivo.name}" supera 20 MB.`);
+  }
+  const extension = archivo.name.split(".").pop()?.toLowerCase().replace(/[^\w]/g, "") || "bin";
+  const ruta = `${CARPETA_MEDICION}/${hojaId}/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(ruta, archivo, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: archivo.type || undefined,
+  });
+  if (error) {
+    if (/bucket not found/i.test(error.message)) {
+      throw new Error("No existe el almacén de archivos en Supabase.");
+    }
+    if (/row-level security|policy|permission/i.test(error.message)) {
+      throw new Error("Sin permiso para subir el documento de verificación.");
+    }
+    throw new Error(error.message);
+  }
+  return supabase.storage.from(BUCKET).getPublicUrl(ruta).data.publicUrl;
+}
+
 export async function crearHoja(
   input: HojaVidaInput,
   fotoUrl: string | null,

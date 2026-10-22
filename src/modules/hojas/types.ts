@@ -11,7 +11,16 @@ export interface HojaVidaDatos {
   motivoBaja?: string;
   /** Equipo que se verifica para medición (báscula, balanza, cinta métrica). */
   esMedicion?: boolean;
+  /** Informes o formatos de verificación adjuntos a este instrumento. */
+  documentosMedicion?: DocumentoMedicionHoja[];
   verificaciones?: VerificacionMedicion[];
+}
+
+export interface DocumentoMedicionHoja {
+  id: string;
+  nombre: string;
+  url: string;
+  fecha: string;
 }
 
 export interface VerificacionMedicion {
@@ -23,6 +32,8 @@ export interface VerificacionMedicion {
   resultado: "Apto" | "No apto" | "";
   responsable: string;
   observacion: string;
+  documentoUrl?: string;
+  documentoNombre?: string;
 }
 
 export interface HojaVida {
