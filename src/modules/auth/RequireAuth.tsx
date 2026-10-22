@@ -1,16 +1,26 @@
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import CargaPantalla from "../../components/CargaPantalla";
 import { useAuth } from "./AuthContext";
 import "./auth.css";
 
 function RequireAuth() {
   const navegar = useNavigate();
-  const { session, perfil, cargando, errorPerfil, salir } = useAuth();
+  const { session, perfil, cargando, errorPerfil, salir, recargarPerfil } = useAuth();
   const ubicacion = useLocation();
   const accesoEstable = useRef(false);
+  const [reintentando, setReintentando] = useState(false);
   if (session && perfil) accesoEstable.current = true;
   if (!session && !perfil && !cargando) accesoEstable.current = false;
+
+  async function reintentar() {
+    setReintentando(true);
+    try {
+      await recargarPerfil();
+    } finally {
+      setReintentando(false);
+    }
+  }
 
   async function manejarCerrarSesion() {
     accesoEstable.current = false;
@@ -23,7 +33,7 @@ function RequireAuth() {
     return <Outlet />;
   }
 
-  if (cargando) {
+  if (cargando || reintentando) {
     return <CargaPantalla mensaje="Verificando sesión..." pantallaCompleta />;
   }
 
@@ -42,6 +52,9 @@ function RequireAuth() {
           Luego el administrador debe agregar tu fila en <code>usuarios_portal</code> con rol{" "}
           <strong>admin</strong>, <strong>operador</strong> o <strong>consulta</strong>.
         </p>
+        <button type="button" className="btn btn--primario" onClick={() => void reintentar()}>
+          Reintentar
+        </button>
         <button type="button" className="btn" onClick={() => void manejarCerrarSesion()}>
           Cerrar sesión
         </button>

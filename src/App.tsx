@@ -33,6 +33,7 @@ import SolicitudesPage from "./modules/solicitudes/SolicitudesPage";
 import SolicitudesAreaPage from "./modules/solicitudes/SolicitudesAreaPage";
 import HojasPage from "./modules/hojas/HojasPage";
 import HojaDetallePage from "./modules/hojas/HojaDetallePage";
+import MedicionPage from "./modules/hojas/MedicionPage";
 import ComputadoresPage from "./modules/computadores/ComputadoresPage";
 import ComputadorDetallePage from "./modules/computadores/ComputadorDetallePage";
 import IndicadoresPage from "./modules/indicadores/IndicadoresPage";
@@ -91,6 +92,7 @@ function App() {
             <Route path="solicitudes" element={<SolicitudesPage />} />
             <Route path="solicitudes/area/:area" element={<SolicitudesAreaPage />} />
             <Route path="hojas-de-vida" element={<HojasPage />} />
+            <Route path="hojas-de-vida/medicion" element={<MedicionPage />} />
             <Route path="hojas-de-vida/:id" element={<HojaDetallePage />} />
             <Route path="computadores" element={<ComputadoresPage />} />
             <Route path="computadores/:id" element={<ComputadorDetallePage />} />

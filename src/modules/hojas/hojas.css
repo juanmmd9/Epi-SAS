@@ -461,3 +461,147 @@
     min-width: 100%;
   }
 }
+
+/* ----- Verificación de equipos de medición ----- */
+
+.medicion__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.medicion__filtros label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.medicion__filtros select {
+  font: inherit;
+  min-width: 12rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.medicion__nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.medicion__layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1.5rem;
+}
+
+.medicion__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.medicion__item {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  background: var(--color-superficie);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.medicion__item--activo {
+  border-color: var(--color-primario);
+  box-shadow: inset 3px 0 0 var(--color-primario);
+}
+
+.medicion__estado {
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.medicion__estado--vigente {
+  color: #166534;
+}
+
+.medicion__estado--vencida,
+.medicion__estado--no-apto {
+  color: #991b1b;
+}
+
+.medicion__estado--sin-registro {
+  color: #92400e;
+}
+
+.medicion__revision textarea,
+.medicion__alta textarea,
+.hoja-form textarea {
+  font: inherit;
+  width: 100%;
+  margin-top: 0.3rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-texto);
+  box-sizing: border-box;
+}
+
+.medicion__revision > label,
+.medicion__revision > button,
+.medicion__alta > button {
+  display: block;
+  margin-top: 0.8rem;
+}
+
+.medicion__historial {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.medicion__historial li {
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.medicion__historial p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 900px) {
+  .medicion__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .medicion__lista {
+    max-height: 16rem;
+  }
+}

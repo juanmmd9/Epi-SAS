@@ -257,6 +257,10 @@
   font-size: 0.85em;
 }
 
+.auth-sin-perfil .btn {
+  margin: 0.35rem;
+}
+
 .sidebar__usuario {
   margin-top: auto;
   padding: 1rem 0.75rem 0;

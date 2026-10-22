@@ -9,6 +9,20 @@ export interface HojaVidaDatos {
   ubicacion?: string;
   fechaBaja?: string;
   motivoBaja?: string;
+  /** Equipo que se verifica para medición (báscula, balanza, cinta métrica). */
+  esMedicion?: boolean;
+  verificaciones?: VerificacionMedicion[];
+}
+
+export interface VerificacionMedicion {
+  id: string;
+  fecha: string;
+  proxima: string;
+  patron: string;
+  puntos: string;
+  resultado: "Apto" | "No apto" | "";
+  responsable: string;
+  observacion: string;
 }
 
 export interface HojaVida {

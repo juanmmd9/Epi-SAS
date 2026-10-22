@@ -14,21 +14,26 @@ function leerEnv(nombre: "VITE_SUPABASE_URL" | "VITE_SUPABASE_ANON_KEY"): string
   return undefined;
 }
 
-const supabaseUrl = leerEnv("VITE_SUPABASE_URL");
+const supabaseUrlRemoto = leerEnv("VITE_SUPABASE_URL");
 const supabaseAnonKey = leerEnv("VITE_SUPABASE_ANON_KEY");
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrlRemoto || !supabaseAnonKey) {
   throw new Error(
     "Faltan VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY en el archivo .env",
   );
 }
+
+const enNavegadorDeDesarrollo =
+  typeof window !== "undefined" && Boolean(import.meta.env?.DEV);
+const supabaseUrl = enNavegadorDeDesarrollo
+  ? `${window.location.origin}/sb`
+  : supabaseUrlRemoto;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    // Evita que un refresh en segundo plano dispare limpiezas agresivas de UI.
     flowType: "pkce",
   },
 });

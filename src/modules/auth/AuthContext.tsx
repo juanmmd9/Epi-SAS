@@ -28,8 +28,8 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const TIMEOUT_SESION_MS = 12_000;
-const TIMEOUT_PERFIL_MS = 10_000;
+const TIMEOUT_SESION_MS = 20_000;
+const TIMEOUT_PERFIL_MS = 20_000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -106,12 +106,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionRef.current = data.session;
         setSession(data.session);
         if (data.session?.user.id) {
-          void cargarPerfil(data.session.user.id).finally(() => {
-            if (activo) {
-              inicioListo.current = true;
-              setCargando(false);
-            }
-          });
+          const userId = data.session.user.id;
+          window.setTimeout(() => {
+            void cargarPerfil(userId).finally(() => {
+              if (activo) {
+                inicioListo.current = true;
+                setCargando(false);
+              }
+            });
+          }, 0);
         } else {
           inicioListo.current = true;
           setCargando(false);
@@ -162,18 +165,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (mismoUsuario && perfilRef.current) return;
 
+      const userId = nuevaSession.user.id;
       if (!inicioListo.current) {
         setCargando(true);
-        void cargarPerfil(nuevaSession.user.id).finally(() => {
-          if (activo) {
-            inicioListo.current = true;
-            setCargando(false);
-          }
-        });
+        window.setTimeout(() => {
+          void cargarPerfil(userId).finally(() => {
+            if (activo) {
+              inicioListo.current = true;
+              setCargando(false);
+            }
+          });
+        }, 0);
         return;
       }
 
-      void cargarPerfil(nuevaSession.user.id);
+      window.setTimeout(() => {
+        void cargarPerfil(userId);
+      }, 0);
     });
 
     return () => {

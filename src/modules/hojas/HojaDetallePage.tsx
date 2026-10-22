@@ -10,6 +10,7 @@ import HojaVidaFormatoImpresion, {
 } from "./HojaVidaFormatoImpresion";
 import { obtenerHistorialMaquina, obtenerHojaPorId } from "./hojasService";
 import type { HistorialMaquina } from "./hojasService";
+import { esEquipoMedicion, estadoMedicion, etiquetaEstado, verificacionesDe } from "./medicion";
 import type { HojaVida } from "./types";
 import "./hojas.css";
 
@@ -217,6 +218,38 @@ function HojaDetallePage() {
         </aside>
 
         <div className="hoja-detalle__historial">
+          {esEquipoMedicion(hoja) && (
+            <section className="hoja-detalle__bloque">
+              <h2>Verificaciones de medición</h2>
+              <p className={`medicion__estado medicion__estado--${estadoMedicion(hoja)}`}>
+                {etiquetaEstado(estadoMedicion(hoja))}
+              </p>
+              <p>
+                <Link to="/hojas-de-vida/medicion">Registrar la siguiente verificación</Link>
+              </p>
+              {verificacionesDe(hoja).length === 0 ? (
+                <p className="hoja-detalle__vacio">
+                  Todavía no hay un informe de verificación para este instrumento.
+                </p>
+              ) : (
+                <ul className="medicion__historial">
+                  {verificacionesDe(hoja).map((item) => (
+                    <li key={item.id}>
+                      <strong>
+                        {item.fecha} · {item.resultado || "Sin resultado"} · próxima{" "}
+                        {item.proxima || "—"}
+                      </strong>
+                      <span>{item.responsable}</span>
+                      <p>{item.patron}</p>
+                      <p>{item.puntos}</p>
+                      {item.observacion && <p>{item.observacion}</p>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
           <header className="hoja-detalle__historial-encabezado">
             <h2>Historial de mantenimientos</h2>
             <p>{totalMantenimientos} registro(s) vinculados a esta máquina.</p>

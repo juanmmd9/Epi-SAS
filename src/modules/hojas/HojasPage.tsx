@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { SoloConPermiso } from "../auth/SoloConPermiso";
 import { AREAS_PLANTA, coincideArea } from "../../lib/areas";
 import HojaForm from "./HojaForm";
@@ -187,6 +187,11 @@ function HojasPage() {
       <p className="hojas__descripcion">
         Catálogo de máquinas y equipos. Los datos se guardan en la nube y los ven
         todos los usuarios del portal.
+      </p>
+      <p>
+        <Link className="btn btn--primario" to="/hojas-de-vida/medicion">
+          Revisar equipos de medición
+        </Link>
       </p>
 
       {faltaStorageFotos && <AvisoSetupFotosHojas />}
