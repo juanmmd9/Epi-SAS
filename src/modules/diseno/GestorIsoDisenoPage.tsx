@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { areaUsuario } from "../../lib/usuarioArea";
+import { useAuth } from "../auth/AuthContext";
+import type { UsuarioPortal } from "../auth/roles";
+import { listarRegistradosDelArea } from "../inicio/equipoRegistrados";
 import {
   calculateProjectProgress,
   calculateStageProgress,
   crearRegistrosIniciales,
+  ENCARGADO_EJEMPLO,
   ISO_STAGES,
   MASTER_FORMATS,
   TIPOS_PROYECTO_ISO,
@@ -32,16 +37,23 @@ function claseBadge(status: EstadoFormatoIso): string {
   return "gestor-iso__badge gestor-iso__badge--pendiente";
 }
 
+function nombrePersona(persona: Pick<UsuarioPortal, "nombre" | "usuario" | "email">): string {
+  return persona.nombre || persona.usuario || persona.email || "Sin nombre";
+}
+
 export interface GestorIsoDisenoProps {
   lineaId: IdLineaDisenoIso;
   titulo: string;
 }
 
 function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
+  const { perfil } = useAuth();
+  const area = areaUsuario(perfil);
   const [estado, setEstado] = useState(() => cargarEstadoIso(lineaId));
   const [busqueda, setBusqueda] = useState("");
   const [modalFormato, setModalFormato] = useState<RegistroFormatoIso | null>(null);
   const [modalProyecto, setModalProyecto] = useState(false);
+  const [equipo, setEquipo] = useState<UsuarioPortal[]>([]);
 
   useEffect(() => {
     setEstado(cargarEstadoIso(lineaId));
@@ -49,6 +61,52 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
     setModalFormato(null);
     setModalProyecto(false);
   }, [lineaId]);
+
+  useEffect(() => {
+    if (!area || !perfil?.id) {
+      setEquipo([]);
+      return;
+    }
+    let vigente = true;
+    void listarRegistradosDelArea(area, perfil.id)
+      .then((lista) => {
+        if (!vigente) return;
+        setEquipo(lista.filter((persona) => persona.rol === "solicitante"));
+      })
+      .catch(() => {
+        if (vigente) setEquipo([]);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [area, perfil?.id]);
+
+  const opcionesEncargado = useMemo(() => {
+    const lista: { id: string; nombre: string; etiqueta: string }[] = [
+      {
+        id: ENCARGADO_EJEMPLO.id,
+        nombre: ENCARGADO_EJEMPLO.nombre,
+        etiqueta: `${ENCARGADO_EJEMPLO.nombre} · perfil de ejemplo`,
+      },
+    ];
+    if (perfil) {
+      lista.push({
+        id: perfil.id,
+        nombre: nombrePersona(perfil),
+        etiqueta: `${nombrePersona(perfil)} · director / líder`,
+      });
+    }
+    for (const persona of equipo) {
+      if (lista.some((item) => item.id === persona.id)) continue;
+      lista.push({
+        id: persona.id,
+        nombre: nombrePersona(persona),
+        etiqueta: `${nombrePersona(persona)} · equipo`,
+      });
+    }
+    return lista;
+  }, [equipo, perfil]);
+
   const [formFormato, setFormFormato] = useState({
     version: "01",
     status: "Pendiente" as EstadoFormatoIso,
@@ -63,7 +121,7 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
     code: "",
     name: "",
     type: "Nuevo Producto" as TipoProyectoIso,
-    lead: "",
+    leadId: ENCARGADO_EJEMPLO.id,
     startDate: fechaHoy(),
     targetDate: "",
   });
@@ -144,15 +202,23 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
     setModalFormato(null);
   }
 
+  function resolverEncargado(leadId: string): { leadId: string; lead: string } {
+    const elegido = opcionesEncargado.find((item) => item.id === leadId);
+    if (elegido) return { leadId: elegido.id, lead: elegido.nombre };
+    return { leadId: ENCARGADO_EJEMPLO.id, lead: ENCARGADO_EJEMPLO.nombre };
+  }
+
   function crearProyecto(e: FormEvent) {
     e.preventDefault();
     const id = `PRJ-${crypto.randomUUID()}`;
+    const encargado = resolverEncargado(formProyecto.leadId);
     const nuevo: ProyectoIso = {
       id,
       code: formProyecto.code.trim().toUpperCase(),
       name: formProyecto.name.trim(),
       type: formProyecto.type,
-      lead: formProyecto.lead.trim(),
+      lead: encargado.lead,
+      leadId: encargado.leadId,
       startDate: formProyecto.startDate,
       targetDate: formProyecto.targetDate,
       status: "En progreso",
@@ -169,9 +235,22 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
       code: "",
       name: "",
       type: "Nuevo Producto",
-      lead: "",
+      leadId: opcionesEncargado[0]?.id ?? ENCARGADO_EJEMPLO.id,
       startDate: fechaHoy(),
       targetDate: "",
+    });
+  }
+
+  function cambiarEncargadoProyecto(leadId: string) {
+    if (!proyecto) return;
+    const encargado = resolverEncargado(leadId);
+    persistir({
+      ...estado,
+      projects: estado.projects.map((item) =>
+        item.id === proyecto.id
+          ? { ...item, lead: encargado.lead, leadId: encargado.leadId }
+          : item,
+      ),
     });
   }
 
@@ -197,7 +276,24 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
           </p>
         </div>
         <div className="gestor-iso__acciones">
-          <button type="button" className="btn btn--primario" onClick={() => setModalProyecto(true)}>
+          <button
+            type="button"
+            className="btn btn--primario"
+            onClick={() => {
+              setFormProyecto({
+                code: "",
+                name: "",
+                type: "Nuevo Producto",
+                leadId:
+                  equipo[0]?.id ??
+                  perfil?.id ??
+                  ENCARGADO_EJEMPLO.id,
+                startDate: fechaHoy(),
+                targetDate: "",
+              });
+              setModalProyecto(true);
+            }}
+          >
             Nuevo proyecto
           </button>
           <button
@@ -287,10 +383,31 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                   </div>
                   <h2>{proyecto.name}</h2>
                   <p className="gestor-iso__meta">
-                    <span>{proyecto.lead}</span>
                     <span>Inicio: {proyecto.startDate}</span>
                     <span>Límite: {proyecto.targetDate}</span>
                   </p>
+                  <label className="gestor-iso__encargado">
+                    Encargado del proyecto
+                    <select
+                      value={
+                        proyecto.leadId &&
+                        opcionesEncargado.some((item) => item.id === proyecto.leadId)
+                          ? proyecto.leadId
+                          : ENCARGADO_EJEMPLO.id
+                      }
+                      onChange={(e) => cambiarEncargadoProyecto(e.target.value)}
+                    >
+                      {opcionesEncargado.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.etiqueta}
+                        </option>
+                      ))}
+                      {proyecto.leadId &&
+                      !opcionesEncargado.some((item) => item.id === proyecto.leadId) ? (
+                        <option value={proyecto.leadId}>{proyecto.lead}</option>
+                      ) : null}
+                    </select>
+                  </label>
                 </div>
                 <div className="gestor-iso__avance">
                   <div>
@@ -558,12 +675,21 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                   </select>
                 </label>
                 <label>
-                  Líder técnico asignado
-                  <input
+                  Encargado (equipo de Diseño)
+                  <select
                     required
-                    value={formProyecto.lead}
-                    onChange={(e) => setFormProyecto({ ...formProyecto, lead: e.target.value })}
-                  />
+                    value={formProyecto.leadId}
+                    onChange={(e) => setFormProyecto({ ...formProyecto, leadId: e.target.value })}
+                  >
+                    {opcionesEncargado.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.etiqueta}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="gestor-iso__hint">
+                    Sale de Equipo (auxiliares registrados). Si aún no hay, usa el perfil de ejemplo.
+                  </span>
                 </label>
                 <label>
                   Fecha de inicio

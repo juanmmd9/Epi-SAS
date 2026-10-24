@@ -44,11 +44,22 @@ function BadgeNav({
   );
 }
 
+function leerAreasMasAbiertas(): boolean {
+  try {
+    const raw = localStorage.getItem("sidebar-diseno-areas-abiertas");
+    if (raw === null) return true;
+    return raw === "1";
+  } catch {
+    return true;
+  }
+}
+
 function BottomNav() {
   const { perfil, rol, salir } = useAuth();
   const ubicacion = useLocation();
   const navegar = useNavigate();
   const [masAbierto, setMasAbierto] = useState(false);
+  const [areasMasAbiertas, setAreasMasAbiertas] = useState(leerAreasMasAbiertas);
   const pendientesFirma = usePendientesAprobacionPm();
   const pmAsignados = usePmAsignadosBadge();
   const solicitudesAbiertas = useSolicitudesAbiertasBadge();
@@ -261,20 +272,43 @@ function BottomNav() {
 
             {rol === "lider" && area && coincideArea(area, "Diseno y Desarrollo") ? (
               <div className="mas-sheet__areas">
-                <h3>Áreas</h3>
-                {AREAS_MENU_DISENO.map((areaMenu) => (
-                  <button
-                    key={areaMenu}
-                    type="button"
-                    className="mas-sheet__area"
-                    onClick={() => {
-                      setMasAbierto(false);
-                      navegar(rutaMenuArea(areaMenu));
-                    }}
-                  >
-                    {areaMenu}
-                  </button>
-                ))}
+                <button
+                  type="button"
+                  className="mas-sheet__areas-toggle"
+                  aria-expanded={areasMasAbiertas}
+                  onClick={() => {
+                    setAreasMasAbiertas((previo) => {
+                      const siguiente = !previo;
+                      try {
+                        localStorage.setItem(
+                          "sidebar-diseno-areas-abiertas",
+                          siguiente ? "1" : "0",
+                        );
+                      } catch {
+                        /* ignore */
+                      }
+                      return siguiente;
+                    });
+                  }}
+                >
+                  <h3>Áreas</h3>
+                  <span aria-hidden>{areasMasAbiertas ? "▾" : "▸"}</span>
+                </button>
+                {areasMasAbiertas
+                  ? AREAS_MENU_DISENO.map((areaMenu) => (
+                      <button
+                        key={areaMenu}
+                        type="button"
+                        className="mas-sheet__area"
+                        onClick={() => {
+                          setMasAbierto(false);
+                          navegar(rutaMenuArea(areaMenu));
+                        }}
+                      >
+                        {areaMenu}
+                      </button>
+                    ))
+                  : null}
               </div>
             ) : null}
 

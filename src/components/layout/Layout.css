@@ -88,6 +88,45 @@
   color: #94a3b8;
 }
 
+.sidebar__areas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.sidebar__grupo--toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: calc(100% - 0.5rem);
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+  padding: 0.45rem 0.5rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  text-align: left;
+}
+
+.sidebar__grupo--toggle:hover {
+  background: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+.sidebar__grupo-flecha {
+  font-size: 0.85rem;
+  line-height: 1;
+  color: #cbd5e1;
+}
+
 .sidebar__enlace {
   color: #cbd5e1;
   text-decoration: none;
@@ -461,6 +500,29 @@ body.layout-mas-abierto {
     gap: 0.35rem;
     max-height: 40vh;
     overflow-y: auto;
+  }
+
+  .mas-sheet__areas-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    margin: 0;
+    padding: 0.25rem 0.15rem;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .mas-sheet__areas-toggle h3 {
+    margin: 0;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: inherit;
   }
 
   .mas-sheet__areas h3 {

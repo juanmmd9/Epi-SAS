@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import BrandLogo from "../BrandLogo";
 import { useAuth } from "../../modules/auth/AuthContext";
@@ -15,6 +15,18 @@ import { useSolicitudesAbiertasBadge } from "../../modules/solicitudes/useSolici
 import "../../modules/auth/auth.css";
 import "./Layout.css";
 
+const CLAVE_AREAS_ABIERTAS = "sidebar-diseno-areas-abiertas";
+
+function leerAreasAbiertas(): boolean {
+  try {
+    const raw = localStorage.getItem(CLAVE_AREAS_ABIERTAS);
+    if (raw === null) return true;
+    return raw === "1";
+  } catch {
+    return true;
+  }
+}
+
 interface Props {
   abierto: boolean;
   onCerrar: () => void;
@@ -24,6 +36,7 @@ function Sidebar({ abierto, onCerrar }: Props) {
   const navegar = useNavigate();
   const ubicacion = useLocation();
   const { perfil, salir } = useAuth();
+  const [areasAbiertas, setAreasAbiertas] = useState(leerAreasAbiertas);
   const area = areaUsuario(perfil);
   const esDiseno = perfil?.rol === "lider" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
   const esAuxiliarDiseno =
@@ -162,21 +175,43 @@ function Sidebar({ abierto, onCerrar }: Props) {
           );
         })}
         {esDiseno || esAuxiliarDiseno ? (
-          <>
-            <p className="sidebar__grupo">Áreas</p>
-            {AREAS_MENU_DISENO.map((areaMenu) => (
-              <NavLink
-                key={areaMenu}
-                to={rutaMenuArea(areaMenu)}
-                className={({ isActive }) =>
-                  "sidebar__enlace" + (isActive ? " sidebar__enlace--activo" : "")
-                }
-                onClick={onCerrar}
-              >
-                <span className="sidebar__enlace-texto">{areaMenu}</span>
-              </NavLink>
-            ))}
-          </>
+          <div className="sidebar__areas">
+            <button
+              type="button"
+              className="sidebar__grupo sidebar__grupo--toggle"
+              aria-expanded={areasAbiertas}
+              onClick={() => {
+                setAreasAbiertas((previo) => {
+                  const siguiente = !previo;
+                  try {
+                    localStorage.setItem(CLAVE_AREAS_ABIERTAS, siguiente ? "1" : "0");
+                  } catch {
+                    /* ignore */
+                  }
+                  return siguiente;
+                });
+              }}
+            >
+              <span>Áreas</span>
+              <span className="sidebar__grupo-flecha" aria-hidden>
+                {areasAbiertas ? "▾" : "▸"}
+              </span>
+            </button>
+            {areasAbiertas
+              ? AREAS_MENU_DISENO.map((areaMenu) => (
+                  <NavLink
+                    key={areaMenu}
+                    to={rutaMenuArea(areaMenu)}
+                    className={({ isActive }) =>
+                      "sidebar__enlace" + (isActive ? " sidebar__enlace--activo" : "")
+                    }
+                    onClick={onCerrar}
+                  >
+                    <span className="sidebar__enlace-texto">{areaMenu}</span>
+                  </NavLink>
+                ))
+              : null}
+          </div>
         ) : null}
       </nav>
       {perfil && (

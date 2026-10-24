@@ -24,11 +24,20 @@ export interface ProyectoIso {
   code: string;
   name: string;
   type: TipoProyectoIso;
+  /** Nombre visible del encargado (del equipo o perfil ejemplo). */
   lead: string;
+  /** Id de usuarios_portal o del perfil ejemplo. */
+  leadId?: string;
   startDate: string;
   targetDate: string;
   status: string;
 }
+
+/** Perfil demo cuando aún no hay auxiliares registrados en Equipo. */
+export const ENCARGADO_EJEMPLO = {
+  id: "ejemplo-auxiliar-diseno",
+  nombre: "Auxiliar ejemplo (demo)",
+} as const;
 
 export interface RegistroFormatoIso {
   id: string;
