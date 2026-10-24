@@ -23,11 +23,14 @@ if (!supabaseUrlRemoto || !supabaseAnonKey) {
   );
 }
 
+const urlRemoto: string = supabaseUrlRemoto;
+const anonKey: string = supabaseAnonKey;
+
 const enNavegadorDeDesarrollo =
   typeof window !== "undefined" && Boolean(import.meta.env?.DEV);
 const supabaseUrl = enNavegadorDeDesarrollo
   ? `${window.location.origin}/sb`
-  : supabaseUrlRemoto;
+  : urlRemoto;
 
 /** Evita peticiones colgadas indefinidas cuando Auth/REST van lentos o unhealthy. */
 const TIMEOUT_FETCH_MS = 15_000;
@@ -82,7 +85,7 @@ export function mensajeErrorSupabase(error: unknown, accion = "completar la oper
   return raw || `No se pudo ${accion}.`;
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl, anonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -98,6 +101,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export function calentarSupabase(): void {
   if (typeof window === "undefined") return;
   void fetchConTimeout(`${supabaseUrl}/auth/v1/health`, {
-    headers: { apikey: supabaseAnonKey },
+    headers: { apikey: anonKey },
   }).catch(() => undefined);
 }
