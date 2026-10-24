@@ -117,10 +117,17 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
     evidence: "",
     notes: "",
   });
-  const [formProyecto, setFormProyecto] = useState({
+  const [formProyecto, setFormProyecto] = useState<{
+    code: string;
+    name: string;
+    type: TipoProyectoIso;
+    leadId: string;
+    startDate: string;
+    targetDate: string;
+  }>({
     code: "",
     name: "",
-    type: "Nuevo Producto" as TipoProyectoIso,
+    type: "Nuevo Producto",
     leadId: ENCARGADO_EJEMPLO.id,
     startDate: fechaHoy(),
     targetDate: "",
