@@ -44,9 +44,13 @@ function LoginPage() {
   const [pendienteEntrada, setPendienteEntrada] = useState(false);
 
   useEffect(() => {
-    void existeTablaUsuarios()
-      .then((ok) => setFaltaRls(!ok))
-      .catch(() => setFaltaRls(false));
+    // No bloquear el login: solo avisar si la tabla aún no existe.
+    const ctrl = window.setTimeout(() => {
+      void existeTablaUsuarios()
+        .then((ok) => setFaltaRls(!ok))
+        .catch(() => setFaltaRls(false));
+    }, 0);
+    return () => window.clearTimeout(ctrl);
   }, []);
 
   useEffect(() => {

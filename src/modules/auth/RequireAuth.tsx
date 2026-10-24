@@ -34,7 +34,16 @@ function RequireAuth() {
   }
 
   if (cargando || reintentando) {
-    return <CargaPantalla mensaje="Verificando sesión..." pantallaCompleta />;
+    return (
+      <CargaPantalla
+        mensaje={
+          errorPerfil
+            ? errorPerfil
+            : "Verificando sesión… Si tarda más de 15 s, Supabase puede estar recuperándose."
+        }
+        pantallaCompleta
+      />
+    );
   }
 
   if (!session) {

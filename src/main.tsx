@@ -4,6 +4,7 @@ import { BrowserRouter, HashRouter } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import "./index.css";
 import App from "./App";
+import { calentarSupabase } from "./services/supabase";
 
 /**
  * En Capacitor, base "./" rompe BrowserRouter (pantalla en blanco).
@@ -13,6 +14,8 @@ const nativo = Capacitor.isNativePlatform();
 const baseRaw = import.meta.env.BASE_URL || "/";
 const basename =
   baseRaw === "./" || baseRaw === "." ? undefined : baseRaw.replace(/\/$/, "") || undefined;
+
+calentarSupabase();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

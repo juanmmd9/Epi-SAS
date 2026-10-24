@@ -28,8 +28,8 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const TIMEOUT_SESION_MS = 20_000;
-const TIMEOUT_PERFIL_MS = 20_000;
+const TIMEOUT_SESION_MS = 8_000;
+const TIMEOUT_PERFIL_MS = 10_000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -100,6 +100,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let activo = true;
 
+    // Si no hay sesión guardada, no bloqueamos la UI esperando a Auth remoto.
+    const haySesionLocal =
+      typeof window !== "undefined" &&
+      Object.keys(window.localStorage).some((k) => k.startsWith("sb-") && k.endsWith("-auth-token"));
+
+    if (!haySesionLocal) {
+      inicioListo.current = true;
+      setCargando(false);
+    }
+
     void withTimeout(supabase.auth.getSession(), TIMEOUT_SESION_MS, "Sesión no respondió a tiempo")
       .then(({ data }) => {
         if (!activo) return;
@@ -125,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         inicioListo.current = true;
         setCargando(false);
         setErrorPerfil(
-          "La conexión tardó demasiado. Recarga la página o revisa tu red.",
+          "Supabase está lento o recuperándose. Espera un minuto y recarga, o vuelve a iniciar sesión.",
         );
       });
 

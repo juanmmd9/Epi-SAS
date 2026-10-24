@@ -1156,8 +1156,20 @@
 
 .inicio-proyectos__card h2 {
   margin: 0;
-  padding: 0.9rem 1rem 1rem;
+  padding: 0.9rem 1rem 0.35rem;
   font-size: 1.05rem;
+}
+
+.inicio-proyectos__card p {
+  margin: 0;
+  padding: 0 1rem 1rem;
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+  line-height: 1.35;
+}
+
+.inicio-proyectos__card:not(:has(p)) h2 {
+  padding-bottom: 1rem;
 }
 
 .inicio-diseno__flujo-titulo {

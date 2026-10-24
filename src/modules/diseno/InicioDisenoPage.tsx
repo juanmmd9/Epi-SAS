@@ -20,6 +20,7 @@ function InicioDisenoPage() {
           >
             <img src={rutaPublica(proyecto.imagen)} alt="" />
             <h2>{proyecto.titulo}</h2>
+            <p>Gestor ISO 8.3 · formatos F-DIS y avance ponderado</p>
           </Link>
         ))}
       </div>

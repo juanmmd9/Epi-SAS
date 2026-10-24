@@ -1,4 +1,4 @@
-import { supabase } from "../../services/supabase";
+import { mensajeErrorSupabase, supabase } from "../../services/supabase";
 import { normalizarArea } from "../../lib/areas";
 import type { RegistroCorrectivo } from "../correctivo/types";
 import type { RegistroPreventivo } from "../preventivo/types";
@@ -131,7 +131,7 @@ export async function crearHoja(
     .insert({ ...payload, foto_url: fotoUrl, activa: true })
     .select()
     .single();
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(mensajeErrorSupabase(error.message, "crear la hoja de vida"));
   return normalizarHojaDesdeDb(data as HojaVida);
 }
 

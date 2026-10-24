@@ -13,6 +13,7 @@ import {
   verificacionesDe,
   type EstadoMedicion,
 } from "./medicion";
+import { mensajeErrorSupabase } from "../../services/supabase";
 import { actualizarHoja, crearHoja, listarHojas, subirDocumentoMedicion } from "./hojasService";
 import type {
   DocumentoMedicionHoja,
@@ -196,7 +197,7 @@ function MedicionPage() {
       setAlta({ ...alta, codigo: "", marca: "", serial: "", ubicacion: "" });
       setAviso("Instrumento creado. Quedó en la lista para revisarlo.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo crear.");
+      setError(mensajeErrorSupabase(e, "registrar el equipo de medición"));
     } finally {
       setGuardando(false);
     }
