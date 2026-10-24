@@ -61,11 +61,12 @@ export interface EstadoAppIso {
 }
 
 export const ISO_STAGES: EtapaIso[] = [
-  { id: "8.3.2", name: "Planificación", weight: 0.15 },
-  { id: "8.3.3", name: "Entradas", weight: 0.2 },
-  { id: "8.3.4_VERIF", name: "Verificación", weight: 0.25 },
-  { id: "8.3.4_VALID", name: "Validación", weight: 0.25 },
-  { id: "8.3.5", name: "Salidas y Cierre", weight: 0.15 },
+  { id: "8.3.2", name: "Planificación", weight: 0.12 },
+  { id: "8.3.3", name: "Entradas", weight: 0.15 },
+  { id: "8.3.4_DES", name: "Diseño y Desarrollo", weight: 0.2 },
+  { id: "8.3.4_VERIF", name: "Verificación", weight: 0.2 },
+  { id: "8.3.4_VALID", name: "Validación", weight: 0.2 },
+  { id: "8.3.5", name: "Salidas y Cierre", weight: 0.13 },
 ];
 
 export const MASTER_FORMATS: FormatoMaestroIso[] = [
@@ -73,6 +74,9 @@ export const MASTER_FORMATS: FormatoMaestroIso[] = [
   { code: "F-DIS-02", name: "Matriz de Gestión del Riesgo del Producto", stage: "8.3.2" },
   { code: "F-DIS-03", name: "Ficha de Requisitos y Entradas Normativas", stage: "8.3.3" },
   { code: "F-DIS-04", name: "Lista Preliminar de Materiales (BOM)", stage: "8.3.3" },
+  { code: "F-DIS-12", name: "Diseño conceptual", stage: "8.3.4_DES" },
+  { code: "F-DIS-13", name: "Diseño preliminar", stage: "8.3.4_DES" },
+  { code: "F-DIS-14", name: "Diseño detalle", stage: "8.3.4_DES" },
   {
     code: "F-DIS-05",
     name: "Protocolo de Ensayos y Cálculos de Verificación",
