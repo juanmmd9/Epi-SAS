@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { areaUsuario } from "../../lib/usuarioArea";
 import { useAuth } from "../auth/AuthContext";
@@ -29,6 +29,52 @@ import "./reporteProduccion.css";
 
 const RESULTADOS: ResultadoControl[] = ["", "OK", "NC", "NA"];
 
+const NOMBRES_MES = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+] as const;
+
+type CarpetaAbierta =
+  | { nivel: "anios" }
+  | { nivel: "meses"; anio: string }
+  | { nivel: "reportes"; anio: string; mes: string };
+
+function partesFecha(fecha: string): { anio: string; mes: string } | null {
+  const match = /^(\d{4})-(\d{2})/.exec(fecha.trim());
+  if (!match) return null;
+  return { anio: match[1], mes: match[2] };
+}
+
+function etiquetaMes(mes: string): string {
+  const indice = Number(mes) - 1;
+  return NOMBRES_MES[indice] ?? `Mes ${mes}`;
+}
+
+function IconoCarpeta() {
+  return (
+    <svg className="tj-carpeta__icono" viewBox="0 0 64 52" aria-hidden>
+      <path
+        className="tj-carpeta__solapa"
+        d="M2 12c0-3.3 2.7-6 6-6h14.2c1.5 0 2.9.7 3.8 1.9L30 14h26c3.3 0 6 2.7 6 6v24c0 3.3-2.7 6-6 6H8c-3.3 0-6-2.7-6-6V12z"
+      />
+      <path
+        className="tj-carpeta__cuerpo"
+        d="M2 18h60v26c0 3.3-2.7 6-6 6H8c-3.3 0-6-2.7-6-6V18z"
+      />
+    </svg>
+  );
+}
+
 function ControlSelect({
   valor,
   onChange,
@@ -58,9 +104,51 @@ function ReporteProduccionPage() {
   const [error, setError] = useState<string | null>(null);
   const [vistaPrevia, setVistaPrevia] = useState<ReporteProduccionDatos | null>(null);
   const [claveFormulario, setClaveFormulario] = useState(0);
+  const [carpeta, setCarpeta] = useState<CarpetaAbierta>({ nivel: "anios" });
 
   const permitido = puedeUsarFormatosTejidos(rol, areaUsuario(perfil));
   const esTrenzadora = datos.areaTrabajo === "Trenzadora";
+
+  const carpetasPorAnio = useMemo(() => {
+    const mapa = new Map<string, Map<string, RegistroReporteProduccion[]>>();
+    for (const registro of registros) {
+      const partes = partesFecha(registro.fecha || registro.datos.fecha || "");
+      if (!partes) continue;
+      let meses = mapa.get(partes.anio);
+      if (!meses) {
+        meses = new Map();
+        mapa.set(partes.anio, meses);
+      }
+      const lista = meses.get(partes.mes) ?? [];
+      lista.push(registro);
+      meses.set(partes.mes, lista);
+    }
+    for (const meses of mapa.values()) {
+      for (const lista of meses.values()) {
+        lista.sort((a, b) => {
+          const porFecha = (b.fecha || "").localeCompare(a.fecha || "");
+          if (porFecha !== 0) return porFecha;
+          return (b.creado_en || "").localeCompare(a.creado_en || "");
+        });
+      }
+    }
+    return [...mapa.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([anio, meses]) => ({
+        anio,
+        total: [...meses.values()].reduce((acc, lista) => acc + lista.length, 0),
+        meses: [...meses.entries()]
+          .sort(([a], [b]) => b.localeCompare(a))
+          .map(([mes, lista]) => ({ mes, lista, etiqueta: etiquetaMes(mes) })),
+      }));
+  }, [registros]);
+
+  const reportesCarpeta =
+    carpeta.nivel === "reportes"
+      ? (carpetasPorAnio
+          .find((item) => item.anio === carpeta.anio)
+          ?.meses.find((item) => item.mes === carpeta.mes)?.lista ?? [])
+      : [];
 
   useEffect(() => {
     if (!permitido) return;
@@ -69,6 +157,37 @@ function ReporteProduccionPage() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setCargando(false));
   }, [permitido]);
+
+  useEffect(() => {
+    if (carpeta.nivel === "anios") return;
+    const anio = carpetasPorAnio.find((item) => item.anio === carpeta.anio);
+    if (!anio) {
+      setCarpeta({ nivel: "anios" });
+      return;
+    }
+    if (carpeta.nivel === "reportes" && !anio.meses.some((item) => item.mes === carpeta.mes)) {
+      setCarpeta({ nivel: "meses", anio: carpeta.anio });
+    }
+  }, [carpeta, carpetasPorAnio]);
+
+  function abrirCarpetaMes(anio: string, mes: string) {
+    setCarpeta({ nivel: "reportes", anio, mes });
+  }
+
+  function irACarpetaDeFecha(fecha: string) {
+    const partes = partesFecha(fecha);
+    if (!partes) {
+      setCarpeta({ nivel: "anios" });
+      return;
+    }
+    setCarpeta({ nivel: "reportes", anio: partes.anio, mes: partes.mes });
+    window.setTimeout(() => {
+      document.getElementById("tj-reportes-guardados")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+  }
 
   useEffect(() => {
     if (!perfil) return;
@@ -155,13 +274,20 @@ function ReporteProduccionPage() {
     }
     setGuardando(true);
     try {
+      const fechaGuardada = datos.fecha;
       const guardado = await guardarReporteProduccion(datos, editandoId);
       setRegistros((prev) => {
         const resto = prev.filter((r) => r.id !== guardado.id);
         return [guardado, ...resto];
       });
       limpiarFormulario();
-      setMensaje("Reporte guardado. El formulario quedó en blanco para crear uno nuevo.");
+      irACarpetaDeFecha(fechaGuardada);
+      const destino = partesFecha(fechaGuardada);
+      setMensaje(
+        destino
+          ? `Reporte guardado en ${etiquetaMes(destino.mes)} ${destino.anio}. El formulario quedó en blanco para crear uno nuevo.`
+          : "Reporte guardado. El formulario quedó en blanco para crear uno nuevo.",
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar");
     } finally {
@@ -592,58 +718,141 @@ function ReporteProduccionPage() {
           </div>
       </div>
 
-      <section className="tj-reporte__lista">
-        <h2>Reportes guardados</h2>
-        {cargando ? <p>Cargando...</p> : null}
-        {!cargando && registros.length === 0 ? <p>Todavía no hay reportes.</p> : null}
-        {registros.length > 0 ? (
-          <div className="tj-reporte__scroll">
-            <table className="tj-tabla">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Turno</th>
-                  <th>Área</th>
-                  <th>Operario</th>
-                  <th>Supervisor</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {registros.map((registro) => (
-                  <tr
-                    key={registro.id}
-                    className={registro.id === editandoId ? "tj-reporte__fila--activa" : undefined}
+      <section className="tj-reporte__lista" id="tj-reportes-guardados">
+        <div className="tj-reporte__lista-cab">
+          <h2>Reportes guardados</h2>
+          {carpeta.nivel !== "anios" ? (
+            <nav className="tj-carpeta__migas" aria-label="Navegación de carpetas">
+              <button type="button" onClick={() => setCarpeta({ nivel: "anios" })}>
+                Años
+              </button>
+              {carpeta.nivel === "meses" || carpeta.nivel === "reportes" ? (
+                <>
+                  <span>/</span>
+                  <button
+                    type="button"
+                    onClick={() => setCarpeta({ nivel: "meses", anio: carpeta.anio })}
                   >
-                    <td>{registro.fecha}</td>
-                    <td>{registro.datos.turno || "—"}</td>
-                    <td>{registro.area_trabajo}</td>
-                    <td>{registro.datos.operario || "—"}</td>
-                    <td>{registro.datos.supervisor || "—"}</td>
-                    <td className="tj-reporte__acciones-fila">
-                      <button
-                        type="button"
-                        className="btn"
-                        onClick={() => setVistaPrevia(registro.datos)}
-                      >
-                        Vista previa
-                      </button>
-                      <button type="button" className="btn" onClick={() => abrirRegistro(registro)}>
-                        Modificar
-                      </button>
-                      <button
-                        type="button"
-                        className="btn"
-                        onClick={() => void eliminarRegistro(registro.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    {carpeta.anio}
+                  </button>
+                </>
+              ) : null}
+              {carpeta.nivel === "reportes" ? (
+                <>
+                  <span>/</span>
+                  <strong>
+                    {etiquetaMes(carpeta.mes)} {carpeta.anio}
+                  </strong>
+                </>
+              ) : null}
+            </nav>
+          ) : null}
+        </div>
+
+        {cargando ? <p>Cargando...</p> : null}
+        {!cargando && registros.length === 0 ? (
+          <p>Todavía no hay reportes. Al guardar uno se crea la carpeta del mes y del año.</p>
+        ) : null}
+
+        {!cargando && registros.length > 0 && carpeta.nivel === "anios" ? (
+          <div className="tj-carpeta__rejilla">
+            {carpetasPorAnio.map((anio) => (
+              <button
+                key={anio.anio}
+                type="button"
+                className="tj-carpeta"
+                onClick={() => setCarpeta({ nivel: "meses", anio: anio.anio })}
+              >
+                <IconoCarpeta />
+                <span className="tj-carpeta__nombre">{anio.anio}</span>
+                <span className="tj-carpeta__meta">
+                  {anio.meses.length} {anio.meses.length === 1 ? "mes" : "meses"} · {anio.total}{" "}
+                  {anio.total === 1 ? "reporte" : "reportes"}
+                </span>
+              </button>
+            ))}
           </div>
+        ) : null}
+
+        {!cargando && carpeta.nivel === "meses" ? (
+          <div className="tj-carpeta__rejilla">
+            {(carpetasPorAnio.find((item) => item.anio === carpeta.anio)?.meses ?? []).map(
+              (mes) => (
+                <button
+                  key={`${carpeta.anio}-${mes.mes}`}
+                  type="button"
+                  className="tj-carpeta tj-carpeta--mes"
+                  onClick={() => abrirCarpetaMes(carpeta.anio, mes.mes)}
+                >
+                  <IconoCarpeta />
+                  <span className="tj-carpeta__nombre">{mes.etiqueta}</span>
+                  <span className="tj-carpeta__meta">
+                    {mes.lista.length} {mes.lista.length === 1 ? "reporte" : "reportes"}
+                  </span>
+                </button>
+              ),
+            )}
+          </div>
+        ) : null}
+
+        {!cargando && carpeta.nivel === "reportes" ? (
+          reportesCarpeta.length === 0 ? (
+            <p>Esta carpeta quedó vacía.</p>
+          ) : (
+            <div className="tj-reporte__scroll">
+              <table className="tj-tabla">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Turno</th>
+                    <th>Área</th>
+                    <th>Operario</th>
+                    <th>Supervisor</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportesCarpeta.map((registro) => (
+                    <tr
+                      key={registro.id}
+                      className={
+                        registro.id === editandoId ? "tj-reporte__fila--activa" : undefined
+                      }
+                    >
+                      <td>{registro.fecha}</td>
+                      <td>{registro.datos.turno || "—"}</td>
+                      <td>{registro.area_trabajo}</td>
+                      <td>{registro.datos.operario || "—"}</td>
+                      <td>{registro.datos.supervisor || "—"}</td>
+                      <td className="tj-reporte__acciones-fila">
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => setVistaPrevia(registro.datos)}
+                        >
+                          Vista previa
+                        </button>
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => abrirRegistro(registro)}
+                        >
+                          Modificar
+                        </button>
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => void eliminarRegistro(registro.id)}
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
         ) : null}
       </section>
 
