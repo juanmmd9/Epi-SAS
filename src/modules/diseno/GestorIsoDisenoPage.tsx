@@ -8,16 +8,21 @@ import {
   calculateProjectProgress,
   calculateStageProgress,
   crearRegistrosIniciales,
+  documentosDe,
   ENCARGADO_EJEMPLO,
   ISO_STAGES,
   MASTER_FORMATS,
+  pesoFormato,
+  tieneEvidenciaVisible,
   TIPOS_PROYECTO_ISO,
+  type DocumentoIso,
   type EstadoFormatoIso,
   type IdLineaDisenoIso,
   type ProyectoIso,
   type RegistroFormatoIso,
   type TipoProyectoIso,
 } from "./isoDisenoCatalogo";
+import { subirDocumentoIsoDiseno } from "./isoDisenoDocsService";
 import { cargarEstadoIso, guardarEstadoIso, restablecerEstadoIso } from "./isoDisenoState";
 import "./gestorIsoDiseno.css";
 
@@ -41,6 +46,17 @@ function nombrePersona(persona: Pick<UsuarioPortal, "nombre" | "usuario" | "emai
   return persona.nombre || persona.usuario || persona.email || "Sin nombre";
 }
 
+function IconoVerDocumento() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 5c-5.2 0-9.3 3.6-10.7 7 1.4 3.4 5.5 7 10.7 7s9.3-3.6 10.7-7C21.3 8.6 17.2 5 12 5zm0 11.5A4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 0 1 0 9zm0-2.2a2.3 2.3 0 1 0 0-4.6 2.3 2.3 0 0 0 0 4.6z"
+      />
+    </svg>
+  );
+}
+
 export interface GestorIsoDisenoProps {
   lineaId: IdLineaDisenoIso;
   titulo: string;
@@ -53,13 +69,20 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
   const [busqueda, setBusqueda] = useState("");
   const [modalFormato, setModalFormato] = useState<RegistroFormatoIso | null>(null);
   const [modalProyecto, setModalProyecto] = useState(false);
+  const [modalDocs, setModalDocs] = useState<RegistroFormatoIso | null>(null);
   const [equipo, setEquipo] = useState<UsuarioPortal[]>([]);
+  const [docsFormato, setDocsFormato] = useState<DocumentoIso[]>([]);
+  const [subiendoDoc, setSubiendoDoc] = useState(false);
+  const [errorDoc, setErrorDoc] = useState<string | null>(null);
 
   useEffect(() => {
     setEstado(cargarEstadoIso(lineaId));
     setBusqueda("");
     setModalFormato(null);
     setModalProyecto(false);
+    setModalDocs(null);
+    setDocsFormato([]);
+    setErrorDoc(null);
   }, [lineaId]);
 
   useEffect(() => {
@@ -171,6 +194,7 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
         approvalDate: "",
         evidence: "",
         notes: "",
+        documents: [],
       };
       persistir({ ...estado, records: [...estado.records, rec] });
     }
@@ -184,7 +208,44 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
       evidence: rec.evidence || "",
       notes: rec.notes || "",
     });
+    setDocsFormato(documentosDe(rec));
+    setErrorDoc(null);
     setModalFormato(rec);
+  }
+
+  async function subirArchivosFormato(archivos: FileList | null) {
+    if (!modalFormato || !archivos || archivos.length === 0) return;
+    setSubiendoDoc(true);
+    setErrorDoc(null);
+    try {
+      const nuevos: DocumentoIso[] = [];
+      for (const archivo of Array.from(archivos)) {
+        const url = await subirDocumentoIsoDiseno(
+          lineaId,
+          modalFormato.projectId,
+          modalFormato.formatCode,
+          archivo,
+        );
+        nuevos.push({
+          id: crypto.randomUUID(),
+          nombre: archivo.name,
+          url,
+          fecha: fechaHoy(),
+        });
+      }
+      setDocsFormato((prev) => [...nuevos, ...prev]);
+      if (formFormato.status === "Pendiente") {
+        setFormFormato((prev) => ({ ...prev, status: "En Elaboración" }));
+      }
+    } catch (e) {
+      setErrorDoc(e instanceof Error ? e.message : "No se pudo subir el documento.");
+    } finally {
+      setSubiendoDoc(false);
+    }
+  }
+
+  function quitarDocumentoFormato(id: string) {
+    setDocsFormato((prev) => prev.filter((doc) => doc.id !== id));
   }
 
   function guardarFormato(e: FormEvent) {
@@ -202,11 +263,14 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
             approvalDate: formFormato.approvalDate,
             evidence: formFormato.evidence.trim(),
             notes: formFormato.notes.trim(),
+            documents: docsFormato,
           }
         : r,
     );
     persistir({ ...estado, records });
     setModalFormato(null);
+    setDocsFormato([]);
+    setErrorDoc(null);
   }
 
   function resolverEncargado(leadId: string): { leadId: string; lead: string } {
@@ -458,7 +522,12 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                       <h3>
                         Etapa {etapaActual.id}: {etapaActual.name}
                       </h3>
-                      <p>Ponderación en el proyecto: {Math.round(etapaActual.weight * 100)}%</p>
+                      <p>
+                        Ponderación en el proyecto: {Math.round(etapaActual.weight * 100)}%
+                        {etapaActual.id === "8.3.4_DES"
+                          ? " · concepto 10% · preliminar 20% · detalle 20%"
+                          : null}
+                      </p>
                     </div>
                     <button type="button" className="btn" onClick={imprimirReporte}>
                       Reporte auditoría
@@ -471,6 +540,7 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                         <tr>
                           <th>Código</th>
                           <th>Formato / Procedimiento</th>
+                          <th>Peso</th>
                           <th>Versión</th>
                           <th>Estado</th>
                           <th>Responsable</th>
@@ -485,6 +555,8 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                                 r.projectId === proyecto.id && r.formatCode === fmt.code,
                             ) ?? null;
                           const status = rec?.status ?? "Pendiente";
+                          const docs = documentosDe(rec);
+                          const conEvidencia = tieneEvidenciaVisible(rec);
                           return (
                             <tr key={fmt.code}>
                               <td>
@@ -493,14 +565,39 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                               <td>
                                 <span className="gestor-iso__fmt-nombre">{fmt.name}</span>
                                 <span className="gestor-iso__fmt-ev">
-                                  {rec?.evidence
-                                    ? "Evidencia registrada"
-                                    : "Sin evidencia registrada"}
+                                  {docs.length > 0
+                                    ? `${docs.length} documento${docs.length === 1 ? "" : "s"}`
+                                    : rec?.evidence
+                                      ? "Evidencia registrada"
+                                      : "Sin evidencia registrada"}
                                 </span>
                               </td>
+                              <td>{Math.round(pesoFormato(fmt) * 1000) / 10}%</td>
                               <td>v{rec?.version || "01"}</td>
                               <td>
-                                <span className={claseBadge(status)}>{etiquetaEstado(status)}</span>
+                                <div className="gestor-iso__estado-celda">
+                                  <span className={claseBadge(status)}>
+                                    {etiquetaEstado(status)}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className={
+                                      conEvidencia
+                                        ? "gestor-iso__ver-doc"
+                                        : "gestor-iso__ver-doc gestor-iso__ver-doc--off"
+                                    }
+                                    title={
+                                      conEvidencia
+                                        ? "Ver documentos / evidencia"
+                                        : "Sin documentos para visualizar"
+                                    }
+                                    disabled={!conEvidencia || !rec}
+                                    onClick={() => rec && setModalDocs(rec)}
+                                  >
+                                    <IconoVerDocumento />
+                                    <span className="sr-only">Ver documentos</span>
+                                  </button>
+                                </div>
                               </td>
                               <td>{rec?.filledBy || "—"}</td>
                               <td>
@@ -604,12 +701,49 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                   />
                 </label>
               </div>
+              <div className="gestor-iso__docs">
+                <div className="gestor-iso__docs-cab">
+                  <strong>Documentos de evidencia</strong>
+                  <label className="btn gestor-iso__docs-subir">
+                    {subiendoDoc ? "Subiendo…" : "Subir documento"}
+                    <input
+                      type="file"
+                      multiple
+                      hidden
+                      disabled={subiendoDoc}
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.zip"
+                      onChange={(e) => {
+                        void subirArchivosFormato(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+                {errorDoc ? <p className="gestor-iso__docs-error">{errorDoc}</p> : null}
+                {docsFormato.length === 0 ? (
+                  <p className="gestor-iso__hint">PDF, Word, Excel, imágenes o ZIP (máx. 20 MB c/u).</p>
+                ) : (
+                  <ul className="gestor-iso__docs-lista">
+                    {docsFormato.map((doc) => (
+                      <li key={doc.id}>
+                        <a href={doc.url} target="_blank" rel="noreferrer">
+                          {doc.nombre}
+                        </a>
+                        <span>{doc.fecha}</span>
+                        <button type="button" className="btn" onClick={() => quitarDocumentoFormato(doc.id)}>
+                          Quitar
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               <label>
-                Enlace / ruta de evidencia
+                Enlace / ruta adicional (opcional)
                 <input
                   value={formFormato.evidence}
                   onChange={(e) => setFormFormato({ ...formFormato, evidence: e.target.value })}
-                  placeholder="Ej: //Servidor/Planos o enlace a archivo"
+                  placeholder="Ej: //Servidor/Planos o enlace a Drive"
                 />
               </label>
               <label>
@@ -621,14 +755,68 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                 />
               </label>
               <div className="gestor-iso__form-acciones">
-                <button type="button" className="btn" onClick={() => setModalFormato(null)}>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={subiendoDoc}
+                  onClick={() => {
+                    setModalFormato(null);
+                    setDocsFormato([]);
+                    setErrorDoc(null);
+                  }}
+                >
                   Cancelar
                 </button>
-                <button type="submit" className="btn btn--primario">
+                <button type="submit" className="btn btn--primario" disabled={subiendoDoc}>
                   Guardar cambios
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      ) : null}
+
+      {modalDocs ? (
+        <div className="gestor-iso__modal" role="dialog" aria-modal="true">
+          <div className="gestor-iso__modal-caja gestor-iso__modal-caja--chica">
+            <div className="gestor-iso__modal-cab">
+              <div>
+                <span className="gestor-iso__codigo">{modalDocs.formatCode}</span>
+                <h3>Documentos del formato</h3>
+              </div>
+              <button type="button" aria-label="Cerrar" onClick={() => setModalDocs(null)}>
+                ×
+              </button>
+            </div>
+            <div className="gestor-iso__docs-vista">
+              {documentosDe(modalDocs).length === 0 && !modalDocs.evidence?.trim() ? (
+                <p>No hay documentos cargados.</p>
+              ) : null}
+              {documentosDe(modalDocs).map((doc) => (
+                <a
+                  key={doc.id}
+                  className="gestor-iso__docs-chip"
+                  href={doc.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <IconoVerDocumento />
+                  <span>{doc.nombre}</span>
+                </a>
+              ))}
+              {modalDocs.evidence?.trim() ? (
+                <p className="gestor-iso__hint">
+                  Ruta / enlace:{" "}
+                  {/^https?:\/\//i.test(modalDocs.evidence.trim()) ? (
+                    <a href={modalDocs.evidence.trim()} target="_blank" rel="noreferrer">
+                      {modalDocs.evidence.trim()}
+                    </a>
+                  ) : (
+                    <code>{modalDocs.evidence.trim()}</code>
+                  )}
+                </p>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}

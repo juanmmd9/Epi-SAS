@@ -10,6 +10,7 @@ export type TipoProyectoIso =
 export interface EtapaIso {
   id: string;
   name: string;
+  /** Peso del proyecto (0–1). */
   weight: number;
 }
 
@@ -17,6 +18,15 @@ export interface FormatoMaestroIso {
   code: string;
   name: string;
   stage: string;
+  /** Peso absoluto en el proyecto (0–1). Si falta, se reparte el peso de la etapa. */
+  weight?: number;
+}
+
+export interface DocumentoIso {
+  id: string;
+  nombre: string;
+  url: string;
+  fecha: string;
 }
 
 export interface ProyectoIso {
@@ -51,6 +61,7 @@ export interface RegistroFormatoIso {
   approvalDate: string;
   evidence: string;
   notes: string;
+  documents?: DocumentoIso[];
 }
 
 export interface EstadoAppIso {
@@ -60,13 +71,18 @@ export interface EstadoAppIso {
   records: RegistroFormatoIso[];
 }
 
+/**
+ * Ponderación del numeral 8.3:
+ * Planificación 10%, Entradas 15%, Diseño (concepto 10% + preliminar 20% + detalle 20%),
+ * Verificación 10%, Validación 10%, Salidas 5%.
+ */
 export const ISO_STAGES: EtapaIso[] = [
-  { id: "8.3.2", name: "Planificación", weight: 0.12 },
+  { id: "8.3.2", name: "Planificación", weight: 0.1 },
   { id: "8.3.3", name: "Entradas", weight: 0.15 },
-  { id: "8.3.4_DES", name: "Diseño y Desarrollo", weight: 0.2 },
-  { id: "8.3.4_VERIF", name: "Verificación", weight: 0.2 },
-  { id: "8.3.4_VALID", name: "Validación", weight: 0.2 },
-  { id: "8.3.5", name: "Salidas y Cierre", weight: 0.13 },
+  { id: "8.3.4_DES", name: "Diseño y Desarrollo", weight: 0.5 },
+  { id: "8.3.4_VERIF", name: "Verificación", weight: 0.1 },
+  { id: "8.3.4_VALID", name: "Validación", weight: 0.1 },
+  { id: "8.3.5", name: "Salidas y Cierre", weight: 0.05 },
 ];
 
 export const MASTER_FORMATS: FormatoMaestroIso[] = [
@@ -74,9 +90,9 @@ export const MASTER_FORMATS: FormatoMaestroIso[] = [
   { code: "F-DIS-02", name: "Matriz de Gestión del Riesgo del Producto", stage: "8.3.2" },
   { code: "F-DIS-03", name: "Ficha de Requisitos y Entradas Normativas", stage: "8.3.3" },
   { code: "F-DIS-04", name: "Lista Preliminar de Materiales (BOM)", stage: "8.3.3" },
-  { code: "F-DIS-12", name: "Diseño conceptual", stage: "8.3.4_DES" },
-  { code: "F-DIS-13", name: "Diseño preliminar", stage: "8.3.4_DES" },
-  { code: "F-DIS-14", name: "Diseño detalle", stage: "8.3.4_DES" },
+  { code: "F-DIS-12", name: "Diseño conceptual", stage: "8.3.4_DES", weight: 0.1 },
+  { code: "F-DIS-13", name: "Diseño preliminar", stage: "8.3.4_DES", weight: 0.2 },
+  { code: "F-DIS-14", name: "Diseño detalle", stage: "8.3.4_DES", weight: 0.2 },
   {
     code: "F-DIS-05",
     name: "Protocolo de Ensayos y Cálculos de Verificación",
@@ -114,20 +130,27 @@ function scoreEstado(status: EstadoFormatoIso | undefined): number {
   return 0;
 }
 
+/** Peso de cada formato dentro del proyecto. */
+export function pesoFormato(fmt: FormatoMaestroIso): number {
+  if (typeof fmt.weight === "number") return fmt.weight;
+  const stage = ISO_STAGES.find((s) => s.id === fmt.stage);
+  if (!stage) return 0;
+  const delStage = MASTER_FORMATS.filter((f) => f.stage === fmt.stage);
+  const conPesoPropio = delStage.filter((f) => typeof f.weight === "number");
+  const pesoAsignado = conPesoPropio.reduce((acc, f) => acc + (f.weight ?? 0), 0);
+  const sinPeso = delStage.filter((f) => typeof f.weight !== "number");
+  if (sinPeso.length === 0) return 0;
+  return Math.max(0, stage.weight - pesoAsignado) / sinPeso.length;
+}
+
 export function calculateProjectProgress(
   projectId: string,
   records: RegistroFormatoIso[],
 ): number {
   let total = 0;
-  for (const stage of ISO_STAGES) {
-    const formats = MASTER_FORMATS.filter((f) => f.stage === stage.id);
-    if (formats.length === 0) continue;
-    let score = 0;
-    for (const fmt of formats) {
-      const rec = records.find((r) => r.projectId === projectId && r.formatCode === fmt.code);
-      score += scoreEstado(rec?.status);
-    }
-    total += (score / formats.length) * stage.weight;
+  for (const fmt of MASTER_FORMATS) {
+    const rec = records.find((r) => r.projectId === projectId && r.formatCode === fmt.code);
+    total += scoreEstado(rec?.status) * pesoFormato(fmt);
   }
   return Math.round(total * 100);
 }
@@ -139,12 +162,24 @@ export function calculateStageProgress(
 ): number {
   const formats = MASTER_FORMATS.filter((f) => f.stage === stageId);
   if (formats.length === 0) return 0;
+  const pesoTotal = formats.reduce((acc, f) => acc + pesoFormato(f), 0);
+  if (pesoTotal <= 0) return 0;
   let score = 0;
   for (const fmt of formats) {
     const rec = records.find((r) => r.projectId === projectId && r.formatCode === fmt.code);
-    score += scoreEstado(rec?.status);
+    score += scoreEstado(rec?.status) * pesoFormato(fmt);
   }
-  return Math.round((score / formats.length) * 100);
+  return Math.round((score / pesoTotal) * 100);
+}
+
+export function documentosDe(registro: RegistroFormatoIso | null | undefined): DocumentoIso[] {
+  return registro?.documents ?? [];
+}
+
+export function tieneEvidenciaVisible(registro: RegistroFormatoIso | null | undefined): boolean {
+  if (!registro) return false;
+  if (documentosDe(registro).length > 0) return true;
+  return Boolean(registro.evidence?.trim());
 }
 
 export function crearRegistrosIniciales(projectId: string): RegistroFormatoIso[] {
@@ -160,5 +195,6 @@ export function crearRegistrosIniciales(projectId: string): RegistroFormatoIso[]
     approvalDate: "",
     evidence: "",
     notes: "",
+    documents: [],
   }));
 }
