@@ -10,6 +10,9 @@ import {
   crearRegistrosIniciales,
   documentosDe,
   ENCARGADO_EJEMPLO,
+  etapaCompleta,
+  etapaDesbloqueada,
+  formatoDesbloqueadoEnEtapa,
   ISO_STAGES,
   MASTER_FORMATS,
   pesoFormato,
@@ -63,8 +66,10 @@ export interface GestorIsoDisenoProps {
 }
 
 function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
-  const { perfil } = useAuth();
+  const { perfil, rol } = useAuth();
   const area = areaUsuario(perfil);
+  /** Solo el auxiliar (solicitante) avanza por tapas; el líder/admin de Diseño no. */
+  const aplicaTapas = rol === "solicitante";
   const [estado, setEstado] = useState(() => cargarEstadoIso(lineaId));
   const [busqueda, setBusqueda] = useState("");
   const [modalFormato, setModalFormato] = useState<RegistroFormatoIso | null>(null);
@@ -74,6 +79,7 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
   const [docsFormato, setDocsFormato] = useState<DocumentoIso[]>([]);
   const [subiendoDoc, setSubiendoDoc] = useState(false);
   const [errorDoc, setErrorDoc] = useState<string | null>(null);
+  const [avisoTapa, setAvisoTapa] = useState<string | null>(null);
 
   useEffect(() => {
     setEstado(cargarEstadoIso(lineaId));
@@ -83,6 +89,7 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
     setModalDocs(null);
     setDocsFormato([]);
     setErrorDoc(null);
+    setAvisoTapa(null);
   }, [lineaId]);
 
   useEffect(() => {
@@ -251,6 +258,16 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
   function guardarFormato(e: FormEvent) {
     e.preventDefault();
     if (!modalFormato) return;
+    if (formFormato.status === "Aprobado") {
+      if (docsFormato.length === 0) {
+        setErrorDoc("Para aprobar debes subir al menos un documento de evidencia.");
+        return;
+      }
+      if (!formFormato.approvedBy.trim() || !formFormato.approvalDate) {
+        setErrorDoc("Para aprobar completa quién aprueba y la fecha de aprobación.");
+        return;
+      }
+    }
     const records = estado.records.map((r) =>
       r.id === modalFormato.id
         ? {
@@ -271,6 +288,39 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
     setModalFormato(null);
     setDocsFormato([]);
     setErrorDoc(null);
+    setAvisoTapa(null);
+  }
+
+  function intentarAbrirEtapa(stageId: string) {
+    if (!proyecto) return;
+    if (aplicaTapas && !etapaDesbloqueada(proyecto.id, stageId, estado.records)) {
+      const indice = ISO_STAGES.findIndex((s) => s.id === stageId);
+      const previa = indice > 0 ? ISO_STAGES[indice - 1] : null;
+      setAvisoTapa(
+        previa
+          ? `Debes completar la etapa «${previa.name}»: todos sus formatos con documento subido y estado Aprobado.`
+          : "Esta etapa aún no está desbloqueada.",
+      );
+      return;
+    }
+    setAvisoTapa(null);
+    persistir({ ...estado, currentStageTab: stageId });
+  }
+
+  function intentarDiligenciar(formatCode: string) {
+    if (!proyecto) return;
+    if (aplicaTapas && !etapaDesbloqueada(proyecto.id, etapaActual.id, estado.records)) {
+      setAvisoTapa("Esta etapa está bloqueada hasta completar la anterior.");
+      return;
+    }
+    if (aplicaTapas && !formatoDesbloqueadoEnEtapa(proyecto.id, formatCode, estado.records)) {
+      setAvisoTapa(
+        "Dentro de la etapa el proceso va por tapas: aprueba con documento el formato anterior antes de continuar.",
+      );
+      return;
+    }
+    setAvisoTapa(null);
+    abrirFormato(formatCode);
   }
 
   function resolverEncargado(leadId: string): { leadId: string; lead: string } {
@@ -502,13 +552,35 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                   {ISO_STAGES.map((st) => {
                     const pct = calculateStageProgress(proyecto.id, st.id, estado.records);
                     const activo = estado.currentStageTab === st.id;
+                    const desbloqueada =
+                      !aplicaTapas || etapaDesbloqueada(proyecto.id, st.id, estado.records);
+                    const completa = etapaCompleta(proyecto.id, st.id, estado.records);
                     return (
                       <button
                         key={st.id}
                         type="button"
-                        className={activo ? "gestor-iso__tab gestor-iso__tab--activo" : "gestor-iso__tab"}
-                        onClick={() => persistir({ ...estado, currentStageTab: st.id })}
+                        className={[
+                          "gestor-iso__tab",
+                          activo ? "gestor-iso__tab--activo" : "",
+                          !desbloqueada ? "gestor-iso__tab--bloqueada" : "",
+                          completa ? "gestor-iso__tab--completa" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        title={
+                          desbloqueada
+                            ? completa
+                              ? "Etapa completada"
+                              : st.name
+                            : "Bloqueada: completa la etapa anterior con documentos y Aprobado"
+                        }
+                        onClick={() => intentarAbrirEtapa(st.id)}
                       >
+                        {!desbloqueada ? (
+                          <span className="gestor-iso__candado" aria-hidden>
+                            ▨
+                          </span>
+                        ) : null}
                         {st.name}
                         <em>{pct}%</em>
                       </button>
@@ -528,11 +600,24 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                           ? " · concepto 10% · preliminar 20% · detalle 20%"
                           : null}
                       </p>
+                      {aplicaTapas ? (
+                        <p className="gestor-iso__tapa-leyenda">
+                          Avance por tapas: no puedes pasar a la siguiente etapa sin documento subido
+                          y estado Aprobado en todos los formatos de la etapa actual.
+                        </p>
+                      ) : (
+                        <p className="gestor-iso__tapa-leyenda">
+                          Como administrador de Diseño puedes abrir cualquier etapa sin bloqueo por
+                          tapas.
+                        </p>
+                      )}
                     </div>
                     <button type="button" className="btn" onClick={imprimirReporte}>
                       Reporte auditoría
                     </button>
                   </div>
+
+                  {avisoTapa ? <p className="gestor-iso__tapa-aviso">{avisoTapa}</p> : null}
 
                   <div className="gestor-iso__tabla-wrap">
                     <table className="gestor-iso__tabla">
@@ -557,19 +642,27 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                           const status = rec?.status ?? "Pendiente";
                           const docs = documentosDe(rec);
                           const conEvidencia = tieneEvidenciaVisible(rec);
+                          const formatoLibre =
+                            !aplicaTapas ||
+                            formatoDesbloqueadoEnEtapa(proyecto.id, fmt.code, estado.records);
                           return (
-                            <tr key={fmt.code}>
+                            <tr
+                              key={fmt.code}
+                              className={formatoLibre ? undefined : "gestor-iso__fila--bloqueada"}
+                            >
                               <td>
                                 <code>{fmt.code}</code>
                               </td>
                               <td>
                                 <span className="gestor-iso__fmt-nombre">{fmt.name}</span>
                                 <span className="gestor-iso__fmt-ev">
-                                  {docs.length > 0
-                                    ? `${docs.length} documento${docs.length === 1 ? "" : "s"}`
-                                    : rec?.evidence
-                                      ? "Evidencia registrada"
-                                      : "Sin evidencia registrada"}
+                                  {!formatoLibre
+                                    ? "Bloqueado hasta liberar el formato anterior"
+                                    : docs.length > 0
+                                      ? `${docs.length} documento${docs.length === 1 ? "" : "s"}`
+                                      : rec?.evidence
+                                        ? "Evidencia registrada"
+                                        : "Sin evidencia registrada"}
                                 </span>
                               </td>
                               <td>{Math.round(pesoFormato(fmt) * 1000) / 10}%</td>
@@ -604,9 +697,15 @@ function GestorIsoDiseno({ lineaId, titulo }: GestorIsoDisenoProps) {
                                 <button
                                   type="button"
                                   className="btn"
-                                  onClick={() => abrirFormato(fmt.code)}
+                                  disabled={!formatoLibre}
+                                  title={
+                                    formatoLibre
+                                      ? "Diligenciar formato"
+                                      : "Completa el formato anterior primero"
+                                  }
+                                  onClick={() => intentarDiligenciar(fmt.code)}
                                 >
-                                  Diligenciar
+                                  {formatoLibre ? "Diligenciar" : "Bloqueado"}
                                 </button>
                               </td>
                             </tr>

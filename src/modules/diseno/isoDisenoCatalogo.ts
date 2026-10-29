@@ -182,6 +182,72 @@ export function tieneEvidenciaVisible(registro: RegistroFormatoIso | null | unde
   return Boolean(registro.evidence?.trim());
 }
 
+/** Documento subido (archivo), no solo ruta de texto. */
+export function tieneDocumentoSubido(registro: RegistroFormatoIso | null | undefined): boolean {
+  return documentosDe(registro).length > 0;
+}
+
+/** Formato liberado: aprobado + al menos un documento cargado. */
+export function formatoLiberado(registro: RegistroFormatoIso | null | undefined): boolean {
+  return registro?.status === "Aprobado" && tieneDocumentoSubido(registro);
+}
+
+export function registroDeFormato(
+  projectId: string,
+  formatCode: string,
+  records: RegistroFormatoIso[],
+): RegistroFormatoIso | undefined {
+  return records.find((r) => r.projectId === projectId && r.formatCode === formatCode);
+}
+
+/** Todos los formatos de la etapa están aprobados con documentación. */
+export function etapaCompleta(
+  projectId: string,
+  stageId: string,
+  records: RegistroFormatoIso[],
+): boolean {
+  const formats = MASTER_FORMATS.filter((f) => f.stage === stageId);
+  if (formats.length === 0) return false;
+  return formats.every((fmt) => formatoLiberado(registroDeFormato(projectId, fmt.code, records)));
+}
+
+/**
+ * Una etapa está desbloqueada si es la primera o todas las anteriores están completas.
+ * Así el proceso avanza por tapas.
+ */
+export function etapaDesbloqueada(
+  projectId: string,
+  stageId: string,
+  records: RegistroFormatoIso[],
+): boolean {
+  const indice = ISO_STAGES.findIndex((s) => s.id === stageId);
+  if (indice <= 0) return true;
+  for (let i = 0; i < indice; i++) {
+    if (!etapaCompleta(projectId, ISO_STAGES[i].id, records)) return false;
+  }
+  return true;
+}
+
+/**
+ * Dentro de una etapa, cada formato se libera en orden (tapa a tapa).
+ * El primero siempre está disponible; el resto exige que el anterior esté liberado.
+ */
+export function formatoDesbloqueadoEnEtapa(
+  projectId: string,
+  formatCode: string,
+  records: RegistroFormatoIso[],
+): boolean {
+  const fmt = MASTER_FORMATS.find((f) => f.code === formatCode);
+  if (!fmt) return false;
+  const delStage = MASTER_FORMATS.filter((f) => f.stage === fmt.stage);
+  const indice = delStage.findIndex((f) => f.code === formatCode);
+  if (indice <= 0) return true;
+  for (let i = 0; i < indice; i++) {
+    if (!formatoLiberado(registroDeFormato(projectId, delStage[i].code, records))) return false;
+  }
+  return true;
+}
+
 export function crearRegistrosIniciales(projectId: string): RegistroFormatoIso[] {
   return MASTER_FORMATS.map((fmt) => ({
     id: `REC-${crypto.randomUUID()}`,

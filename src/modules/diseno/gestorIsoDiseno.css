@@ -328,6 +328,46 @@
   color: #fff;
 }
 
+.gestor-iso__tab--bloqueada {
+  opacity: 0.55;
+  color: #64748b;
+}
+
+.gestor-iso__tab--bloqueada:hover {
+  background: #f1f5f9;
+}
+
+.gestor-iso__tab--completa:not(.gestor-iso__tab--activo) {
+  color: #166534;
+}
+
+.gestor-iso__candado {
+  margin-right: 0.2rem;
+  font-size: 0.7rem;
+}
+
+.gestor-iso__tapa-leyenda {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-texto-suave);
+}
+
+.gestor-iso__tapa-aviso {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.gestor-iso__fila--bloqueada {
+  opacity: 0.62;
+  background: #f8fafc;
+}
+
 .gestor-iso__tab em {
   font-style: normal;
   font-size: 0.68rem;
