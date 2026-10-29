@@ -11,9 +11,13 @@ import {
   listarPiezasTodas,
   reemplazarInventario,
 } from "./computadoresService";
+import {
+  descargarBlobExcel,
+  generarExcelComputadores,
+  nombreArchivoComputadores,
+} from "./computadoresExcel";
 import { esErrorTablaComputadores, SQL_MIGRACION_COMPUTADORES } from "./computadoresSetup";
 import {
-  SEMILLA_COMPUTADORES,
   compararCodigoPc,
   normalizarTipoComputador,
   parseFechaExcel,
@@ -232,23 +236,19 @@ function ComputadoresPage() {
     }
   }
 
-  async function cargarSemilla() {
-    const aviso =
-      lista.length > 0
-        ? `Se reemplazarán los ${lista.length} computadores actuales por la lista oficial del Excel (51 equipos). ¿Continuar?`
-        : "Se cargarán los 51 computadores de la lista oficial del Excel. ¿Continuar?";
-    if (!window.confirm(aviso)) return;
-
+  async function guardarExcel() {
+    if (lista.length === 0) {
+      setError("No hay computadores para exportar.");
+      return;
+    }
     setGuardando(true);
     setError(null);
     try {
-      const { creados } = await reemplazarInventario(SEMILLA_COMPUTADORES);
-      setMensaje(`Lista actualizada: ${creados} computadores cargados desde el Excel oficial.`);
-      await cargar();
+      const blob = await generarExcelComputadores(lista);
+      descargarBlobExcel(blob, nombreArchivoComputadores());
+      setMensaje(`Excel guardado: ${lista.length} computadores.`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Error al importar";
-      if (esErrorTablaComputadores(msg)) setFaltaTabla(true);
-      setError(msg);
+      setError(e instanceof Error ? e.message : "No se pudo generar el Excel");
     } finally {
       setGuardando(false);
     }
@@ -359,8 +359,13 @@ function ComputadoresPage() {
         </div>
         <SoloConPermiso permiso="editar.computadores">
           <div className="computadores__acciones">
-            <button type="button" className="btn" onClick={() => void cargarSemilla()} disabled={guardando || faltaTabla}>
-              Cargar lista Excel
+            <button
+              type="button"
+              className="btn"
+              onClick={() => void guardarExcel()}
+              disabled={guardando || faltaTabla || lista.length === 0}
+            >
+              Guardar Excel
             </button>
             <button
               type="button"
@@ -612,7 +617,7 @@ function ComputadoresPage() {
 
       {!cargando && !faltaTabla && filtrados.length === 0 && (
         <p className="computadores__vacio">
-          No hay computadores para mostrar. Usa “Cargar lista Excel” o “+ Nuevo PC”.
+          No hay computadores para mostrar. Usa “+ Nuevo PC” o “Importar archivo”.
         </p>
       )}
 
