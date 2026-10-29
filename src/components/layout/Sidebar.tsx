@@ -1,0 +1,239 @@
+import { Fragment, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import BrandLogo from "../BrandLogo";
+import { useAuth } from "../../modules/auth/AuthContext";
+import { enlacesParaRol } from "../../modules/auth/roles";
+import { etiquetaCargo } from "../../modules/auth/cargosArea";
+import { areaUsuario, muestraPortalMantenimiento } from "../../lib/usuarioArea";
+import { enlaceVisibleParaArea, rutaFormatosPara, vePrincipal } from "./navConfig";
+import { AREAS_MENU_DISENO, rutaMenuArea } from "../../modules/diseno/areasDiseno";
+import { coincideArea } from "../../lib/areas";
+import { usePmAsignadosBadge } from "../../modules/preventivo/usePmAsignadosBadge";
+import { usePendientesAprobacionPm } from "../../modules/preventivo/usePendientesAprobacionPm";
+import { usePermisosPendientesBadge } from "../../modules/permisos/usePermisosPendientesBadge";
+import { useSolicitudesAbiertasBadge } from "../../modules/solicitudes/useSolicitudesAbiertasBadge";
+import "../../modules/auth/auth.css";
+import "./Layout.css";
+
+const CLAVE_AREAS_ABIERTAS = "sidebar-diseno-areas-abiertas";
+
+function leerAreasAbiertas(): boolean {
+  try {
+    const raw = localStorage.getItem(CLAVE_AREAS_ABIERTAS);
+    if (raw === null) return true;
+    return raw === "1";
+  } catch {
+    return true;
+  }
+}
+
+interface Props {
+  abierto: boolean;
+  onCerrar: () => void;
+}
+
+function Sidebar({ abierto, onCerrar }: Props) {
+  const navegar = useNavigate();
+  const ubicacion = useLocation();
+  const { perfil, salir } = useAuth();
+  const [areasAbiertas, setAreasAbiertas] = useState(leerAreasAbiertas);
+  const area = areaUsuario(perfil);
+  const esDiseno = perfil?.rol === "lider" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
+  const esAuxiliarDiseno =
+    perfil?.rol === "solicitante" && Boolean(area) && coincideArea(area ?? "", "Diseno y Desarrollo");
+  const enlaces = enlacesParaRol(perfil?.rol).filter((enlace) =>
+    enlaceVisibleParaArea(perfil?.rol, area, enlace.ruta),
+  );
+  const destinoFormatos = rutaFormatosPara(perfil?.rol, area);
+  const formatosEnMenu = Boolean(destinoFormatos) && !vePrincipal(perfil?.rol, area);
+  const pendientesFirma = usePendientesAprobacionPm();
+  const pmAsignados = usePmAsignadosBadge();
+  const solicitudesAbiertas = useSolicitudesAbiertasBadge();
+  const permisosPendientes = usePermisosPendientesBadge();
+
+  async function manejarCerrarSesion() {
+    onCerrar();
+    await salir();
+    navegar("/login", { replace: true });
+  }
+
+  return (
+    <aside className={"sidebar" + (abierto ? " sidebar--abierto" : "")}>
+      <div className="sidebar__marca">
+        <BrandLogo className="sidebar__logo" width={286} height={90} />
+        {muestraPortalMantenimiento(perfil) ? (
+          <span className="sidebar__titulo">Portal Mantenimiento</span>
+        ) : null}
+      </div>
+      <nav className="sidebar__nav">
+        {enlaces.map((enlace) => {
+          const esInicio = enlace.ruta === "/inicio";
+          const esAprobar = enlace.ruta === "/preventivo/aprobaciones";
+          const esSolicitudes = enlace.ruta === "/solicitudes";
+          const esPermisos = enlace.ruta === "/personal/permisos";
+          const avisoPm = esInicio && pmAsignados > 0;
+          const avisoFirma = esAprobar && pendientesFirma > 0;
+          const avisoSol = esSolicitudes && solicitudesAbiertas > 0;
+          const avisoPerm = esPermisos && permisosPendientes > 0;
+          if (
+            esAuxiliarDiseno &&
+            (enlace.ruta === "/solicitudes" || enlace.ruta === "/hojas-de-vida")
+          ) {
+            return null;
+          }
+          return (
+            <Fragment key={enlace.ruta}>
+            {esAuxiliarDiseno && esInicio ? null : (
+            <NavLink
+              to={enlace.ruta}
+              end={enlace.ruta === "/inicio" || enlace.ruta === "/solicitudes"}
+              className={({ isActive }) =>
+                "sidebar__enlace" +
+                (isActive ? " sidebar__enlace--activo" : "") +
+                (avisoFirma || avisoSol || avisoPerm || avisoPm ? " sidebar__enlace--aviso" : "") +
+                (avisoSol && !avisoFirma && !avisoPerm && !avisoPm ? " sidebar__enlace--aviso-sol" : "") +
+                (avisoPerm && !avisoFirma && !avisoPm ? " sidebar__enlace--aviso-perm" : "")
+              }
+              onClick={onCerrar}
+            >
+              <span className="sidebar__enlace-texto">{enlace.texto}</span>
+              {avisoPm ? (
+                <span
+                  className="nav-badge nav-badge--sidebar nav-badge--ambar"
+                  aria-label={`${pmAsignados} PM pendiente(s)`}
+                >
+                  {pmAsignados > 9 ? "9+" : pmAsignados}
+                </span>
+              ) : null}
+              {avisoFirma ? (
+                <span
+                  className="nav-badge nav-badge--sidebar"
+                  aria-label={`${pendientesFirma} pendiente(s) de firmar`}
+                >
+                  {pendientesFirma > 9 ? "9+" : pendientesFirma}
+                </span>
+              ) : null}
+              {avisoSol ? (
+                <span
+                  className="nav-badge nav-badge--sidebar nav-badge--naranja"
+                  aria-label={`${solicitudesAbiertas} solicitud(es) abierta(s)`}
+                >
+                  {solicitudesAbiertas > 9 ? "9+" : solicitudesAbiertas}
+                </span>
+              ) : null}
+              {avisoPerm ? (
+                <span
+                  className="nav-badge nav-badge--sidebar nav-badge--azul"
+                  aria-label={`${permisosPendientes} permiso(s) por aprobar`}
+                >
+                  {permisosPendientes > 9 ? "9+" : permisosPendientes}
+                </span>
+              ) : null}
+            </NavLink>
+            )}
+            {esAuxiliarDiseno && esInicio ? (
+              <NavLink
+                to="/diseno/tablero"
+                className={() => {
+                  const activo =
+                    ubicacion.pathname === "/diseno/tablero" ||
+                    ubicacion.pathname.startsWith("/diseno/tablero/");
+                  return "sidebar__enlace" + (activo ? " sidebar__enlace--activo" : "");
+                }}
+                onClick={onCerrar}
+              >
+                <span className="sidebar__enlace-texto">Tablero</span>
+              </NavLink>
+            ) : null}
+            {formatosEnMenu && esInicio && destinoFormatos ? (
+              <NavLink
+                to={destinoFormatos}
+                className={() => {
+                  const activo =
+                    ubicacion.pathname === destinoFormatos ||
+                    ubicacion.pathname.startsWith(`${destinoFormatos}/`) ||
+                    ubicacion.pathname.startsWith("/formatos/gc-re-027");
+                  return "sidebar__enlace" + (activo ? " sidebar__enlace--activo" : "");
+                }}
+                onClick={onCerrar}
+              >
+                <span className="sidebar__enlace-texto">Formatos</span>
+              </NavLink>
+            ) : null}
+            {esDiseno && enlace.ruta === "/tablero" ? (
+              <NavLink
+                to="/equipo"
+                className={({ isActive }) =>
+                  "sidebar__enlace" + (isActive ? " sidebar__enlace--activo" : "")
+                }
+                onClick={onCerrar}
+              >
+                <span className="sidebar__enlace-texto">Equipo</span>
+              </NavLink>
+            ) : null}
+            </Fragment>
+          );
+        })}
+        {esDiseno || esAuxiliarDiseno ? (
+          <div className="sidebar__areas">
+            <button
+              type="button"
+              className="sidebar__grupo sidebar__grupo--toggle"
+              aria-expanded={areasAbiertas}
+              onClick={() => {
+                setAreasAbiertas((previo) => {
+                  const siguiente = !previo;
+                  try {
+                    localStorage.setItem(CLAVE_AREAS_ABIERTAS, siguiente ? "1" : "0");
+                  } catch {
+                    /* ignore */
+                  }
+                  return siguiente;
+                });
+              }}
+            >
+              <span>Áreas</span>
+              <span className="sidebar__grupo-flecha" aria-hidden>
+                {areasAbiertas ? "▾" : "▸"}
+              </span>
+            </button>
+            {areasAbiertas
+              ? AREAS_MENU_DISENO.map((areaMenu) => (
+                  <NavLink
+                    key={areaMenu}
+                    to={rutaMenuArea(areaMenu)}
+                    className={({ isActive }) =>
+                      "sidebar__enlace" + (isActive ? " sidebar__enlace--activo" : "")
+                    }
+                    onClick={onCerrar}
+                  >
+                    <span className="sidebar__enlace-texto">{areaMenu}</span>
+                  </NavLink>
+                ))
+              : null}
+          </div>
+        ) : null}
+      </nav>
+      {perfil && (
+        <div className="sidebar__usuario">
+          <span className="sidebar__usuario-nombre">
+            {perfil.nombre || perfil.usuario || perfil.email}
+          </span>
+          <span className="sidebar__usuario-rol">
+            {etiquetaCargo(perfil.rol, areaUsuario(perfil))}
+            {areaUsuario(perfil) ? ` · ${areaUsuario(perfil)}` : ""}
+          </span>
+          <button
+            type="button"
+            className="btn sidebar__cerrar-sesion"
+            onClick={() => void manejarCerrarSesion()}
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      )}
+    </aside>
+  );
+}
+
+export default Sidebar;

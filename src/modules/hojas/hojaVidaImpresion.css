@@ -1,0 +1,237 @@
+.hv-print {
+  display: none;
+  background: #fff;
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.35;
+}
+
+.hv-print__cabecera {
+  display: grid;
+  grid-template-columns: 1.1fr 1.6fr 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  border: 1.5px solid #111;
+  padding: 0.65rem 0.8rem;
+  margin-bottom: 0.85rem;
+}
+
+.hv-print__empresa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.hv-print__empresa strong {
+  font-size: 13pt;
+  letter-spacing: 0.02em;
+}
+
+.hv-print__empresa span {
+  font-size: 9pt;
+  color: #444;
+}
+
+.hv-print__titulo {
+  text-align: center;
+}
+
+.hv-print__titulo h1 {
+  margin: 0;
+  font-size: 14pt;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.hv-print__titulo p {
+  margin: 0.2rem 0 0;
+  font-size: 9pt;
+  color: #444;
+}
+
+.hv-print__meta {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 9pt;
+}
+
+.hv-print__identificacion {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.85rem;
+  border: 1.5px solid #111;
+  padding: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.hv-print__foto {
+  width: 140px;
+  height: 140px;
+  border: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #f8fafc;
+  font-size: 9pt;
+  color: #666;
+}
+
+.hv-print__foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hv-print__datos-principales h2 {
+  margin: 0 0 0.25rem;
+  font-size: 13pt;
+}
+
+.hv-print__chip {
+  margin: 0 0 0.65rem;
+  font-size: 9.5pt;
+  color: #333;
+}
+
+.hv-print__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem 0.75rem;
+  margin: 0;
+}
+
+.hv-print__grid div {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.2rem;
+}
+
+.hv-print__grid dt {
+  margin: 0;
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #555;
+}
+
+.hv-print__grid dd {
+  margin: 0.1rem 0 0;
+  font-size: 10pt;
+  font-weight: 600;
+}
+
+.hv-print__bloque {
+  margin-bottom: 0.85rem;
+}
+
+.hv-print__bloque h3 {
+  break-after: avoid;
+}
+
+.hv-print__tabla thead {
+  display: table-header-group;
+}
+
+.hv-print__tabla tr {
+  break-inside: avoid;
+}
+
+.hv-print__bloque h3 {
+  margin: 0 0 0.4rem;
+  font-size: 11pt;
+  border-bottom: 2px solid #111;
+  padding-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.hv-print__vacio {
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px dashed #999;
+  font-size: 9.5pt;
+  color: #555;
+}
+
+.hv-print__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+}
+
+.hv-print__tabla th,
+.hv-print__tabla td {
+  border: 1px solid #222;
+  padding: 0.35rem 0.45rem;
+  vertical-align: top;
+  text-align: left;
+}
+
+.hv-print__tabla th {
+  background: #e5e7eb;
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.hv-print__firmas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+  page-break-inside: avoid;
+}
+
+.hv-print__firmas > div {
+  text-align: center;
+}
+
+.hv-print__linea {
+  border-bottom: 1px solid #111;
+  height: 2.2rem;
+  margin-bottom: 0.35rem;
+}
+
+.hv-print__firmas strong {
+  display: block;
+  font-size: 9.5pt;
+}
+
+.hv-print__firmas small {
+  color: #555;
+  font-size: 8pt;
+}
+
+@media print {
+  body.imprimiendo-hoja-vida .layout__topbar,
+  body.imprimiendo-hoja-vida .sidebar,
+  body.imprimiendo-hoja-vida .hoja-detalle__encabezado,
+  body.imprimiendo-hoja-vida .hoja-detalle__layout,
+  body.imprimiendo-hoja-vida .hoja-detalle__acciones-print {
+    display: none !important;
+  }
+
+  body.imprimiendo-hoja-vida .layout__contenido,
+  body.imprimiendo-hoja-vida .hojas,
+  body.imprimiendo-hoja-vida .hoja-detalle {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    background: #fff !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  body.imprimiendo-hoja-vida .hv-print {
+    display: block !important;
+    width: 100%;
+  }
+
+  @page {
+    size: letter portrait;
+    margin: 12mm;
+  }
+}
